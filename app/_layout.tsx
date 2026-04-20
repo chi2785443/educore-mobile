@@ -1,15 +1,15 @@
-import '../global.css';
+import "../global.css";
 
-import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StatusBar } from 'expo-status-bar';
-import * as SecureStore from 'expo-secure-store';
-import * as SplashScreen from 'expo-splash-screen';
-import { useAuthStore } from '@/store/authStore';
-import { ACCESS_TOKEN_KEY } from '@/services/axios.service';
-import { authService } from '@/services/auth.service';
-import { UserType } from '@/interface/user.interface';
+import React, { useEffect } from "react";
+import { Stack } from "expo-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { StatusBar } from "expo-status-bar";
+import * as SecureStore from "expo-secure-store";
+import * as SplashScreen from "expo-splash-screen";
+import { useAuthStore } from "@/store/authStore";
+import { ACCESS_TOKEN_KEY } from "@/services/axios.service";
+import { authService } from "@/services/auth.service";
+import { UserType } from "@/interface/user.interface";
 
 SplashScreen.preventAutoHideAsync();
 
