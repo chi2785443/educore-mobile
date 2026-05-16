@@ -15,7 +15,7 @@ const ROLES: RoleOption[] = [
   {
     role: "super_admin",
     label: "School Owner / Admin",
-    description: "Register and manage your school on Eduflow",
+    description: "Register and manage your school on EduCore",
     icon: "business-outline",
   },
   {

@@ -19,6 +19,7 @@
     "@react-navigation/native": "^7.1.8",
     "@tanstack/react-query": "^5.99.2",
     "axios": "^1.15.1",
+    "date-fns": "^4.1.0",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
     "expo-document-picker": "^14.0.8",
@@ -48,6 +49,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "~19.1.0",
     "babel-preset-expo": "^54.0.10",
     "eslint": "^9.25.0",

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { BasicInfoStep } from '@/components/auth/BasicInfoStep';
@@ -22,7 +23,7 @@ const STEP_TITLES: Record<SignUpStep, string> = {
 const STEP_SUBTITLES: Record<SignUpStep, string> = {
   0: 'Fill in your details to get started',
   1: 'Enter the code we sent to your email',
-  2: 'How will you be using Eduflow?',
+  2: 'How will you be using EduCore?',
   3: 'Complete your profile setup',
 };
 
@@ -75,6 +76,13 @@ export default function SignUpScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="flex-1 px-6 py-8 gap-8">
+            {/* Logo */}
+            <Image
+              source={require('@/assets/images/educore_logo.svg')}
+              style={{ width: 130, height: 37 }}
+              contentFit="contain"
+            />
+
             {/* Progress bar */}
             <View className="gap-3">
               <View className="flex-row gap-1.5">
