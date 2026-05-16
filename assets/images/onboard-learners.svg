@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" width="340" height="300">
+  <!-- Background rings -->
+  <circle cx="170" cy="148" r="125" fill="none" stroke="rgba(20,184,166,0.07)" stroke-width="24"/>
+  <circle cx="170" cy="148" r="90" fill="rgba(20,184,166,0.05)"/>
+
+  <!-- Open book — centre -->
+  <!-- Book spine -->
+  <rect x="163" y="118" width="14" height="80" rx="3" fill="#0f766e"/>
+  <!-- Left page -->
+  <path d="M163 122 Q120 118 108 128 L108 194 Q120 186 163 190 Z" fill="#134e4a"/>
+  <path d="M163 122 Q120 118 108 128 L108 194 Q120 186 163 190 Z" fill="none" stroke="rgba(20,184,166,0.4)" stroke-width="1"/>
+  <!-- Right page -->
+  <path d="M177 122 Q220 118 232 128 L232 194 Q220 186 177 190 Z" fill="#134e4a"/>
+  <path d="M177 122 Q220 118 232 128 L232 194 Q220 186 177 190 Z" fill="none" stroke="rgba(20,184,166,0.4)" stroke-width="1"/>
+  <!-- Left page lines -->
+  <path d="M116 140 Q138 138 160 140" stroke="rgba(52,211,153,0.35)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M114 150 Q136 148 160 150" stroke="rgba(52,211,153,0.3)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M115 160 Q137 158 160 160" stroke="rgba(52,211,153,0.25)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M116 170 Q138 168 160 170" stroke="rgba(52,211,153,0.2)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M117 180 Q139 178 160 180" stroke="rgba(52,211,153,0.15)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Right page lines -->
+  <path d="M180 140 Q202 138 224 140" stroke="rgba(52,211,153,0.35)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M180 150 Q202 148 226 150" stroke="rgba(52,211,153,0.3)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M180 160 Q202 158 225 160" stroke="rgba(52,211,153,0.25)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M180 170 Q202 168 224 170" stroke="rgba(52,211,153,0.2)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M180 180 Q200 178 223 180" stroke="rgba(52,211,153,0.15)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Graduation cap — top centre -->
+  <g transform="translate(148, 44)">
+    <polygon points="22,12 44,4 66,12 44,20" fill="#14b8a6"/>
+    <polygon points="22,12 44,20 44,36 22,28" fill="#0d9488"/>
+    <polygon points="66,12 44,20 44,36 66,28" fill="#0f766e"/>
+    <line x1="66" y1="12" x2="66" y2="26" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+    <circle cx="66" cy="27" r="3" fill="#2dd4bf"/>
+  </g>
+
+  <!-- Floating score card — top left -->
+  <g transform="translate(22,62)">
+    <rect width="78" height="52" rx="12" fill="#0f4a3f"/>
+    <rect width="78" height="52" rx="12" fill="none" stroke="rgba(20,184,166,0.35)" stroke-width="1"/>
+    <text x="12" y="20" font-size="11" fill="rgba(255,255,255,0.5)" font-family="Arial">Score</text>
+    <text x="12" y="38" font-size="20" fill="#2dd4bf" font-family="Arial" font-weight="900">A+</text>
+    <text x="44" y="38" font-size="10" fill="rgba(45,212,191,0.6)" font-family="Arial">94%</text>
+  </g>
+
+  <!-- Floating trophy — top right -->
+  <g transform="translate(246,62)">
+    <rect width="72" height="52" rx="12" fill="#0f4a3f"/>
+    <rect width="72" height="52" rx="12" fill="none" stroke="rgba(245,158,11,0.35)" stroke-width="1"/>
+    <!-- Trophy shape -->
+    <path d="M22 10 Q22 24 30 26 L30 32 L22 34 L50 34 L42 32 L42 26 Q50 24 50 10 Z" fill="#fbbf24"/>
+    <path d="M22 12 Q15 12 15 20 Q15 26 22 26" fill="none" stroke="#fbbf24" stroke-width="2.5"/>
+    <path d="M50 12 Q57 12 57 20 Q57 26 50 26" fill="none" stroke="#fbbf24" stroke-width="2.5"/>
+    <text x="56" y="28" font-size="10" fill="rgba(251,191,36,0.6)" font-family="Arial">#1</text>
+  </g>
+
+  <!-- Floating assessment card — bottom left -->
+  <g transform="translate(18,210)">
+    <rect width="90" height="60" rx="12" fill="#0f4a3f"/>
+    <rect width="90" height="60" rx="12" fill="none" stroke="rgba(20,184,166,0.3)" stroke-width="1"/>
+    <text x="10" y="18" font-size="8" fill="rgba(255,255,255,0.4)" font-family="Arial">Assessment</text>
+    <!-- Progress bar -->
+    <rect x="10" y="24" width="70" height="5" rx="2.5" fill="rgba(255,255,255,0.08)"/>
+    <rect x="10" y="24" width="56" height="5" rx="2.5" fill="#2dd4bf"/>
+    <text x="10" y="42" font-size="9" fill="rgba(255,255,255,0.5)" font-family="Arial">Progress</text>
+    <text x="62" y="42" font-size="9" fill="#2dd4bf" font-family="Arial">80%</text>
+    <rect x="10" y="46" width="70" height="4" rx="2" fill="rgba(255,255,255,0.06)"/>
+    <rect x="10" y="46" width="30" height="4" rx="2" fill="rgba(20,184,166,0.4)"/>
+  </g>
+
+  <!-- Floating timetable card — bottom right -->
+  <g transform="translate(232,210)">
+    <rect width="90" height="60" rx="12" fill="#0f4a3f"/>
+    <rect width="90" height="60" rx="12" fill="none" stroke="rgba(20,184,166,0.3)" stroke-width="1"/>
+    <text x="10" y="18" font-size="8" fill="rgba(255,255,255,0.4)" font-family="Arial">Timetable</text>
+    <rect x="10" y="24" width="10" height="30" rx="2" fill="rgba(20,184,166,0.25)"/>
+    <rect x="24" y="28" width="10" height="26" rx="2" fill="rgba(20,184,166,0.35)"/>
+    <rect x="38" y="32" width="10" height="22" rx="2" fill="rgba(20,184,166,0.25)"/>
+    <rect x="52" y="24" width="10" height="30" rx="2" fill="rgba(20,184,166,0.45)"/>
+    <rect x="66" y="30" width="10" height="24" rx="2" fill="rgba(20,184,166,0.3)"/>
+  </g>
+
+  <!-- Floating sparkles -->
+  <g fill="#2dd4bf">
+    <circle cx="98" cy="60" r="2.5"/>
+    <circle cx="88" cy="72" r="1.5"/>
+    <circle cx="110" cy="74" r="1.5"/>
+    <circle cx="240" cy="60" r="2.5"/>
+    <circle cx="250" cy="72" r="1.5"/>
+    <circle cx="230" cy="72" r="1.5"/>
+    <circle cx="100" cy="225" r="2"/>
+    <circle cx="240" cy="225" r="2"/>
+  </g>
+
+  <!-- Shadow under book -->
+  <ellipse cx="170" cy="204" rx="68" ry="8" fill="rgba(0,0,0,0.3)"/>
+</svg>

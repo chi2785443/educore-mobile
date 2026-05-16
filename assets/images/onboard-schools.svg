@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" width="340" height="300">
+  <!-- Background subtle grid -->
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(99,102,241,0.07)" stroke-width="0.8"/>
+    </pattern>
+  </defs>
+  <rect width="340" height="300" fill="url(#grid)"/>
+
+  <!-- School building -->
+  <!-- Main body -->
+  <rect x="95" y="110" width="150" height="110" rx="4" fill="#1a2744"/>
+  <rect x="95" y="110" width="150" height="110" rx="4" fill="none" stroke="rgba(99,102,241,0.3)" stroke-width="1.5"/>
+  <!-- Roof / triangle top -->
+  <polygon points="80,110 170,60 260,110" fill="#253462"/>
+  <polygon points="80,110 170,60 260,110" fill="none" stroke="rgba(99,102,241,0.4)" stroke-width="1.5"/>
+  <!-- Roof flag pole -->
+  <line x1="170" y1="60" x2="170" y2="38" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <rect x="170" y="38" width="14" height="9" rx="1" fill="#818cf8"/>
+
+  <!-- Windows row 1 -->
+  <rect x="112" y="126" width="24" height="20" rx="3" fill="#0d1b3e"/>
+  <rect x="112" y="126" width="24" height="20" rx="3" fill="none" stroke="rgba(99,102,241,0.35)" stroke-width="1"/>
+  <line x1="124" y1="126" x2="124" y2="146" stroke="rgba(99,102,241,0.25)" stroke-width="0.8"/>
+  <line x1="112" y1="136" x2="136" y2="136" stroke="rgba(99,102,241,0.25)" stroke-width="0.8"/>
+
+  <rect x="158" y="126" width="24" height="20" rx="3" fill="#0d1b3e"/>
+  <rect x="158" y="126" width="24" height="20" rx="3" fill="none" stroke="rgba(99,102,241,0.35)" stroke-width="1"/>
+  <line x1="170" y1="126" x2="170" y2="146" stroke="rgba(99,102,241,0.25)" stroke-width="0.8"/>
+  <line x1="158" y1="136" x2="182" y2="136" stroke="rgba(99,102,241,0.25)" stroke-width="0.8"/>
+
+  <rect x="204" y="126" width="24" height="20" rx="3" fill="#0d1b3e"/>
+  <rect x="204" y="126" width="24" height="20" rx="3" fill="none" stroke="rgba(99,102,241,0.35)" stroke-width="1"/>
+  <line x1="216" y1="126" x2="216" y2="146" stroke="rgba(99,102,241,0.25)" stroke-width="0.8"/>
+  <line x1="204" y1="136" x2="228" y2="136" stroke="rgba(99,102,241,0.25)" stroke-width="0.8"/>
+
+  <!-- Door -->
+  <rect x="152" y="165" width="36" height="55" rx="18" fill="#0d1b3e"/>
+  <rect x="152" y="165" width="36" height="55" rx="18" fill="none" stroke="rgba(99,102,241,0.4)" stroke-width="1.5"/>
+  <circle cx="183" cy="193" r="2" fill="rgba(129,140,248,0.6)"/>
+
+  <!-- Steps -->
+  <rect x="144" y="218" width="52" height="6" rx="1" fill="#1e3268"/>
+  <rect x="138" y="224" width="64" height="6" rx="1" fill="#1a2a5e"/>
+
+  <!-- Floating stat cards -->
+  <!-- Card 1 — top left -->
+  <rect x="18" y="70" width="82" height="52" rx="12" fill="#1a2744"/>
+  <rect x="18" y="70" width="82" height="52" rx="12" fill="none" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+  <circle cx="36" cy="88" r="8" fill="rgba(99,102,241,0.25)"/>
+  <text x="33" y="92" font-size="9" fill="#818cf8" font-family="Arial" font-weight="700">245</text>
+  <rect x="50" y="82" width="40" height="4" rx="2" fill="rgba(255,255,255,0.1)"/>
+  <rect x="50" y="90" width="28" height="3" rx="1.5" fill="rgba(255,255,255,0.06)"/>
+  <text x="36" y="112" font-size="8" fill="rgba(129,140,248,0.7)" font-family="Arial">Students</text>
+
+  <!-- Card 2 — top right -->
+  <rect x="240" y="70" width="82" height="52" rx="12" fill="#1a2744"/>
+  <rect x="240" y="70" width="82" height="52" rx="12" fill="none" stroke="rgba(20,184,166,0.3)" stroke-width="1"/>
+  <circle cx="258" cy="88" r="8" fill="rgba(20,184,166,0.2)"/>
+  <text x="255" y="92" font-size="9" fill="#14b8a6" font-family="Arial" font-weight="700">48</text>
+  <rect x="272" y="82" width="40" height="4" rx="2" fill="rgba(255,255,255,0.1)"/>
+  <rect x="272" y="90" width="30" height="3" rx="1.5" fill="rgba(255,255,255,0.06)"/>
+  <text x="258" y="112" font-size="8" fill="rgba(20,184,166,0.7)" font-family="Arial">Staff</text>
+
+  <!-- Card 3 — bottom left -->
+  <rect x="18" y="198" width="82" height="52" rx="12" fill="#1a2744"/>
+  <rect x="18" y="198" width="82" height="52" rx="12" fill="none" stroke="rgba(245,158,11,0.3)" stroke-width="1"/>
+  <circle cx="36" cy="216" r="8" fill="rgba(245,158,11,0.2)"/>
+  <text x="33" y="220" font-size="9" fill="#fbbf24" font-family="Arial" font-weight="700">12</text>
+  <rect x="50" y="210" width="40" height="4" rx="2" fill="rgba(255,255,255,0.1)"/>
+  <rect x="50" y="218" width="22" height="3" rx="1.5" fill="rgba(255,255,255,0.06)"/>
+  <text x="36" y="240" font-size="8" fill="rgba(251,191,36,0.7)" font-family="Arial">Classrooms</text>
+
+  <!-- Card 4 — bottom right -->
+  <rect x="240" y="198" width="82" height="52" rx="12" fill="#1a2744"/>
+  <rect x="240" y="198" width="82" height="52" rx="12" fill="none" stroke="rgba(225,29,72,0.3)" stroke-width="1"/>
+  <circle cx="258" cy="216" r="8" fill="rgba(225,29,72,0.2)"/>
+  <text x="254" y="220" font-size="9" fill="#fb7185" font-family="Arial" font-weight="700">94%</text>
+  <rect x="272" y="210" width="40" height="4" rx="2" fill="rgba(255,255,255,0.1)"/>
+  <rect x="272" y="218" width="28" height="3" rx="1.5" fill="rgba(255,255,255,0.06)"/>
+  <text x="254" y="240" font-size="8" fill="rgba(251,113,133,0.7)" font-family="Arial">Attendance</text>
+
+  <!-- Connection lines from cards to building -->
+  <line x1="100" y1="96" x2="140" y2="110" stroke="rgba(99,102,241,0.18)" stroke-width="1" stroke-dasharray="4 4"/>
+  <line x1="240" y1="96" x2="210" y2="110" stroke="rgba(20,184,166,0.18)" stroke-width="1" stroke-dasharray="4 4"/>
+</svg>

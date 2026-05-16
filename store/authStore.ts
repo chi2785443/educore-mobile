@@ -7,9 +7,11 @@ interface AuthState {
   user: UserType | null;
   isAuthenticated: boolean;
   selectedSchoolId: string | null;
+  hasOnboarded: boolean;
   login: (user: UserType) => void;
   updateUser: (updates: Partial<UserType>) => void;
   setSelectedSchool: (schoolId: string) => void;
+  completeOnboarding: () => void;
   logout: () => void;
 }
 
@@ -19,12 +21,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       selectedSchoolId: null,
+      hasOnboarded: false,
 
       login: (user) =>
         set((state) => ({
           user,
           isAuthenticated: true,
-          // Auto-select primary school on login; keep existing selection if already set
           selectedSchoolId:
             state.selectedSchoolId ??
             user.schools?.find((s) => s.isPrimary)?.schoolId ??
@@ -39,6 +41,8 @@ export const useAuthStore = create<AuthState>()(
 
       setSelectedSchool: (schoolId) => set({ selectedSchoolId: schoolId }),
 
+      completeOnboarding: () => set({ hasOnboarded: true }),
+
       logout: () => set({ user: null, isAuthenticated: false, selectedSchoolId: null }),
     }),
     {
@@ -48,6 +52,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
         selectedSchoolId: state.selectedSchoolId,
+        hasOnboarded: state.hasOnboarded,
       }),
     }
   )
