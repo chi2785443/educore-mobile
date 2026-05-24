@@ -6,6 +6,7 @@ import { signUpSchema, SignUpFormData } from '@/schemas/auth.schema';
 import { useRegister } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 
 interface Props {
   onSuccess: () => void;
@@ -106,15 +107,12 @@ export function BasicInfoStep({ onSuccess }: Props) {
       <Controller
         control={control}
         name="phoneNumber"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <Input
-            label="Phone number (optional)"
-            placeholder="+234 800 000 0000"
-            keyboardType="phone-pad"
-            leftIcon="call-outline"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+        render={({ field: { onChange, value } }) => (
+          <PhoneInput
+            label="Phone number"
+            optional
+            value={value ?? ''}
+            onChange={onChange}
             error={errors.phoneNumber?.message}
           />
         )}

@@ -7,6 +7,7 @@ import { schoolRegistrationSchema, SchoolRegistrationFormData } from '@/schemas/
 import { useCreateSchool } from '@/hooks/useSchool';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 
 interface Props {
   onBack: () => void;
@@ -95,15 +96,12 @@ export function SchoolRegistrationStep({ onBack }: Props) {
       <Controller
         control={control}
         name="phone"
-        render={({ field: { onChange, value, onBlur } }) => (
-          <Input
-            label="Phone (optional)"
-            placeholder="+234 800 000 0000"
-            keyboardType="phone-pad"
-            leftIcon="call-outline"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+        render={({ field: { onChange, value } }) => (
+          <PhoneInput
+            label="Phone"
+            optional
+            value={value ?? ''}
+            onChange={onChange}
             error={errors.phone?.message}
           />
         )}
