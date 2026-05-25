@@ -169,16 +169,13 @@ function ApplicationCard({
       )}
 
       {canWithdraw && (
-        <Pressable
-          onPress={onWithdraw}
-          style={({ pressed }) => ({
-            marginTop: 12, borderRadius: 10,
-            backgroundColor: pressed ? '#fef2f2' : '#fff5f5',
-            borderWidth: 1, borderColor: '#fecaca',
-            paddingVertical: 8, alignItems: 'center',
-          })}
-        >
-          <Text style={{ fontSize: 13, fontWeight: '700', color: '#dc2626' }}>Withdraw Application</Text>
+        <Pressable onPress={onWithdraw} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <View style={{
+            marginTop: 12, borderRadius: 10, backgroundColor: '#fff5f5',
+            borderWidth: 1, borderColor: '#fecaca', paddingVertical: 8, alignItems: 'center',
+          }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#dc2626' }}>Withdraw Application</Text>
+          </View>
         </Pressable>
       )}
     </View>
@@ -260,20 +257,18 @@ function InterviewCard({
 
         {/* Confirm button */}
         {needsConfirm && (
-          <Pressable
-            onPress={onConfirm}
-            disabled={isConfirming}
-            style={({ pressed }) => ({
-              borderRadius: 12, backgroundColor: pressed ? '#4f46e5' : '#6366f1',
+          <Pressable onPress={onConfirm} disabled={isConfirming} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+            <View style={{
+              borderRadius: 12, backgroundColor: '#6366f1',
               paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
-            })}
-          >
-            {isConfirming
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />}
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
-              {isConfirming ? 'Confirming…' : 'Confirm Attendance'}
-            </Text>
+            }}>
+              {isConfirming
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />}
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                {isConfirming ? 'Confirming…' : 'Confirm Attendance'}
+              </Text>
+            </View>
           </Pressable>
         )}
         {item.candidateConfirmed && item.status !== 'completed' && (
@@ -354,16 +349,14 @@ function JobDetailView({ job, onBack, onApply }: { job: Job; onBack: () => void;
 
       {/* Apply button — in normal flow below ScrollView, always visible */}
       <View style={{ backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f3f4f6', padding: 16 }}>
-        <Pressable
-          onPress={onApply}
-          style={({ pressed }) => ({
-            backgroundColor: pressed ? '#4f46e5' : '#6366f1',
-            borderRadius: 14, paddingVertical: 16, alignItems: 'center',
-            flexDirection: 'row', justifyContent: 'center', gap: 8,
-          })}
-        >
-          <Ionicons name="send-outline" size={18} color="#fff" />
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>Apply for this Position</Text>
+        <Pressable onPress={onApply} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+          <View style={{
+            backgroundColor: '#6366f1', borderRadius: 14, paddingVertical: 16,
+            alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
+          }}>
+            <Ionicons name="send-outline" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>Apply for this Position</Text>
+          </View>
         </Pressable>
       </View>
     </View>
@@ -479,15 +472,13 @@ function ApplyFormView({
           <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>
             Resume <Text style={{ color: '#dc2626' }}>*</Text>
           </Text>
-          <Pressable
-            onPress={pickResume}
-            style={({ pressed }) => ({
-              backgroundColor: resume ? '#f0fdf4' : (pressed ? '#f3f4f6' : '#fff'),
+          <Pressable onPress={pickResume} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <View style={{
+              backgroundColor: resume ? '#f0fdf4' : '#fff',
               borderWidth: 2, borderColor: resume ? '#16a34a' : '#e5e7eb',
               borderStyle: resume ? 'solid' : 'dashed',
               borderRadius: 14, padding: 16, alignItems: 'center', gap: 8,
-            })}
-          >
+            }}>
             <Ionicons name={resume ? 'document-text' : 'cloud-upload-outline'} size={28} color={resume ? '#16a34a' : '#9ca3af'} />
             <Text style={{ fontSize: 13, fontWeight: '700', color: resume ? '#15803d' : '#6b7280', textAlign: 'center' }}>
               {resume ? resume.name : 'Tap to upload resume (PDF or Word)'}
@@ -497,6 +488,7 @@ function ApplyFormView({
                 <Text style={{ fontSize: 12, color: '#dc2626', fontWeight: '600' }}>Remove</Text>
               </Pressable>
             )}
+            </View>
           </Pressable>
         </View>
 
@@ -533,21 +525,19 @@ function ApplyFormView({
         </View>
 
         {/* Submit */}
-        <Pressable
-          onPress={handleSubmit}
-          disabled={isPending}
-          style={({ pressed }) => ({
-            backgroundColor: isPending ? '#a5b4fc' : (pressed ? '#4f46e5' : '#6366f1'),
+        <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+          <View style={{
+            backgroundColor: isPending ? '#a5b4fc' : '#6366f1',
             borderRadius: 14, paddingVertical: 16, alignItems: 'center',
             flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 4,
-          })}
-        >
-          {isPending
-            ? <ActivityIndicator size="small" color="#fff" />
-            : <Ionicons name="send-outline" size={18} color="#fff" />}
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>
-            {isPending ? 'Submitting…' : 'Submit Application'}
-          </Text>
+          }}>
+            {isPending
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="send-outline" size={18} color="#fff" />}
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>
+              {isPending ? 'Submitting…' : 'Submit Application'}
+            </Text>
+          </View>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
