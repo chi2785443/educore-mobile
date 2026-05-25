@@ -15,39 +15,91 @@ function NoSchoolState({ firstName }: { firstName: string }) {
   const router = useRouter();
 
   const actions = [
-    { icon: 'briefcase-outline' as const, label: 'Browse Job Openings',  color: '#6366f1', bg: '#e0e7ff', route: '/(tabs)/my-jobs' },
-    { icon: 'document-text-outline' as const, label: 'My Enrollments',   color: '#14b8a6', bg: '#d1fae5', route: '/(tabs)/my-enrollments' },
-    { icon: 'chatbubble-outline' as const, label: 'My Enquiries',        color: '#f59e0b', bg: '#fef3c7', route: '/(tabs)/my-enquiries' },
+    {
+      icon: 'briefcase-outline' as const,
+      label: 'Browse Job Openings',
+      desc: 'Find positions at schools near you',
+      from: '#4f46e5', to: '#7c3aed',
+      route: '/(tabs)/my-jobs',
+    },
+    {
+      icon: 'document-text-outline' as const,
+      label: 'My Enrollments',
+      desc: 'Track your school applications',
+      from: '#0d9488', to: '#0891b2',
+      route: '/(tabs)/my-enrollments',
+    },
+    {
+      icon: 'chatbubble-ellipses-outline' as const,
+      label: 'My Enquiries',
+      desc: 'View replies from schools',
+      from: '#d97706', to: '#ea580c',
+      route: '/(tabs)/my-enquiries',
+    },
   ] as const;
 
   return (
-    <View className="flex-1 items-center justify-center px-8 gap-6">
-      <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name="school-outline" size={34} color="#7c3aed" />
+    <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+      {/* Hero */}
+      <View style={{
+        backgroundColor: '#0B0F14', paddingHorizontal: 24,
+        paddingTop: 32, paddingBottom: 36,
+        alignItems: 'center', gap: 12,
+      }}>
+        <View style={{
+          width: 72, height: 72, borderRadius: 24,
+          backgroundColor: 'rgba(99,102,241,0.15)',
+          borderWidth: 1, borderColor: 'rgba(99,102,241,0.3)',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ionicons name="school-outline" size={32} color="#818cf8" />
+        </View>
+        <View style={{ alignItems: 'center', gap: 6 }}>
+          <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', textAlign: 'center' }}>
+            Hello, {firstName}!
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 260 }}>
+            You&apos;re not part of a school yet. Apply to enroll or find a job opening.
+          </Text>
+        </View>
       </View>
-      <View className="items-center gap-2">
-        <Text className="text-xl font-bold text-gray-900 text-center">Hello, {firstName}!</Text>
-        <Text className="text-sm text-gray-500 text-center leading-relaxed">
-          You&apos;re not enrolled in any school yet. Browse schools to get started.
+
+      {/* Action cards */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 20, gap: 12 }}>
+        <Text style={{ fontSize: 12, fontWeight: '800', color: '#9ca3af', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
+          Get Started
         </Text>
-      </View>
-      <View className="gap-3 w-full">
         {actions.map(item => (
           <Pressable
             key={item.label}
             onPress={() => router.push(item.route as never)}
             style={({ pressed }) => ({
-              flexDirection: 'row', alignItems: 'center', gap: 14,
-              backgroundColor: pressed ? '#f9fafb' : '#fff',
-              borderRadius: 16, padding: 14,
-              borderWidth: 1, borderColor: '#f3f4f6',
+              borderRadius: 18, overflow: 'hidden', opacity: pressed ? 0.85 : 1,
+              backgroundColor: item.from,
+              shadowColor: item.from,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.35,
+              shadowRadius: 10,
+              elevation: 6,
             })}
           >
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name={item.icon} size={20} color={item.color} />
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 14,
+              padding: 18,
+            }}>
+              <View style={{
+                width: 46, height: 46, borderRadius: 14,
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Ionicons name={item.icon} size={22} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{item.label}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>{item.desc}</Text>
+              </View>
+              <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.5)" />
             </View>
-            <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' }}>{item.label}</Text>
-            <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
           </Pressable>
         ))}
       </View>

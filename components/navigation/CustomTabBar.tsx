@@ -118,8 +118,13 @@ function TabButton({
   );
 }
 
+const TAB_NAMES = new Set(TABS.map(t => t.name));
+
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+
+  // Only render the 5 visible tabs — hidden screens (href: null) must not appear
+  const visibleRoutes = state.routes.filter(r => TAB_NAMES.has(r.name));
 
   return (
     <View style={{
@@ -129,20 +134,17 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
       paddingBottom: insets.bottom,
       borderTopWidth: 1,
       borderTopColor: '#1e2433',
-      // Top rounded corners
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
-      // Shadow upward
       shadowColor: '#000',
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.25,
       shadowRadius: 12,
       elevation: 20,
     }}>
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const focused = state.index === index;
-        const config = TABS[index] ?? TABS[0];
+      {visibleRoutes.map((route) => {
+        const focused = state.routes[state.index]?.name === route.name;
+        const config = TABS.find(t => t.name === route.name) ?? TABS[0];
         const isAction = route.name === 'action';
 
         const onPress = () => {
