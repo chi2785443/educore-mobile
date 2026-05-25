@@ -13,6 +13,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="action" options={{ href: null }} />
       <Tabs.Screen name="chat" />
       <Tabs.Screen name="account" />
+      <Tabs.Screen name="my-jobs" options={{ href: null }} />
+      <Tabs.Screen name="my-enrollments" options={{ href: null }} />
+      <Tabs.Screen name="my-enquiries" options={{ href: null }} />
     </Tabs>
   );
 }

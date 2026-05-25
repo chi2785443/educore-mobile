@@ -2,7 +2,7 @@ export interface Enrollment {
   id: string;
   schoolId: string;
   studentId: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'under_review';
   trainingInterest: string;
   gradeLevel?: string;
   previousSchool?: string;
@@ -10,6 +10,7 @@ export interface Enrollment {
   document1Url?: string;
   document2Url?: string;
   createdAt: string;
+  school?: { id: string; name: string; logo?: string };
 }
 
 export interface CreateEnrollment {

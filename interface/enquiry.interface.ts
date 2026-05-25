@@ -4,7 +4,7 @@ export interface Enquiry {
   subject: string;
   category?: string;
   message: string;
-  status: 'open' | 'replied' | 'closed';
+  status: 'pending' | 'replied' | 'closed';
   createdAt: string;
 }
 

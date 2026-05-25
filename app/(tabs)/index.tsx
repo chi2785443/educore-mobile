@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import MobileAdminDashboard from '@/components/dashboard/MobileAdminDashboard';
@@ -11,34 +12,43 @@ import MobileParentDashboard from '@/components/dashboard/MobileParentDashboard'
 import { Ionicons } from '@expo/vector-icons';
 
 function NoSchoolState({ firstName }: { firstName: string }) {
+  const router = useRouter();
+
+  const actions = [
+    { icon: 'briefcase-outline' as const, label: 'Browse Job Openings',  color: '#6366f1', bg: '#e0e7ff', route: '/(tabs)/my-jobs' },
+    { icon: 'document-text-outline' as const, label: 'My Enrollments',   color: '#14b8a6', bg: '#d1fae5', route: '/(tabs)/my-enrollments' },
+    { icon: 'chatbubble-outline' as const, label: 'My Enquiries',        color: '#f59e0b', bg: '#fef3c7', route: '/(tabs)/my-enquiries' },
+  ] as const;
+
   return (
     <View className="flex-1 items-center justify-center px-8 gap-6">
       <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name="school-outline" size={34} color="#7c3aed" />
       </View>
       <View className="items-center gap-2">
-        <Text className="text-xl font-bold text-gray-900 text-center">Welcome, {firstName}!</Text>
+        <Text className="text-xl font-bold text-gray-900 text-center">Hello, {firstName}!</Text>
         <Text className="text-sm text-gray-500 text-center leading-relaxed">
-          You're not enrolled in any school yet. Browse schools to get started.
+          You&apos;re not enrolled in any school yet. Browse schools to get started.
         </Text>
       </View>
       <View className="gap-3 w-full">
-        {[
-          { icon: 'briefcase-outline' as const, label: 'Browse Job Openings', color: '#6366f1', bg: '#e0e7ff' },
-          { icon: 'document-text-outline' as const, label: 'My Enrollment', color: '#14b8a6', bg: '#d1fae5' },
-          { icon: 'chatbubble-outline' as const, label: 'My Enquiries', color: '#f59e0b', bg: '#fef3c7' },
-        ].map(item => (
-          <View key={item.label} style={{
-            flexDirection: 'row', alignItems: 'center', gap: 14,
-            backgroundColor: '#fff', borderRadius: 16, padding: 14,
-            borderWidth: 1, borderColor: '#f3f4f6',
-          }}>
+        {actions.map(item => (
+          <Pressable
+            key={item.label}
+            onPress={() => router.push(item.route as never)}
+            style={({ pressed }) => ({
+              flexDirection: 'row', alignItems: 'center', gap: 14,
+              backgroundColor: pressed ? '#f9fafb' : '#fff',
+              borderRadius: 16, padding: 14,
+              borderWidth: 1, borderColor: '#f3f4f6',
+            })}
+          >
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: item.bg, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name={item.icon} size={20} color={item.color} />
             </View>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>{item.label}</Text>
-            <Ionicons name="chevron-forward" size={16} color="#d1d5db" style={{ marginLeft: 'auto' }} />
-          </View>
+            <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' }}>{item.label}</Text>
+            <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+          </Pressable>
         ))}
       </View>
     </View>
