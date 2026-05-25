@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobService } from '@/services/job.service';
-import { JobApplication } from '@/interface/job.interface';
+import { ApplyJobPayload } from '@/interface/job.interface';
 
 export function useBrowseJobs(params?: { search?: string }) {
   return useQuery({
@@ -10,9 +10,51 @@ export function useBrowseJobs(params?: { search?: string }) {
   });
 }
 
-export function useApplyForJob(schoolId: string, onSuccess?: () => void) {
+export function useMyApplications() {
+  return useQuery({
+    queryKey: ['jobs', 'my-applications'],
+    queryFn: () => jobService.getMyApplications(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useMyInterviews() {
+  return useQuery({
+    queryKey: ['jobs', 'my-interviews'],
+    queryFn: () => jobService.getMyInterviews(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useApplyForJob(onSuccess?: () => void) {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: JobApplication) => jobService.apply(schoolId, data),
-    onSuccess: () => onSuccess?.(),
+    mutationFn: (data: ApplyJobPayload) => jobService.apply(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['jobs', 'my-applications'] });
+      onSuccess?.();
+    },
+  });
+}
+
+export function useWithdrawApplication(onSuccess?: () => void) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jobService.withdrawApplication(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['jobs', 'my-applications'] });
+      onSuccess?.();
+    },
+  });
+}
+
+export function useConfirmInterview(onSuccess?: () => void) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jobService.confirmInterview(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['jobs', 'my-interviews'] });
+      onSuccess?.();
+    },
   });
 }
