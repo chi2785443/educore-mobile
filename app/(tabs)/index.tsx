@@ -73,30 +73,28 @@ function NoSchoolState({ firstName }: { firstName: string }) {
           <Pressable
             key={item.label}
             onPress={() => router.push(item.route as never)}
-            style={({ pressed }) => ({
-              borderRadius: 18, overflow: 'hidden', opacity: pressed ? 0.85 : 1,
-              backgroundColor: item.from,
-              shadowColor: item.from,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.35,
-              shadowRadius: 10,
-              elevation: 6,
-            })}
+            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
             <View style={{
               flexDirection: 'row', alignItems: 'center', gap: 14,
-              padding: 18,
+              backgroundColor: item.from,
+              borderRadius: 18, padding: 18,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              elevation: 4,
             }}>
               <View style={{
                 width: 46, height: 46, borderRadius: 14,
-                backgroundColor: 'rgba(255,255,255,0.15)',
+                backgroundColor: 'rgba(255,255,255,0.2)',
                 alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
                 <Ionicons name={item.icon} size={22} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{item.label}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>{item.desc}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 2 }}>{item.desc}</Text>
               </View>
               <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.5)" />
             </View>
