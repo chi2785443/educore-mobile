@@ -25,21 +25,19 @@ function extractErrorMessage(error: AxiosError): string {
   );
 }
 
-// Endpoints that don't need a Bearer token (pre-auth flows).
+// Endpoints that don't need a Bearer token (pre-auth or email-based flows).
 const NO_TOKEN_PATHS = [
   '/auth/login',
   '/auth/register',
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/refresh',
+  '/auth/send-otp',
+  '/auth/verify-otp',
 ];
 
 // Endpoints where a 401 means bad credentials — never trigger refresh loop.
-const NO_REFRESH_PATHS = [
-  ...NO_TOKEN_PATHS,
-  '/auth/verify-otp',
-  '/auth/send-otp',
-];
+const NO_REFRESH_PATHS = [...NO_TOKEN_PATHS];
 
 function needsNoToken(url?: string): boolean {
   if (!url) return false;

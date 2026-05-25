@@ -14,7 +14,12 @@ export function useLogin() {
   return useMutation({
     mutationFn: (data: Login) => authService.login(data),
     onSuccess: async (response) => {
+      // Store access token (always present)
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, response.access_token);
+      // Store refresh token if the backend provides one
+      if (response.refresh_token) {
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, response.refresh_token);
+      }
       login(response.user as unknown as UserType);
       queryClient.clear();
       if (response.user.isAdmin) {
@@ -33,6 +38,9 @@ export function useRegister() {
     mutationFn: (data: Register) => authService.register(data),
     onSuccess: async (response) => {
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, response.access_token);
+      if (response.refresh_token) {
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, response.refresh_token);
+      }
       login(response.user as unknown as UserType);
     },
   });
@@ -40,7 +48,7 @@ export function useRegister() {
 
 export function useSendOtp() {
   return useMutation({
-    mutationFn: () => authService.sendOtp(),
+    mutationFn: (email: string) => authService.sendOtp(email),
     onSuccess: (data) => {
       if (__DEV__ && data.otp) {
         console.log('[DEV] OTP:', data.otp);
@@ -51,7 +59,8 @@ export function useSendOtp() {
 
 export function useVerifyOtp(onSuccess?: () => void) {
   return useMutation({
-    mutationFn: (otp: string) => authService.verifyOtp(otp),
+    mutationFn: ({ email, otp }: { email: string; otp: string }) =>
+      authService.verifyOtp(email, otp),
     onSuccess: () => {
       onSuccess?.();
     },

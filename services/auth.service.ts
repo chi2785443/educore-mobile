@@ -20,13 +20,13 @@ export const authService = {
     return response.data;
   },
 
-  sendOtp: async (): Promise<SendOtpResponse> => {
-    const response = await apiClient.post<SendOtpResponse>('/auth/send-otp');
+  sendOtp: async (email: string): Promise<SendOtpResponse> => {
+    const response = await apiClient.post<SendOtpResponse>('/auth/send-otp', { email });
     return response.data;
   },
 
-  verifyOtp: async (otp: string): Promise<VerifyOtpResponse> => {
-    const response = await apiClient.post<VerifyOtpResponse>('/auth/verify-otp', { otp });
+  verifyOtp: async (email: string, otp: string): Promise<VerifyOtpResponse> => {
+    const response = await apiClient.post<VerifyOtpResponse>('/auth/verify-otp', { email, otp });
     return response.data;
   },
 

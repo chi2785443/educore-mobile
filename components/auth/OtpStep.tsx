@@ -15,6 +15,7 @@ interface Props {
 
 export function OtpStep({ onSuccess, onBack }: Props) {
   const user = useAuthStore((s) => s.user);
+  const email = user?.email ?? '';
   const { mutate: sendOtp, isPending: isSending } = useSendOtp();
   const { mutate: verifyOtp, isPending: isVerifying } = useVerifyOtp(onSuccess);
 
@@ -28,11 +29,11 @@ export function OtpStep({ onSuccess, onBack }: Props) {
   });
 
   useEffect(() => {
-    sendOtp();
-  }, []);
+    if (email) sendOtp(email);
+  }, [email]);
 
   const onSubmit = (data: OtpFormData) => {
-    verifyOtp(data.otp, {
+    verifyOtp({ email, otp: data.otp }, {
       onError: (err) => Alert.alert('Verification Failed', err.message),
     });
   };
@@ -72,7 +73,7 @@ export function OtpStep({ onSuccess, onBack }: Props) {
         fullWidth
         variant="ghost"
         loading={isSending}
-        onPress={() => sendOtp()}
+        onPress={() => sendOtp(email)}
       >
         Resend code
       </Button>
