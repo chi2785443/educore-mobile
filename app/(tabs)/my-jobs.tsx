@@ -17,6 +17,12 @@ import { Job, MyApplication, MyInterview } from '@/interface/job.interface';
 
 const HEADER_COLOR = '#1e1b4b';
 
+function isJobOpen(job: Job): boolean {
+  const statusOk = !job.status || job.status === 'open' || job.status === 'active';
+  const deadlineOk = !job.deadline || new Date(job.deadline) >= new Date();
+  return statusOk && deadlineOk;
+}
+
 function appStatusConfig(status: string) {
   switch (status) {
     case 'submitted':           return { label: 'Submitted',     bg: '#dbeafe', color: '#2563eb' };
@@ -55,6 +61,9 @@ function interviewTypeIcon(type: string): React.ComponentProps<typeof Ionicons>[
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function JobCard({ job, onPress }: { job: Job; onPress: () => void }) {
+  const open = isJobOpen(job);
+  const deadlinePassed = !!job.deadline && new Date(job.deadline) < new Date();
+
   return (
     <Pressable
       onPress={onPress}
@@ -62,21 +71,33 @@ function JobCard({ job, onPress }: { job: Job; onPress: () => void }) {
     >
       <View style={{
         backgroundColor: '#fff', borderRadius: 18, padding: 16,
-        borderWidth: 1, borderColor: '#e5e7eb',
+        borderWidth: 1, borderColor: open ? '#e5e7eb' : '#fca5a5',
         shadowColor: '#000', shadowOpacity: 0.04,
         shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2,
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#e0e7ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Ionicons name="briefcase-outline" size={20} color="#6366f1" />
+          <View style={{
+            width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+            backgroundColor: open ? '#e0e7ff' : '#fee2e2',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons name="briefcase-outline" size={20} color={open ? '#6366f1' : '#ef4444'} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }} numberOfLines={2}>{job.title}</Text>
-            <Text style={{ fontSize: 13, color: '#6366f1', fontWeight: '600', marginTop: 2 }} numberOfLines={1}>
+            <Text style={{ fontSize: 13, color: open ? '#6366f1' : '#9ca3af', fontWeight: '600', marginTop: 2 }} numberOfLines={1}>
               {job.school?.name ?? 'School'}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+          {!open ? (
+            <View style={{ backgroundColor: '#fee2e2', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: '#dc2626' }}>
+                {deadlinePassed ? 'Expired' : 'Closed'}
+              </Text>
+            </View>
+          ) : (
+            <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+          )}
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
           {job.employmentType && (
@@ -93,10 +114,12 @@ function JobCard({ job, onPress }: { job: Job; onPress: () => void }) {
             </View>
           )}
           {job.deadline && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fff7ed', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-              <Ionicons name="calendar-outline" size={11} color="#d97706" />
-              <Text style={{ fontSize: 11, fontWeight: '600', color: '#d97706' }}>
-                Closes {new Date(job.deadline).toLocaleDateString()}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+              backgroundColor: deadlinePassed ? '#fee2e2' : '#fff7ed',
+            }}>
+              <Ionicons name="calendar-outline" size={11} color={deadlinePassed ? '#dc2626' : '#d97706'} />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: deadlinePassed ? '#dc2626' : '#d97706' }}>
+                {deadlinePassed ? 'Closed ' : 'Closes '}{new Date(job.deadline).toLocaleDateString()}
               </Text>
             </View>
           )}
@@ -285,6 +308,9 @@ function InterviewCard({
 // ─── Job Detail view ────────────────────────────────────────────────────────
 
 function JobDetailView({ job, onBack, onApply }: { job: Job; onBack: () => void; onApply: () => void }) {
+  const open = isJobOpen(job);
+  const deadlinePassed = !!job.deadline && new Date(job.deadline) < new Date();
+
   return (
     <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
       <View style={{ backgroundColor: HEADER_COLOR, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
@@ -338,26 +364,54 @@ function JobDetailView({ job, onBack, onApply }: { job: Job; onBack: () => void;
           </View>
         )}
         {job.deadline && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff7ed', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#fed7aa' }}>
-            <Ionicons name="alert-circle-outline" size={18} color="#d97706" />
-            <Text style={{ fontSize: 13, color: '#92400e', fontWeight: '600' }}>
-              Application closes {new Date(job.deadline).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, padding: 12, borderWidth: 1,
+            backgroundColor: deadlinePassed ? '#fef2f2' : '#fff7ed',
+            borderColor: deadlinePassed ? '#fca5a5' : '#fed7aa',
+          }}>
+            <Ionicons name="alert-circle-outline" size={18} color={deadlinePassed ? '#dc2626' : '#d97706'} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: deadlinePassed ? '#991b1b' : '#92400e', flex: 1 }}>
+              {deadlinePassed
+                ? `Applications closed on ${new Date(job.deadline).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}`
+                : `Applications close ${new Date(job.deadline).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
             </Text>
+          </View>
+        )}
+
+        {!open && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fef2f2', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#fca5a5' }}>
+            <Ionicons name="lock-closed-outline" size={20} color="#dc2626" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#b91c1c' }}>Not Accepting Applications</Text>
+              <Text style={{ fontSize: 12, color: '#dc2626', marginTop: 2 }}>
+                {deadlinePassed ? 'The application deadline for this position has passed.' : 'This position is no longer open for applications.'}
+              </Text>
+            </View>
           </View>
         )}
       </ScrollView>
 
-      {/* Apply button — in normal flow below ScrollView, always visible */}
+      {/* Apply button — only visible when job is still open */}
       <View style={{ backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f3f4f6', padding: 16 }}>
-        <Pressable onPress={onApply} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+        {open ? (
+          <Pressable onPress={onApply} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+            <View style={{
+              backgroundColor: '#6366f1', borderRadius: 14, paddingVertical: 16,
+              alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
+            }}>
+              <Ionicons name="send-outline" size={18} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>Apply for this Position</Text>
+            </View>
+          </Pressable>
+        ) : (
           <View style={{
-            backgroundColor: '#6366f1', borderRadius: 14, paddingVertical: 16,
+            backgroundColor: '#f3f4f6', borderRadius: 14, paddingVertical: 16,
             alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
           }}>
-            <Ionicons name="send-outline" size={18} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>Apply for this Position</Text>
+            <Ionicons name="lock-closed-outline" size={18} color="#9ca3af" />
+            <Text style={{ color: '#9ca3af', fontSize: 16, fontWeight: '900' }}>Applications Closed</Text>
           </View>
-        </Pressable>
+        )}
       </View>
     </View>
   );
