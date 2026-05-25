@@ -323,7 +323,7 @@ function JobDetailView({ job, onBack, onApply }: { job: Job; onBack: () => void;
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 100 }}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 24 }}>
         {job.description && (
           <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#e5e7eb' }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 }}>About the Role</Text>
@@ -352,15 +352,17 @@ function JobDetailView({ job, onBack, onApply }: { job: Job; onBack: () => void;
         )}
       </ScrollView>
 
-      {/* Apply button pinned at bottom */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f3f4f6', padding: 16 }}>
+      {/* Apply button — in normal flow below ScrollView, always visible */}
+      <View style={{ backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f3f4f6', padding: 16 }}>
         <Pressable
           onPress={onApply}
           style={({ pressed }) => ({
             backgroundColor: pressed ? '#4f46e5' : '#6366f1',
             borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+            flexDirection: 'row', justifyContent: 'center', gap: 8,
           })}
         >
+          <Ionicons name="send-outline" size={18} color="#fff" />
           <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>Apply for this Position</Text>
         </Pressable>
       </View>
