@@ -44,43 +44,39 @@ interface FeatureCardProps {
   onPress: () => void;
 }
 function FeatureCard({ icon, iconColor, iconBg, title, subtitle, onPress }: FeatureCardProps) {
-  // Outer View owns the width — Pressable is touch-only
   return (
     <View style={{ width: '48%' }}>
-      <Pressable onPress={onPress}>
-        {({ pressed }) => (
+      <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
+        <View style={{
+          backgroundColor: '#fff',
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: '#f1f5f9',
+          padding: 10,
+          gap: 7,
+          shadowColor: '#000',
+          shadowOpacity: 0.04,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 6,
+          elevation: 2,
+        }}>
+          {/* Icon */}
           <View style={{
-            backgroundColor: pressed ? '#f0f0f5' : '#fff',
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: '#f1f5f9',
-            padding: 14,
-            gap: 10,
-            shadowColor: '#000',
-            shadowOpacity: 0.04,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 6,
-            elevation: 2,
+            width: 34, height: 34, borderRadius: 10,
+            backgroundColor: iconBg,
+            alignItems: 'center', justifyContent: 'center',
           }}>
-            {/* Icon */}
-            <View style={{
-              width: 44, height: 44, borderRadius: 14,
-              backgroundColor: iconBg,
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Ionicons name={icon} size={22} color={iconColor} />
-            </View>
-            {/* Text */}
-            <View style={{ gap: 2 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }}>{title}</Text>
-              <Text style={{ fontSize: 11, color: '#94a3b8', lineHeight: 16 }}>{subtitle}</Text>
-            </View>
-            {/* Arrow pinned bottom-right */}
-            <View style={{ alignSelf: 'flex-end' }}>
-              <Ionicons name="chevron-forward" size={13} color="#cbd5e1" />
-            </View>
+            <Ionicons name={icon} size={17} color={iconColor} />
           </View>
-        )}
+          {/* Text + arrow row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <View style={{ flex: 1, gap: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{title}</Text>
+              <Text style={{ fontSize: 10, color: '#94a3b8', lineHeight: 14 }} numberOfLines={1}>{subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={12} color="#cbd5e1" />
+          </View>
+        </View>
       </Pressable>
     </View>
   );
