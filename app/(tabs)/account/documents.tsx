@@ -55,45 +55,44 @@ function DocRow({ doc }: { doc: MemberDocument }) {
   };
 
   return (
-    <Pressable
-      onPress={handleOpen}
-      style={({ pressed }) => ({
+    <Pressable onPress={handleOpen} style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1 })}>
+      <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
         paddingVertical: 13, paddingHorizontal: 16,
-        backgroundColor: pressed ? '#f8fafc' : '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#f9fafb',
-      })}
-    >
-      {/* Icon */}
-      <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Ionicons name={cfg.icon} size={22} color={cfg.color} />
-      </View>
-
-      {/* Info */}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{doc.title}</Text>
-        <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Text style={{ fontSize: 11, color: '#9ca3af' }}>{cfg.label} · {formatSize(doc.fileSize)}</Text>
-          {sourceSt && (
-            <View style={{ backgroundColor: sourceSt.bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: sourceSt.color }}>{sourceSt.label}</Text>
-            </View>
-          )}
-          {doc.visibility === 'public' && (
-            <View style={{ backgroundColor: '#dcfce7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#16a34a' }}>Public</Text>
-            </View>
-          )}
+        backgroundColor: '#fff',
+        borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
+      }}>
+        {/* Icon */}
+        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Ionicons name={cfg.icon} size={22} color={cfg.color} />
         </View>
-        <Text style={{ fontSize: 11, color: '#d1d5db', marginTop: 2 }}>
-          {format(new Date(doc.createdAt), 'd MMM yyyy')}
-        </Text>
-      </View>
 
-      {/* Open indicator */}
-      {opening
-        ? <ActivityIndicator size="small" color="#d97706" />
-        : <Ionicons name="open-outline" size={17} color="#cbd5e1" />}
+        {/* Info */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{doc.title}</Text>
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Text style={{ fontSize: 11, color: '#9ca3af' }}>{cfg.label} · {formatSize(doc.fileSize)}</Text>
+            {sourceSt && (
+              <View style={{ backgroundColor: sourceSt.bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: sourceSt.color }}>{sourceSt.label}</Text>
+              </View>
+            )}
+            {doc.visibility === 'public' && (
+              <View style={{ backgroundColor: '#dcfce7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#16a34a' }}>Public</Text>
+              </View>
+            )}
+          </View>
+          <Text style={{ fontSize: 11, color: '#d1d5db', marginTop: 2 }}>
+            {format(new Date(doc.createdAt), 'd MMM yyyy')}
+          </Text>
+        </View>
+
+        {/* Open indicator */}
+        {opening
+          ? <ActivityIndicator size="small" color="#d97706" />
+          : <Ionicons name="open-outline" size={17} color="#cbd5e1" />}
+      </View>
     </Pressable>
   );
 }

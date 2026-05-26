@@ -46,15 +46,13 @@ function DocCard({ doc }: { doc: LibraryDocument }) {
   };
 
   return (
-    <Pressable
-      onPress={handleOpen}
-      style={({ pressed }) => ({
-        backgroundColor: pressed ? '#f8fafc' : '#fff',
+    <Pressable onPress={handleOpen} style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1 })}>
+      <View style={{
+        backgroundColor: '#fff',
         borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9',
         padding: 14, gap: 10,
         shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2,
-      })}
-    >
+      }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
         {/* File icon */}
         <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -96,6 +94,7 @@ function DocCard({ doc }: { doc: LibraryDocument }) {
           </View>
         </ScrollView>
       )}
+      </View>
     </Pressable>
   );
 }
