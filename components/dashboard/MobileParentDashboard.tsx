@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useParentDashboard } from '@/hooks/useDashboardRole';
@@ -17,13 +17,23 @@ const statusStyle = (s: string) => {
 };
 
 export default function MobileParentDashboard({ schoolId, schoolName, firstName }: Props) {
-  const { data, isLoading } = useParentDashboard(schoolId);
+  const { data, isLoading, refetch } = useParentDashboard(schoolId);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading || !data) return <DashLoader color="#e11d48" message="Loading your portal..." />;
   const d = data;
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      className="flex-1"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#e11d48" colors={['#e11d48']} />}
+    >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{

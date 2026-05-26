@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useStaffDashboard } from '@/hooks/useDashboardRole';
@@ -11,13 +11,23 @@ import {
 interface Props { schoolId: string; schoolName: string; firstName: string }
 
 export default function MobileStaffDashboard({ schoolId, schoolName, firstName }: Props) {
-  const { data, isLoading } = useStaffDashboard(schoolId);
+  const { data, isLoading, refetch } = useStaffDashboard(schoolId);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading || !data) return <DashLoader color="#14b8a6" message="Loading your workspace..." />;
   const d = data;
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      className="flex-1"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#14b8a6" colors={['#14b8a6']} />}
+    >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{

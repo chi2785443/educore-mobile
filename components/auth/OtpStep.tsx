@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,9 +28,8 @@ export function OtpStep({ onSuccess, onBack }: Props) {
     defaultValues: { otp: '' },
   });
 
-  useEffect(() => {
-    if (email) sendOtp(email);
-  }, [email]);
+  // No auto-send on mount — the backend already sends the OTP during registration.
+  // The "Resend code" button below handles cases where the user needs a fresh code.
 
   const onSubmit = (data: OtpFormData) => {
     verifyOtp({ email, otp: data.otp }, {

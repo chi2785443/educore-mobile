@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, Pressable, TextInput,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -433,9 +434,8 @@ function ApplyFormView({
   const [resume, setResume] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
 
   const { mutate: apply, isPending } = useApplyForJob(() => {
-    Alert.alert('Application Submitted!', 'Your application has been sent. You can track it in the Applications tab.', [
-      { text: 'OK', onPress: onDone },
-    ]);
+    toast.success('Application submitted! Track it in the Applications tab.');
+    onDone();
   });
 
   const pickResume = async () => {
@@ -450,9 +450,9 @@ function ApplyFormView({
   };
 
   const handleSubmit = () => {
-    if (!coverLetter.trim()) return Alert.alert('Required', 'Please write a cover letter.');
-    if (!years.trim() || isNaN(Number(years))) return Alert.alert('Required', 'Please enter years of experience.');
-    if (!resume) return Alert.alert('Required', 'Please attach your resume.');
+    if (!coverLetter.trim()) { toast.error('Please write a cover letter'); return; }
+    if (!years.trim() || isNaN(Number(years))) { toast.error('Please enter years of experience'); return; }
+    if (!resume) { toast.error('Please attach your resume'); return; }
 
     apply({
       schoolId: job.school.id,

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useStudentDashboard } from '@/hooks/useDashboardRole';
@@ -25,13 +25,23 @@ function ScoreRing({ pct, passed }: { pct: number; passed: boolean }) {
 }
 
 export default function MobileStudentDashboard({ schoolId, schoolName, firstName }: Props) {
-  const { data, isLoading } = useStudentDashboard(schoolId);
+  const { data, isLoading, refetch } = useStudentDashboard(schoolId);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading || !data) return <DashLoader color="#7c3aed" message="Loading your dashboard..." />;
   const d = data;
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      className="flex-1"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}
+    >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{

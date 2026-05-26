@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useAdminDashboard } from '@/hooks/useDashboardRole';
@@ -11,14 +11,24 @@ import {
 interface Props { schoolId: string; schoolName: string; firstName: string }
 
 export default function MobileAdminDashboard({ schoolId, schoolName, firstName }: Props) {
-  const { data, isLoading } = useAdminDashboard(schoolId);
+  const { data, isLoading, refetch } = useAdminDashboard(schoolId);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading || !data) return <DashLoader color="#6366f1" message="Loading school overview..." />;
   const d = data;
   const hasPending = Object.values(d.pendingActions).some(v => v > 0);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      className="flex-1"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
+    >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{

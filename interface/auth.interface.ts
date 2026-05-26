@@ -47,6 +47,7 @@ export interface AuthUserData {
 
 export interface AuthResponse {
   access_token: string;
+  refresh_token?: string;
   user: AuthUserData;
-  expiresIn: string;
+  expiresIn?: string;
 }

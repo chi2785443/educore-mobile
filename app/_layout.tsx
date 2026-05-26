@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 import { ACCESS_TOKEN_KEY } from "@/services/axios.service";
 import { authService } from "@/services/auth.service";
 import { UserType } from "@/interface/user.interface";
+import { ToastProvider } from "@/components/ui/Toast";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -55,16 +56,19 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthInitializer onReady={handleReady} />
-      <StatusBar style="dark" />
-      {ready && (
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      )}
+      <ToastProvider>
+        <AuthInitializer onReady={handleReady} />
+        <StatusBar style="dark" />
+        {ready && (
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+          </Stack>
+        )}
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

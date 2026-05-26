@@ -3,6 +3,7 @@ export interface Job {
   title: string;
   description: string;
   employmentType: string;
+  status?: string;
   location?: string;
   salary?: string;
   deadline?: string;

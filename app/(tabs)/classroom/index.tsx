@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, ScrollView, Pressable, TextInput,
+  View, Text, ScrollView, Pressable, TextInput, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import {
   useMyTeacherClassrooms, useMyStudentClassrooms, useClassroomsBySchool,
@@ -37,6 +38,7 @@ interface Classroom {
 
 /* ── Classroom card ────────────────────────────────────────────── */
 function ClassroomCard({ classroom }: { classroom: Classroom }) {
+  const router = useRouter();
   const pal = getPalette(classroom.grade);
   const initials = classroom.name.slice(0, 2).toUpperCase();
   const occupancy = classroom.currentStudentCount ?? 0;
@@ -46,6 +48,7 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
 
   return (
     <Pressable
+      onPress={() => router.push(`/classroom/${classroom.id}`)}
       style={({ pressed }) => ({
         backgroundColor: pressed ? '#f8fafc' : '#fff',
         borderRadius: 20,
@@ -120,7 +123,7 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
               <Text style={{ fontSize: 10, fontWeight: '700', color: barColor }}>{Math.round(pct)}%</Text>
             </View>
             <View style={{ height: 4, backgroundColor: '#f3f4f6', borderRadius: 2 }}>
-              <View style={{ height: 4, borderRadius: 2, backgroundColor: barColor, width: `${pct}%` as any }} />
+              <View style={{ height: 4, borderRadius: 2, backgroundColor: barColor, width: `${pct}%` as `${number}%` }} />
             </View>
           </View>
         )}
@@ -167,7 +170,13 @@ export default function ClassroomTab() {
   const studentResult = useMyStudentClassrooms(isStudent ? schoolId : undefined);
 
   const result = isAdmin ? adminResult : isStaff ? staffResult : studentResult;
-  const { isLoading } = result;
+  const { isLoading, refetch } = result;
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   const rawData: unknown = result.data;
   const classrooms: Classroom[] = useMemo(() => (
@@ -177,7 +186,6 @@ export default function ClassroomTab() {
         : []
   ), [rawData]);
 
-  // All distinct grades for filter chips
   const grades = useMemo(() => {
     const g = [...new Set(classrooms.map(c => c.grade).filter(Boolean))] as string[];
     return g.sort();
@@ -201,7 +209,6 @@ export default function ClassroomTab() {
 
       {/* ── Dark header ──────────────────────────────────────── */}
       <View style={{ backgroundColor: '#0B0F14', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 16 }}>
-        {/* Title row */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <View>
             <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
@@ -211,7 +218,6 @@ export default function ClassroomTab() {
               {filtered.length} classroom{filtered.length !== 1 ? 's' : ''}
             </Text>
           </View>
-          {/* Grid / list toggle placeholder */}
           <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="grid-outline" size={18} color="rgba(255,255,255,0.6)" />
           </View>
@@ -245,9 +251,8 @@ export default function ClassroomTab() {
         <ScrollView
           horizontal showsHorizontalScrollIndicator={false}
           style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' }}
         >
-          {/* All chip */}
           <Pressable
             onPress={() => setActiveGrade(null)}
             style={{
@@ -319,6 +324,7 @@ export default function ClassroomTab() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 36 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}
         >
           {filtered.map(c => <ClassroomCard key={c.id} classroom={c} />)}
         </ScrollView>
