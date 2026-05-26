@@ -53,3 +53,52 @@ export interface ClockPayload {
   qrToken?: string;
   classroomId?: string;
 }
+
+// ─── Daily Attendance ─────────────────────────────────────────────────────────
+
+export type DayStatus = 'present' | 'partial' | 'absent';
+
+export interface DailyClockEvent {
+  id: string;
+  recordedAt: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  isFlagged: boolean;
+  isWithinArea?: boolean | null;
+  distanceMeters?: number | null;
+  method: 'qr_code' | 'manual';
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  approvalNote?: string | null;
+  isExtraHours: boolean;
+}
+
+export interface DailyAttendanceSummary {
+  date: string; // YYYY-MM-DD
+  clockIn: DailyClockEvent | null;
+  clockOut: DailyClockEvent | null;
+  hoursWorked: number | null;
+  status: DayStatus;
+  isFlagged: boolean;
+  hasPendingReview: boolean;
+  payrollDeductionApplied: boolean;
+  deductionAmount: number | null;
+}
+
+export interface DailyStats {
+  daysPresent: number;
+  daysPartial: number;
+  totalHours: number;
+  flaggedDays: number;
+}
+
+export interface DailyAttendanceResponse {
+  days: DailyAttendanceSummary[];
+  stats: DailyStats;
+  member: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    profilePicture?: string | null;
+  };
+}

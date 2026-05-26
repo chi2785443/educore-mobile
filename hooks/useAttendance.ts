@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceService } from '@/services/attendance.service';
-import { ClockPayload } from '@/interface/attendance.interface';
+import { ClockPayload, DailyAttendanceResponse } from '@/interface/attendance.interface';
 
 export const useTodayAttendance = (schoolId: string | undefined) =>
   useQuery({
@@ -28,6 +28,18 @@ export const useAttendanceSettings = (schoolId: string | undefined) =>
     queryFn: () => attendanceService.getAttendanceSettings(schoolId!),
     enabled: !!schoolId,
     staleTime: 5 * 60_000,
+  });
+
+export const useMyDailyAttendance = (
+  schoolId: string | undefined,
+  month: number,
+  year: number,
+) =>
+  useQuery<DailyAttendanceResponse>({
+    queryKey: ['attendance-daily', schoolId, month, year],
+    queryFn: () => attendanceService.getMyDailyAttendance(schoolId!, month, year),
+    enabled: !!schoolId,
+    staleTime: 60_000,
   });
 
 export const useClockAttendance = (schoolId: string) => {
