@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, Pressable, Switch, Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
@@ -60,7 +60,6 @@ function FeatureCard({ icon, iconColor, iconBg, title, subtitle, onPress }: Feat
           shadowRadius: 6,
           elevation: 2,
         }}>
-          {/* Icon */}
           <View style={{
             width: 34, height: 34, borderRadius: 10,
             backgroundColor: iconBg,
@@ -68,7 +67,6 @@ function FeatureCard({ icon, iconColor, iconBg, title, subtitle, onPress }: Feat
           }}>
             <Ionicons name={icon} size={17} color={iconColor} />
           </View>
-          {/* Text + arrow row */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View style={{ flex: 1, gap: 1 }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{title}</Text>
@@ -82,7 +80,7 @@ function FeatureCard({ icon, iconColor, iconBg, title, subtitle, onPress }: Feat
   );
 }
 
-/* ── Settings row — layout on inner View, not Pressable ─────────── */
+/* ── Settings row ────────────────────────────────────────────────── */
 function SettingsRow({
   icon, iconBg, iconColor, label, value, onPress, showArrow = true, rightElement,
 }: {
@@ -103,7 +101,6 @@ function SettingsRow({
           minHeight: 52,
           backgroundColor: pressed && !!onPress ? '#f2f2f2' : '#fff',
         }}>
-          {/* Coloured icon square */}
           <View style={{
             width: 34, height: 34, borderRadius: 9,
             backgroundColor: iconBg,
@@ -112,26 +109,14 @@ function SettingsRow({
           }}>
             <Ionicons name={icon} size={17} color={iconColor} />
           </View>
-
-          {/* Label */}
-          <Text
-            style={{ flex: 1, fontSize: 15, fontWeight: '400', color: '#111827' }}
-            numberOfLines={1}
-          >
+          <Text style={{ flex: 1, fontSize: 15, fontWeight: '400', color: '#111827' }} numberOfLines={1}>
             {label}
           </Text>
-
-          {/* Value */}
           {value ? (
-            <Text
-              style={{ fontSize: 14, color: '#8a8a8a', flexShrink: 0, maxWidth: '45%', textAlign: 'right' }}
-              numberOfLines={1}
-            >
+            <Text style={{ fontSize: 14, color: '#8a8a8a', flexShrink: 0, maxWidth: '45%', textAlign: 'right' }} numberOfLines={1}>
               {value}
             </Text>
           ) : null}
-
-          {/* Right element or chevron */}
           {rightElement ?? (showArrow && onPress ? (
             <Ionicons name="chevron-forward" size={15} color="#c7c7cc" />
           ) : null)}
@@ -147,22 +132,16 @@ function SettingsGroup({ children, label }: { children: React.ReactNode; label?:
     <View style={{ marginBottom: 4 }}>
       {label && (
         <Text style={{
-          fontSize: 13,
-          fontWeight: '400',
-          color: '#8a8a8a',
-          paddingHorizontal: 20,
-          paddingTop: 20,
-          paddingBottom: 6,
+          fontSize: 13, fontWeight: '400', color: '#8a8a8a',
+          paddingHorizontal: 20, paddingTop: 20, paddingBottom: 6,
         }}>
           {label}
         </Text>
       )}
       <View style={{
         backgroundColor: '#fff',
-        borderTopWidth: 0.5,
-        borderTopColor: '#e5e7eb',
-        borderBottomWidth: 0.5,
-        borderBottomColor: '#e5e7eb',
+        borderTopWidth: 0.5, borderTopColor: '#e5e7eb',
+        borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb',
       }}>
         {React.Children.map(children, (child, i) => (
           <View key={i}>
@@ -179,12 +158,7 @@ function SettingsGroup({ children, label }: { children: React.ReactNode; label?:
 
 /* ── School picker modal ─────────────────────────────────────────── */
 function SchoolPickerModal({
-  visible,
-  memberships,
-  selectedSchoolId,
-  accent,
-  onSelect,
-  onClose,
+  visible, memberships, selectedSchoolId, accent, onSelect, onClose,
 }: {
   visible: boolean;
   memberships: UserSchoolMembership[];
@@ -196,70 +170,70 @@ function SchoolPickerModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable
-        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }}
         onPress={onClose}
       >
         <Pressable onPress={e => e.stopPropagation?.()}>
           <View style={{
             backgroundColor: '#fff',
             borderTopLeftRadius: 28, borderTopRightRadius: 28,
-            paddingTop: 12, paddingBottom: 36,
+            paddingTop: 12, paddingBottom: 40,
             maxHeight: '80%',
           }}>
             {/* Handle */}
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb', alignSelf: 'center', marginBottom: 16 }} />
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb', alignSelf: 'center', marginBottom: 20 }} />
 
-            {/* Title */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 6 }}>
-              <Text style={{ fontSize: 17, fontWeight: '900', color: '#111827' }}>Switch School</Text>
+            {/* Title row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 4 }}>
+              <View>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: '#0f172a' }}>Switch School</Text>
+                <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                  {memberships.length} school{memberships.length !== 1 ? 's' : ''} you belong to
+                </Text>
+              </View>
               <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
-                <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="close" size={16} color="#6b7280" />
                 </View>
               </Pressable>
             </View>
-            <Text style={{ fontSize: 13, color: '#9ca3af', paddingHorizontal: 20, marginBottom: 16 }}>
-              {memberships.length} school{memberships.length !== 1 ? 's' : ''} you belong to
-            </Text>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
-              {memberships.map((m, i) => {
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 440 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, gap: 10 }}>
+              {memberships.map((m) => {
                 const cfg = ROLE_CONFIG[m.role] ?? { label: m.role, color: '#6b7280', bg: '#f3f4f6' };
                 const isSelected = selectedSchoolId === m.schoolId;
                 return (
                   <Pressable
                     key={m.schoolId}
                     onPress={() => { onSelect(m.schoolId); onClose(); }}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
                   >
                     <View style={{
                       flexDirection: 'row', alignItems: 'center', gap: 14,
-                      paddingHorizontal: 20, paddingVertical: 14,
-                      backgroundColor: isSelected ? cfg.bg + '40' : '#fff',
-                      borderTopWidth: i === 0 ? 0.5 : 0,
-                      borderBottomWidth: 0.5,
-                      borderColor: '#f1f5f9',
+                      paddingHorizontal: 16, paddingVertical: 14,
+                      backgroundColor: isSelected ? cfg.bg + '60' : '#f8fafc',
+                      borderRadius: 16,
+                      borderWidth: isSelected ? 1.5 : 1,
+                      borderColor: isSelected ? cfg.color + '60' : '#f1f5f9',
                     }}>
                       {/* School initial */}
                       <View style={{
-                        width: 48, height: 48, borderRadius: 16,
+                        width: 50, height: 50, borderRadius: 16,
                         backgroundColor: cfg.bg,
                         alignItems: 'center', justifyContent: 'center',
-                        borderWidth: isSelected ? 2 : 1,
-                        borderColor: isSelected ? cfg.color : cfg.bg,
                         flexShrink: 0,
                       }}>
-                        <Text style={{ fontWeight: '900', fontSize: 20, color: cfg.color }}>
+                        <Text style={{ fontWeight: '900', fontSize: 22, color: cfg.color }}>
                           {m.school?.name?.[0]?.toUpperCase() ?? '?'}
                         </Text>
                       </View>
 
                       {/* Info */}
                       <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#111827' }} numberOfLines={1}>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>
                           {m.school?.name ?? 'Unknown School'}
                         </Text>
-                        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                           <View style={{ backgroundColor: cfg.bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
                             <Text style={{ color: cfg.color, fontSize: 11, fontWeight: '700' }}>{cfg.label}</Text>
                           </View>
@@ -271,13 +245,13 @@ function SchoolPickerModal({
                         </View>
                       </View>
 
-                      {/* Active indicator */}
+                      {/* Radio indicator */}
                       {isSelected ? (
-                        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <Ionicons name="checkmark" size={15} color="#fff" />
+                        <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: cfg.color, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Ionicons name="checkmark" size={14} color="#fff" />
                         </View>
                       ) : (
-                        <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: '#e5e7eb', flexShrink: 0 }} />
+                        <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: '#d1d5db', flexShrink: 0 }} />
                       )}
                     </View>
                   </Pressable>
@@ -294,6 +268,7 @@ function SchoolPickerModal({
 /* ── Main screen ────────────────────────────────────────────────── */
 export default function AccountTab() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
   const selectedSchoolId = useAuthStore(s => s.selectedSchoolId);
   const setSelectedSchool = useAuthStore(s => s.setSelectedSchool);
@@ -316,23 +291,25 @@ export default function AccountTab() {
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || '?';
   const roleInfo = ROLE_CONFIG[role] ?? { label: 'Member', color: '#6b7280', bg: '#f3f4f6' };
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+  const TAB_BAR_HEIGHT = 60 + insets.bottom;
 
-        {/* ── Hero header ──────────────────────────────────────── */}
-        <View style={{ backgroundColor: heroBg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }}>
-          {/* Avatar */}
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: heroBg }} edges={['top']}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 16 }}
+        style={{ backgroundColor: '#f8fafc' }}
+      >
+        {/* ── Hero header ──────────────────────────────────────────── */}
+        <View style={{ backgroundColor: heroBg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48 }}>
           <View style={{ alignItems: 'center', gap: 14 }}>
+            {/* Avatar */}
             <Pressable onPress={() => router.push('/account/edit-profile' as never)} style={{ position: 'relative' }}>
               {user?.profilePicture ? (
                 <Image
                   key={user.profilePicture}
                   source={{ uri: user.profilePicture }}
-                  style={{
-                    width: 80, height: 80, borderRadius: 28,
-                    borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)',
-                  }}
+                  style={{ width: 80, height: 80, borderRadius: 28, borderWidth: 3, borderColor: 'rgba(255,255,255,0.18)' }}
                   contentFit="cover"
                   transition={200}
                 />
@@ -344,7 +321,7 @@ export default function AccountTab() {
                   shadowColor: accent, shadowOpacity: 0.5,
                   shadowOffset: { width: 0, height: 8 }, shadowRadius: 16,
                   elevation: 12,
-                  borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)',
+                  borderWidth: 3, borderColor: 'rgba(255,255,255,0.18)',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 30, fontWeight: '900' }}>{initials}</Text>
                 </View>
@@ -385,11 +362,11 @@ export default function AccountTab() {
             flexDirection: 'row', marginTop: 20,
             backgroundColor: 'rgba(255,255,255,0.07)',
             borderRadius: 18, overflow: 'hidden',
-            borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+            borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
           }}>
             {[
-              { label: 'Schools', value: String(memberships.length) },
-              { label: 'Status', value: user?.isActive ? 'Active' : 'Inactive' },
+              { label: 'Schools',  value: String(memberships.length) },
+              { label: 'Status',   value: user?.isActive ? 'Active' : 'Inactive' },
               { label: 'Verified', value: user?.emailVerified ? 'Yes' : 'No' },
             ].map((s, i) => (
               <View key={s.label} style={{
@@ -398,74 +375,14 @@ export default function AccountTab() {
                 borderRightColor: 'rgba(255,255,255,0.08)',
               }}>
                 <Text style={{ color: '#fff', fontSize: 17, fontWeight: '900' }}>{s.value}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: '600', marginTop: 2 }}>
-                  {s.label}
-                </Text>
+                <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: '600', marginTop: 2 }}>{s.label}</Text>
               </View>
             ))}
           </View>
-
-          {/* ── Active school card ──────────────────────────── */}
-          {memberships.length > 0 && (
-            <Pressable
-              onPress={() => setSchoolPickerOpen(true)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginTop: 14 })}
-            >
-              <View style={{
-                flexDirection: 'row', alignItems: 'center', gap: 12,
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                borderRadius: 18, padding: 14,
-                borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-              }}>
-                {/* School initial circle */}
-                <View style={{
-                  width: 44, height: 44, borderRadius: 14,
-                  backgroundColor: accent + '30',
-                  borderWidth: 1.5, borderColor: accent + '50',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900' }}>
-                    {primaryMembership?.school?.name?.[0]?.toUpperCase() ?? '?'}
-                  </Text>
-                </View>
-
-                {/* School info */}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 2 }}>
-                    Active School
-                  </Text>
-                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }} numberOfLines={1}>
-                    {primaryMembership?.school?.name ?? 'No school selected'}
-                  </Text>
-                  {primaryMembership && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                      <View style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}>
-                        <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 10, fontWeight: '700' }}>
-                          {ROLE_CONFIG[primaryMembership.role]?.label ?? primaryMembership.role}
-                        </Text>
-                      </View>
-                      {primaryMembership.isPrimary && (
-                        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>· Primary</Text>
-                      )}
-                    </View>
-                  )}
-                </View>
-
-                {/* Switch button */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, flexShrink: 0 }}>
-                  <Ionicons name="swap-horizontal" size={14} color="rgba(255,255,255,0.8)" />
-                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700' }}>Switch</Text>
-                </View>
-              </View>
-            </Pressable>
-          )}
         </View>
 
-        {/* ── Pulls up over dark header ─────────────────────────── */}
-        <View style={{
-          backgroundColor: '#f8fafc', borderTopLeftRadius: 28,
-          borderTopRightRadius: 28, marginTop: -22, paddingTop: 10, paddingBottom: 40,
-        }}>
+        {/* ── White pull-up section ─────────────────────────────────── */}
+        <View style={{ backgroundColor: '#f8fafc', borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -24 }}>
 
           <SchoolPickerModal
             visible={schoolPickerOpen}
@@ -476,7 +393,77 @@ export default function AccountTab() {
             onClose={() => setSchoolPickerOpen(false)}
           />
 
-          {/* ── Feature grid — flexWrap, always correct ───────── */}
+          {/* ── Active school card ────────────────────────────────── */}
+          {memberships.length > 0 && (
+            <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10 }}>
+                Active School
+              </Text>
+              <Pressable onPress={() => setSchoolPickerOpen(true)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+                <View style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: '#f1f5f9',
+                  padding: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.06,
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowRadius: 10,
+                  elevation: 4,
+                }}>
+                  {/* School initial */}
+                  <View style={{
+                    width: 50, height: 50, borderRadius: 15,
+                    backgroundColor: roleInfo.bg,
+                    alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Text style={{ fontWeight: '900', fontSize: 22, color: roleInfo.color }}>
+                      {primaryMembership?.school?.name?.[0]?.toUpperCase() ?? '?'}
+                    </Text>
+                  </View>
+
+                  {/* School info */}
+                  <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>
+                      {primaryMembership?.school?.name ?? 'No school selected'}
+                    </Text>
+                    {primaryMembership && (
+                      <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                        <View style={{ backgroundColor: roleInfo.bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                          <Text style={{ color: roleInfo.color, fontSize: 11, fontWeight: '700' }}>{roleInfo.label}</Text>
+                        </View>
+                        {primaryMembership.isPrimary && (
+                          <View style={{ backgroundColor: '#f0fdf4', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                            <Text style={{ color: '#16a34a', fontSize: 11, fontWeight: '700' }}>Primary</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Switch button */}
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 5,
+                    backgroundColor: accent + '18',
+                    borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8,
+                    flexShrink: 0,
+                  }}>
+                    <Ionicons name="swap-horizontal" size={14} color={accent} />
+                    <Text style={{ color: accent, fontSize: 12, fontWeight: '800' }}>
+                      {memberships.length > 1 ? 'Switch' : 'Details'}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── Feature grid ─────────────────────────────────────── */}
           {(() => {
             const features: FeatureCardProps[] = [
               { icon: 'wallet-outline', iconColor: '#6366f1', iconBg: '#eef2ff',
@@ -518,36 +505,32 @@ export default function AccountTab() {
                 </Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 12 }}>
                   {features.map(f => <FeatureCard key={f.title} {...f} />)}
-                  {/* Invisible spacer when odd number keeps last card half-width */}
                   {features.length % 2 !== 0 && <View style={{ width: '48%' }} />}
                 </View>
               </View>
             );
           })()}
 
-          {/* ── Applications & Enquiries ─────────────────────── */}
+          {/* ── Applications & Enquiries ─────────────────────────── */}
           <SettingsGroup label="Applications & Enquiries">
             <SettingsRow
               icon="briefcase-outline" iconBg="#e0f2fe" iconColor="#0284c7"
-              label="My Job Applications"
-              value="Jobs I've applied for"
+              label="My Job Applications" value="Jobs I've applied for"
               onPress={() => router.push('/my-jobs' as never)}
             />
             <SettingsRow
               icon="document-text-outline" iconBg="#d1fae5" iconColor="#059669"
-              label="My Enrollments"
-              value="School enrollment applications"
+              label="My Enrollments" value="School enrollment applications"
               onPress={() => router.push('/my-enrollments' as never)}
             />
             <SettingsRow
               icon="chatbubble-outline" iconBg="#fef3c7" iconColor="#d97706"
-              label="My Enquiries"
-              value="Questions sent to schools"
+              label="My Enquiries" value="Questions sent to schools"
               onPress={() => router.push('/my-enquiries' as never)}
             />
           </SettingsGroup>
 
-          {/* ── Profile & security ────────────────────────────── */}
+          {/* ── Profile & security ───────────────────────────────── */}
           <SettingsGroup label="Profile & Security">
             <SettingsRow
               icon="person-outline" iconBg="#e0e7ff" iconColor="#6366f1"
@@ -557,17 +540,22 @@ export default function AccountTab() {
             />
             <SettingsRow
               icon="lock-closed-outline" iconBg="#fef3c7" iconColor="#d97706"
-              label="Change Password"
-              value="Update your password"
+              label="Change Password" value="Update your password"
               onPress={() => router.push('/account/change-password')}
             />
           </SettingsGroup>
 
-          {/* ── Account settings ──────────────────────────────── */}
+          {/* ── Account settings ─────────────────────────────────── */}
           <SettingsGroup label="Account">
             <SettingsRow icon="mail-outline" iconBg="#e0e7ff" iconColor="#6366f1" label="Email" value={user?.email ?? '—'} />
             <SettingsRow icon="call-outline" iconBg="#d1fae5" iconColor="#059669" label="Phone" value={user?.phoneNumber ?? 'Not set'} />
-            <SettingsRow icon="checkmark-circle-outline" iconBg={user?.emailVerified ? '#d1fae5' : '#fef3c7'} iconColor={user?.emailVerified ? '#059669' : '#d97706'} label="Email Verified" value={user?.emailVerified ? 'Verified' : 'Not verified'} showArrow={false} />
+            <SettingsRow
+              icon="checkmark-circle-outline"
+              iconBg={user?.emailVerified ? '#d1fae5' : '#fef3c7'}
+              iconColor={user?.emailVerified ? '#059669' : '#d97706'}
+              label="Email Verified" value={user?.emailVerified ? 'Verified' : 'Not verified'}
+              showArrow={false}
+            />
           </SettingsGroup>
 
           <SettingsGroup label="Preferences">
@@ -583,21 +571,14 @@ export default function AccountTab() {
             <SettingsRow icon="information-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="About EduCore" value="v1.0.0" onPress={() => {}} />
           </SettingsGroup>
 
-          {/* Sign out */}
+          {/* ── Sign out ─────────────────────────────────────────── */}
           <View style={{ marginTop: 8, marginBottom: 8 }}>
-            <View style={{
-              backgroundColor: '#fff',
-              borderTopWidth: 0.5, borderTopColor: '#e5e7eb',
-              borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb',
-            }}>
+            <View style={{ backgroundColor: '#fff', borderTopWidth: 0.5, borderTopColor: '#e5e7eb', borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb' }}>
               <Pressable onPress={logout}>
                 {({ pressed }) => (
                   <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 14,
-                    paddingVertical: 14,
-                    paddingHorizontal: 20,
+                    flexDirection: 'row', alignItems: 'center', gap: 14,
+                    paddingVertical: 14, paddingHorizontal: 20,
                     backgroundColor: pressed ? '#fef2f2' : '#fff',
                   }}>
                     <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
