@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, Pressable, FlatList, ActivityIndicator,
 } from 'react-native';
@@ -130,8 +130,18 @@ export default function NotificationsScreen() {
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllRead();
   const deleteNotif = useDeleteNotification();
+  const hasAutoMarkedRef = useRef(false);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  // Auto-mark all as read as soon as the screen loads and there are unread notifications
+  useEffect(() => {
+    if (!hasAutoMarkedRef.current && !isLoading && unreadCount > 0) {
+      hasAutoMarkedRef.current = true;
+      markAll.mutate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, unreadCount]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top']}>
