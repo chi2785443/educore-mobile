@@ -87,7 +87,7 @@ export default function AssessmentDetailScreen() {
     isStaff && activeTab === 'retakes' ? assessmentId : undefined,
   );
   const { data: myRetakeRequests = [] } = useMyRetakeRequests(isStudent);
-  const { data: myAttempts = [] } = useMyAttempts(isStudent);
+  const { data: myAttempts = [], isLoading: loadingMyAttempts } = useMyAttempts(isStudent);
 
   /* Mutations */
   const publishMutation  = usePublishAssessment(assessmentId ?? '', classroomId ?? '');
@@ -165,7 +165,7 @@ export default function AssessmentDetailScreen() {
     try {
       const attempt = await startMutation.mutateAsync({ assessmentId: assessmentId ?? '' });
       router.push(
-        `/classroom/${classroomId}/assessment/take?assessmentId=${assessmentId}&attemptId=${attempt.id}`,
+        `/features/${classroomId}/assessment/take?assessmentId=${assessmentId}&attemptId=${attempt.id}`,
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not start assessment. Please try again.');
@@ -510,15 +510,21 @@ export default function AssessmentDetailScreen() {
       {/* MY SCORE TAB (student) */}
       {activeTab === 'score' && isStudent && (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 14 }}>
-          {loadingMyScore ? (
+          {(loadingMyScore || loadingMyAttempts) ? (
             <View style={{ paddingTop: 40, alignItems: 'center' }}>
               <ActivityIndicator color={typeColor} />
             </View>
+          ) : !myCompletedAttempt ? (
+            <EmptyState
+              icon="clipboard-outline"
+              title="You haven't taken this test yet"
+              subtitle="Start the assessment from the Info tab to see your score here."
+            />
           ) : !myScore ? (
             <EmptyState
               icon="hourglass-outline"
-              title="Score not available yet"
-              subtitle="Your score will appear here after your submission is graded."
+              title="Awaiting grading"
+              subtitle="Your submission was received. Your score will appear here once graded."
             />
           ) : (
             <>

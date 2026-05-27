@@ -5,9 +5,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
-import { useSchoolAssessments } from '@/hooks/useAssessment';
-import { Assessment, AssessmentStatus } from '@/interface/assessment.interface';
+import { useMyStudentClassrooms } from '@/hooks/useClassroom';
+import { assessmentService } from '@/services/assessment.service';
+import { Assessment } from '@/interface/assessment.interface';
 import AssessmentCard from '@/components/assessment/AssessmentCard';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
@@ -15,6 +17,7 @@ type StatusFilter = 'all' | 'available' | 'completed';
 
 export default function MyAssessmentsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const user = useAuthStore(s => s.user);
   const selectedSchoolId = useAuthStore(s => s.selectedSchoolId);
   const memberships = user?.schools ?? [];
@@ -22,23 +25,56 @@ export default function MyAssessmentsScreen() {
   const schoolId = primary?.schoolId ?? '';
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const { data: rawData, isLoading, refetch } = useSchoolAssessments(schoolId);
+
+  /* Fetch only classrooms this student is enrolled in */
+  const { data: rawClassrooms, isLoading: loadingClassrooms, refetch: refetchClassrooms } =
+    useMyStudentClassrooms(schoolId);
+
+  const classroomIds = useMemo(() => {
+    const d = rawClassrooms as unknown;
+    if (Array.isArray(d)) return (d as { id: string }[]).map(c => c.id);
+    if (d && typeof d === 'object' && 'data' in d) {
+      const inner = (d as { data: { id: string }[] }).data;
+      return Array.isArray(inner) ? inner.map(c => c.id) : [];
+    }
+    return [];
+  }, [rawClassrooms]);
+
+  /* Fan-out: one query per enrolled classroom */
+  const assessmentQueries = useQueries({
+    queries: classroomIds.map(cId => ({
+      queryKey: ['assessments', 'classroom', cId] as const,
+      queryFn: () => assessmentService.getAssessments({ classroomId: cId }),
+      staleTime: 60_000,
+    })),
+  });
+
+  const isLoading = loadingClassrooms || assessmentQueries.some(q => q.isLoading && !q.data);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await refetchClassrooms();
+    await queryClient.invalidateQueries({ queryKey: ['assessments', 'classroom'] });
     setRefreshing(false);
-  }, [refetch]);
+  }, [refetchClassrooms, queryClient]);
 
+  /* Merge + deduplicate across classrooms */
   const assessments: Assessment[] = useMemo(() => {
-    const d = rawData as unknown;
-    if (Array.isArray(d)) return d as Assessment[];
-    if (d && typeof d === 'object' && 'data' in d) return (d as { data: Assessment[] }).data ?? [];
-    return [];
-  }, [rawData]);
+    const seen = new Set<string>();
+    const all: Assessment[] = [];
+    for (const q of assessmentQueries) {
+      for (const a of (q.data ?? [])) {
+        if (!seen.has(a.id)) {
+          seen.add(a.id);
+          all.push(a);
+        }
+      }
+    }
+    return all;
+  }, [assessmentQueries]);
 
-  // Students see published assessments; filter out ones targeted at specific students if user not included
+  /* Students only see published/completed, respecting targetStudentIds */
   const visible = useMemo(() => assessments.filter(a => {
     if (a.status !== 'published' && a.status !== 'completed') return false;
     if (a.targetStudentIds && a.targetStudentIds.length > 0 && user?.id) {
@@ -53,7 +89,7 @@ export default function MyAssessmentsScreen() {
     return visible.filter(a => a.status === 'completed');
   }, [visible, statusFilter]);
 
-  // Group by classroom
+  /* Group by classroom */
   const grouped = useMemo(() => {
     const map = new Map<string, { classroomName: string; items: Assessment[] }>();
     for (const a of filtered) {
@@ -67,7 +103,7 @@ export default function MyAssessmentsScreen() {
   }, [filtered]);
 
   const statusTabs: { key: StatusFilter; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
-    { key: 'all', label: 'All', icon: 'grid-outline' },
+    { key: 'all',       label: 'All',       icon: 'grid-outline' },
     { key: 'available', label: 'Available', icon: 'clipboard-outline' },
     { key: 'completed', label: 'Completed', icon: 'checkmark-circle-outline' },
   ];
@@ -93,9 +129,9 @@ export default function MyAssessmentsScreen() {
         {/* Stats strip */}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
           {[
-            { label: 'Available', value: visible.filter(a => a.status === 'published').length, color: '#6366f1' },
-            { label: 'Completed', value: visible.filter(a => a.status === 'completed').length, color: '#10b981' },
-            { label: 'Total', value: visible.length, color: '#f59e0b' },
+            { label: 'Available', value: visible.filter(a => a.status === 'published').length,  color: '#6366f1' },
+            { label: 'Completed', value: visible.filter(a => a.status === 'completed').length,  color: '#10b981' },
+            { label: 'Total',     value: visible.length,                                         color: '#f59e0b' },
           ].map(s => (
             <View key={s.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, padding: 12, alignItems: 'center' }}>
               <Text style={{ color: s.color, fontSize: 20, fontWeight: '900' }}>{s.value}</Text>
@@ -122,10 +158,16 @@ export default function MyAssessmentsScreen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
           <Ionicons name="clipboard-outline" size={48} color="#d1d5db" />
           <Text style={{ fontSize: 16, fontWeight: '800', color: '#374151', textAlign: 'center' }}>
-            {statusFilter === 'available' ? 'No available assessments' : statusFilter === 'completed' ? 'No completed assessments' : 'No assessments yet'}
+            {classroomIds.length === 0
+              ? 'Not enrolled in any class'
+              : statusFilter === 'available' ? 'No available assessments'
+              : statusFilter === 'completed' ? 'No completed assessments'
+              : 'No assessments yet'}
           </Text>
           <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 }}>
-            Published assessments from your teachers will appear here.
+            {classroomIds.length === 0
+              ? 'Enroll in a class to see your assessments here.'
+              : 'Published assessments from your teachers will appear here.'}
           </Text>
         </View>
       ) : (
@@ -134,8 +176,8 @@ export default function MyAssessmentsScreen() {
           contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 36 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
         >
-          {grouped.map(([classroomId, { classroomName, items }]) => (
-            <View key={classroomId} style={{ gap: 10 }}>
+          {grouped.map(([cId, { classroomName, items }]) => (
+            <View key={cId} style={{ gap: 10 }}>
               {/* Classroom section header */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#6366f1' }} />
@@ -149,7 +191,7 @@ export default function MyAssessmentsScreen() {
                   key={a.id}
                   assessment={a}
                   onPress={() => a.classroomId
-                    ? router.push(`/classroom/${a.classroomId}/assessment/${a.id}`)
+                    ? router.push(`/features/${a.classroomId}/assessment/${a.id}`)
                     : undefined
                   }
                 />

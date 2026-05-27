@@ -1,5 +1,5 @@
 import { apiClient } from './axios.service';
-import { Enrollment, CreateEnrollment } from '@/interface/enrollment.interface';
+import { Enrollment, CreateEnrollment, EnrollmentStatus, UpdateEnrollmentStatus } from '@/interface/enrollment.interface';
 
 export const enrollmentService = {
   getMy: async (): Promise<Enrollment[]> => {
@@ -33,6 +33,18 @@ export const enrollmentService = {
     const response = await apiClient.post<Enrollment>('/enrollments', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data;
+  },
+
+  getBySchool: async (schoolId: string, status?: EnrollmentStatus): Promise<Enrollment[]> => {
+    const params = status ? { status } : {};
+    const response = await apiClient.get(`/enrollments/schools/${schoolId}`, { params });
+    const raw = response.data;
+    return Array.isArray(raw) ? raw : (raw?.data ?? []);
+  },
+
+  updateStatus: async (schoolId: string, id: string, data: UpdateEnrollmentStatus): Promise<Enrollment> => {
+    const response = await apiClient.patch<Enrollment>(`/enrollments/schools/${schoolId}/${id}/status`, data);
     return response.data;
   },
 };

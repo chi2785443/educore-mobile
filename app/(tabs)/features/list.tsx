@@ -24,7 +24,6 @@ const GRADE_PALETTE: Record<string, { fg: string; bg: string; grad: string }> = 
 const DEFAULT_PAL = { fg: '#6366f1', bg: '#e0e7ff', grad: '#6366f1' };
 const getPalette = (grade?: string) => (grade && GRADE_PALETTE[grade]) ?? DEFAULT_PAL;
 
-/* ── Classroom type ────────────────────────────────────────────── */
 interface Classroom {
   id: string;
   name: string;
@@ -36,7 +35,6 @@ interface Classroom {
   roomNumber?: string;
 }
 
-/* ── Classroom card ────────────────────────────────────────────── */
 function ClassroomCard({ classroom }: { classroom: Classroom }) {
   const router = useRouter();
   const pal = getPalette(classroom.grade);
@@ -48,7 +46,7 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
 
   return (
     <Pressable
-      onPress={() => router.push(`/classroom/${classroom.id}`)}
+      onPress={() => router.push(`/features/${classroom.id}`)}
       style={({ pressed }) => ({
         backgroundColor: pressed ? '#f8fafc' : '#fff',
         borderRadius: 20,
@@ -63,12 +61,10 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
         elevation: 3,
       })}
     >
-      {/* Gradient top band */}
       <View style={{
         height: 56, backgroundColor: pal.grad,
         flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10,
       }}>
-        {/* Circle initial */}
         <View style={{
           width: 36, height: 36, borderRadius: 12,
           backgroundColor: 'rgba(255,255,255,0.2)',
@@ -95,9 +91,7 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
         )}
       </View>
 
-      {/* Body */}
       <View style={{ padding: 14, gap: 12 }}>
-        {/* Meta pills */}
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           {classroom.roomNumber && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f8fafc', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#f1f5f9' }}>
@@ -115,7 +109,6 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
           )}
         </View>
 
-        {/* Occupancy bar */}
         {cap > 0 && (
           <View style={{ gap: 6 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -128,7 +121,6 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
           </View>
         )}
 
-        {/* Footer row */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: classroom.isActive === false ? '#d1d5db' : '#4ade80' }} />
@@ -146,8 +138,7 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
   );
 }
 
-/* ── Main screen ───────────────────────────────────────────────── */
-export default function ClassroomTab() {
+export default function ClassroomListScreen() {
   const [search, setSearch] = useState('');
   const [activeGrade, setActiveGrade] = useState<string | null>(null);
 
@@ -206,8 +197,6 @@ export default function ClassroomTab() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
-
-      {/* ── Dark header ──────────────────────────────────────── */}
       <View style={{ backgroundColor: '#0B0F14', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <View>
@@ -223,7 +212,6 @@ export default function ClassroomTab() {
           </View>
         </View>
 
-        {/* Search bar */}
         <View style={{
           flexDirection: 'row', alignItems: 'center', gap: 10,
           backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 14,
@@ -246,7 +234,6 @@ export default function ClassroomTab() {
         </View>
       </View>
 
-      {/* ── Grade filter chips ────────────────────────────────── */}
       {grades.length > 1 && (
         <ScrollView
           horizontal showsHorizontalScrollIndicator={false}
@@ -261,9 +248,7 @@ export default function ClassroomTab() {
               borderWidth: 1, borderColor: !activeGrade ? '#7c3aed' : '#e5e7eb',
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: !activeGrade ? '#fff' : '#6b7280' }}>
-              All
-            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: !activeGrade ? '#fff' : '#6b7280' }}>All</Text>
           </Pressable>
           {grades.map(g => {
             const pal = getPalette(g);
@@ -278,16 +263,13 @@ export default function ClassroomTab() {
                   borderWidth: 1, borderColor: isActive ? pal.fg : '#e5e7eb',
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : '#6b7280' }}>
-                  {g}
-                </Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : '#6b7280' }}>{g}</Text>
               </Pressable>
             );
           })}
         </ScrollView>
       )}
 
-      {/* ── Content ──────────────────────────────────────────── */}
       {!primary ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
           <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>

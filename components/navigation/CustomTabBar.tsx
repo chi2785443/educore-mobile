@@ -20,7 +20,7 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   { name: 'index', label: 'Home', icon: 'home-outline', iconActive: 'home' },
-  { name: 'classroom', label: 'Classes', icon: 'book-outline', iconActive: 'book' },
+  { name: 'features', label: 'Features', icon: 'apps-outline', iconActive: 'apps' },
   { name: 'action', label: '', icon: 'add', iconActive: 'add' },
   { name: 'chat', label: 'Chat', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
   { name: 'account', label: 'Account', icon: 'person-outline', iconActive: 'person' },

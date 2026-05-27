@@ -34,52 +34,6 @@ const ROLE_ACCENT: Record<string, string> = {
   parent:       '#f43f5e',
 };
 
-/* ── Feature card ───────────────────────────────────────────────── */
-interface FeatureCardProps {
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  iconColor: string;
-  iconBg: string;
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-}
-function FeatureCard({ icon, iconColor, iconBg, title, subtitle, onPress }: FeatureCardProps) {
-  return (
-    <View style={{ width: '48%' }}>
-      <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
-        <View style={{
-          backgroundColor: '#fff',
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: '#f1f5f9',
-          padding: 10,
-          gap: 7,
-          shadowColor: '#000',
-          shadowOpacity: 0.04,
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 6,
-          elevation: 2,
-        }}>
-          <View style={{
-            width: 34, height: 34, borderRadius: 10,
-            backgroundColor: iconBg,
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Ionicons name={icon} size={17} color={iconColor} />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <View style={{ flex: 1, gap: 1 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{title}</Text>
-              <Text style={{ fontSize: 10, color: '#94a3b8', lineHeight: 14 }} numberOfLines={1}>{subtitle}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={12} color="#cbd5e1" />
-          </View>
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
 /* ── Settings row ────────────────────────────────────────────────── */
 function SettingsRow({
   icon, iconBg, iconColor, label, value, onPress, showArrow = true, rightElement,
@@ -178,7 +132,7 @@ function SchoolPickerModal({
             backgroundColor: '#fff',
             borderTopLeftRadius: 28, borderTopRightRadius: 28,
             paddingTop: 12, paddingBottom: 40,
-            maxHeight: '80%',
+            minHeight: 320,
           }}>
             {/* Handle */}
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb', alignSelf: 'center', marginBottom: 20 }} />
@@ -281,9 +235,8 @@ export default function AccountTab() {
 
   const role = primaryMembership?.role ?? '';
   const isAdmin = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin;
-  const isStaff = role === UserRole.STAFF;
   const isStudent = role === UserRole.STUDENT;
-  const isSuperAdmin = role === UserRole.SUPER_ADMIN || !!user?.isAdmin;
+  const isParent = role === UserRole.PARENT;
 
   const heroBg = ROLE_HERO_BG[role] ?? '#0B0F14';
   const accent = ROLE_ACCENT[role] ?? '#6366f1';
@@ -463,72 +416,39 @@ export default function AccountTab() {
             </View>
           )}
 
-          {/* ── Feature grid ─────────────────────────────────────── */}
-          {(() => {
-            const features: FeatureCardProps[] = [
-              { icon: 'wallet-outline', iconColor: '#6366f1', iconBg: '#eef2ff',
-                title: 'My Finances', subtitle: isStudent ? 'Fee balance & payments' : 'Salary & advances',
-                onPress: () => router.push('/account/finances') },
-              { icon: 'time-outline', iconColor: '#059669', iconBg: '#f0fdf4',
-                title: 'Attendance', subtitle: 'Clock records & logs',
-                onPress: () => router.push('/account/attendance') },
-              { icon: 'library-outline', iconColor: '#7c3aed', iconBg: '#f5f3ff',
-                title: 'Library', subtitle: 'School resources',
-                onPress: () => router.push('/account/library') },
-              { icon: 'document-text-outline', iconColor: '#d97706', iconBg: '#fffbeb',
-                title: 'My Documents', subtitle: 'Personal files',
-                onPress: () => router.push('/account/documents') },
-              ...(isStudent ? [
-                { icon: 'trophy-outline' as const, iconColor: '#0ea5e9', iconBg: '#f0f9ff',
-                  title: 'My Results', subtitle: 'Term results & grades',
-                  onPress: () => router.push('/account/results') },
-                { icon: 'clipboard-outline' as const, iconColor: '#6366f1', iconBg: '#eef2ff',
-                  title: 'My Assessments', subtitle: 'Tests & quizzes assigned',
-                  onPress: () => router.push('/account/my-assessments') },
-              ] : []),
-              ...((isStaff || isAdmin) ? [
-                { icon: 'clipboard-outline' as const, iconColor: '#6366f1', iconBg: '#eef2ff',
-                  title: 'Assessments', subtitle: 'Manage tests & quizzes',
-                  onPress: () => router.push('/account/assessments') },
-                { icon: 'help-circle-outline' as const, iconColor: '#e11d48', iconBg: '#fff1f2',
-                  title: 'Question Bank', subtitle: 'Browse & create questions',
-                  onPress: () => router.push('/account/question-bank') },
-              ] : []),
-              ...(isSuperAdmin ? [{ icon: 'card-outline' as const, iconColor: '#0f172a', iconBg: '#f1f5f9',
-                title: 'Subscription', subtitle: 'Plan status & usage',
-                onPress: () => router.push('/account/subscription') }] : []),
-            ];
-            return (
-              <View>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#8a8a8a', textTransform: 'uppercase', letterSpacing: 1.2, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
-                  My Features
-                </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 12 }}>
-                  {features.map(f => <FeatureCard key={f.title} {...f} />)}
-                  {features.length % 2 !== 0 && <View style={{ width: '48%' }} />}
-                </View>
-              </View>
-            );
-          })()}
-
           {/* ── Applications & Enquiries ─────────────────────────── */}
           <SettingsGroup label="Applications & Enquiries">
-            <SettingsRow
-              icon="briefcase-outline" iconBg="#e0f2fe" iconColor="#0284c7"
-              label="My Job Applications" value="Jobs I've applied for"
-              onPress={() => router.push('/my-jobs' as never)}
-            />
+            {!(isStudent || isParent) && (
+              <SettingsRow
+                icon="briefcase-outline" iconBg="#e0f2fe" iconColor="#0284c7"
+                label="My Job Applications" value="Jobs I've applied for"
+                onPress={() => router.push('/my-jobs' as never)}
+              />
+            )}
             <SettingsRow
               icon="document-text-outline" iconBg="#d1fae5" iconColor="#059669"
               label="My Enrollments" value="School enrollment applications"
               onPress={() => router.push('/my-enrollments' as never)}
             />
-            <SettingsRow
-              icon="chatbubble-outline" iconBg="#fef3c7" iconColor="#d97706"
-              label="My Enquiries" value="Questions sent to schools"
-              onPress={() => router.push('/my-enquiries' as never)}
-            />
+            {isParent && (
+              <SettingsRow
+                icon="chatbubble-outline" iconBg="#fef3c7" iconColor="#d97706"
+                label="My Enquiries" value="Questions sent to schools"
+                onPress={() => router.push('/my-enquiries' as never)}
+              />
+            )}
           </SettingsGroup>
+
+          {/* ── School Management (admins only) ──────────────────── */}
+          {isAdmin && (
+            <SettingsGroup label="School Management">
+              <SettingsRow
+                icon="chatbubbles-outline" iconBg="#e0e7ff" iconColor="#4f46e5"
+                label="School Enquiries" value="View & respond to parent enquiries"
+                onPress={() => router.push('/school-enquiries' as never)}
+              />
+            </SettingsGroup>
+          )}
 
           {/* ── Profile & security ───────────────────────────────── */}
           <SettingsGroup label="Profile & Security">

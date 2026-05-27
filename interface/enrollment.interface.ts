@@ -31,11 +31,16 @@ export interface Enrollment {
   reviewedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  school?: {
-    id: string;
-    name: string;
-    logo?: string;
-  };
+  school?: { id: string; name: string; logo?: string };
+  student?: { id: string; firstName: string; lastName: string; email: string };
+  reviewedBy?: { id: string; firstName: string; lastName: string };
+}
+
+export interface UpdateEnrollmentStatus {
+  status: EnrollmentStatus;
+  responseMessage?: string;
+  adminNotes?: string;
+  deleteDocuments?: boolean;
 }
 
 export interface CreateEnrollment {

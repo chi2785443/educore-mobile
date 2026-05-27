@@ -157,7 +157,7 @@ export default function AssessmentsScreen() {
               key={a.id}
               assessment={a}
               onPress={() => a.classroomId
-                ? router.push(`/classroom/${a.classroomId}/assessment/${a.id}`)
+                ? router.push(`/features/${a.classroomId}/assessment/${a.id}`)
                 : undefined
               }
             />

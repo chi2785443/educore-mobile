@@ -4,6 +4,7 @@ export default function ClassroomStackLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="list" />
       <Stack.Screen name="[classroomId]/index" />
       <Stack.Screen name="[classroomId]/assessment/[assessmentId]" />
       <Stack.Screen

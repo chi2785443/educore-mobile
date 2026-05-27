@@ -9,13 +9,14 @@ export default function TabsLayout() {
     >
       {/* Tab order must match TABS array in CustomTabBar */}
       <Tabs.Screen name="index" />
-      <Tabs.Screen name="classroom" />
+      <Tabs.Screen name="features" />
       <Tabs.Screen name="action" options={{ href: null }} />
       <Tabs.Screen name="chat" />
       <Tabs.Screen name="account" />
       <Tabs.Screen name="my-jobs" options={{ href: null }} />
       <Tabs.Screen name="my-enrollments" options={{ href: null }} />
       <Tabs.Screen name="my-enquiries" options={{ href: null }} />
+      <Tabs.Screen name="school-enquiries" options={{ href: null }} />
     </Tabs>
   );
 }

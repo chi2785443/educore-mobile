@@ -385,7 +385,7 @@ export default function ClassroomDetailScreen() {
                   key={a.id}
                   assessment={a}
                   onPress={() =>
-                    router.push(`/classroom/${classroomId}/assessment/${a.id}`)
+                    router.push(`/features/${classroomId}/assessment/${a.id}`)
                   }
                 />
               ))}

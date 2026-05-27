@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, Pressable, Modal, ScrollView, Animated,
-  Dimensions, TextInput, ActivityIndicator,
+  Dimensions, TextInput, ActivityIndicator, Linking, Platform,
 } from 'react-native';
 import { toast } from '@/components/ui/Toast';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,21 +30,50 @@ import { ReportType, ReportTerm } from '@/interface/report.interface';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
-/* ── Geolocation (expo-location with graceful fallback) ─────────── */
-let Location: typeof import('expo-location') | null = null;
-try {
-  Location = require('expo-location');
-} catch { /* not installed — graceful fallback */ }
+/* ── Geolocation ─────────────────────────────────────────────────── */
+import * as Location from 'expo-location';
 
-async function getCurrentLocation(): Promise<{ latitude: number; longitude: number } | null> {
-  if (!Location) return null;
+type LocationResult =
+  | { ok: true; latitude: number; longitude: number }
+  | { ok: false; reason: 'denied' | 'settings_required' | 'services_disabled' | 'error' };
+
+async function getCurrentLocation(): Promise<LocationResult> {
   try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return null;
-    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    return { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+    // Check if location services are enabled on the device
+    const enabled = await Location.hasServicesEnabledAsync();
+    if (!enabled) {
+      return { ok: false, reason: 'services_disabled' };
+    }
+
+    const existing = await Location.getForegroundPermissionsAsync();
+
+    // If permanently denied (can no longer ask), user must go to Settings
+    if (existing.status === 'denied' && !existing.canAskAgain) {
+      return { ok: false, reason: 'settings_required' };
+    }
+
+    // Ask for permission if not granted yet
+    if (existing.status !== 'granted') {
+      const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return { ok: false, reason: canAskAgain ? 'denied' : 'settings_required' };
+      }
+    }
+
+    const loc = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    return { ok: true, latitude: loc.coords.latitude, longitude: loc.coords.longitude };
   } catch {
-    return null;
+    return { ok: false, reason: 'error' };
+  }
+}
+
+function openAppSettings() {
+  if (Platform.OS === 'ios') {
+    Linking.openURL('app-settings:');
+  } else {
+    Linking.openSettings();
   }
 }
 
@@ -95,9 +124,23 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
   // Step states: idle → confirming (dialog open) → submitting
   const [confirming, setConfirming] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationResult, setLocationResult] = useState<LocationResult | null>(null);
   const [qrToken, setQrToken] = useState('');
+
+  const location = locationResult?.ok ? locationResult : null;
+  const locationError: { msg: string; canOpenSettings: boolean } | null = (() => {
+    if (!locationResult || locationResult.ok) return null;
+    switch (locationResult.reason) {
+      case 'services_disabled':
+        return { msg: 'Location services are disabled on your device. Enable them in Settings.', canOpenSettings: true };
+      case 'settings_required':
+        return { msg: 'Location permission was denied. Open Settings to allow it.', canOpenSettings: true };
+      case 'denied':
+        return { msg: 'Location permission denied. Please allow it when prompted.', canOpenSettings: false };
+      default:
+        return { msg: 'Could not get your location. Please try again.', canOpenSettings: false };
+    }
+  })();
 
   const shouldTrack =
     !settings ||
@@ -116,21 +159,15 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
 
   const getLocation = async () => {
     setLocating(true);
-    setLocationError(null);
-    setLocation(null);
-    const loc = await getCurrentLocation();
-    if (loc) {
-      setLocation(loc);
-    } else {
-      setLocationError('Could not get location. Allow access and retry.');
-    }
+    setLocationResult(null);
+    const result = await getCurrentLocation();
+    setLocationResult(result);
     setLocating(false);
   };
 
   const handleOpenDialog = () => {
     setConfirming(true);
-    setLocation(null);
-    setLocationError(null);
+    setLocationResult(null);
     setQrToken('');
     getLocation();
   };
@@ -140,8 +177,8 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
       await clockMutation.mutateAsync({
         type: actionType,
         method: settings?.useQRCode ? 'qr_code' : 'manual',
-        latitude: location?.latitude,
-        longitude: location?.longitude,
+        latitude: locationResult?.ok ? locationResult.latitude : undefined,
+        longitude: locationResult?.ok ? locationResult.longitude : undefined,
         qrToken: settings?.useQRCode ? qrToken.trim() || undefined : undefined,
       });
       setConfirming(false);
@@ -229,38 +266,82 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
               </View>
 
               {/* Location status */}
-              <View style={{ backgroundColor: '#f8fafc', borderRadius: 14, padding: 14, gap: 8 }}>
+              <View style={{
+                borderRadius: 14, padding: 14, gap: 10,
+                backgroundColor: locationError ? '#fff7ed' : locationResult?.ok ? '#f0fdf4' : '#f8fafc',
+                borderWidth: 1,
+                borderColor: locationError ? '#fed7aa' : locationResult?.ok ? '#bbf7d0' : '#e2e8f0',
+              }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name="location-outline" size={14} color="#64748b" />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Location</Text>
+                  <Ionicons
+                    name="location-outline" size={14}
+                    color={locationError ? '#ea580c' : locationResult?.ok ? '#16a34a' : '#64748b'}
+                  />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: locationError ? '#9a3412' : locationResult?.ok ? '#15803d' : '#374151' }}>
+                    Location
+                  </Text>
                 </View>
+
+                {/* Acquiring */}
                 {locating && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <ActivityIndicator size="small" color="#6366f1" />
                     <Text style={{ fontSize: 12, color: '#6b7280' }}>Detecting your location…</Text>
                   </View>
                 )}
-                {location && !locating && (
+
+                {/* Success */}
+                {!locating && locationResult?.ok && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                    <Text style={{ fontSize: 12, color: '#059669', fontWeight: '600' }}>
-                      {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                    <Ionicons name="checkmark-circle" size={15} color="#16a34a" />
+                    <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '700' }}>Location captured</Text>
+                    <Text style={{ fontSize: 11, color: '#4ade80', marginLeft: 2 }}>
+                      {locationResult.latitude.toFixed(4)}, {locationResult.longitude.toFixed(4)}
                     </Text>
                   </View>
                 )}
-                {locationError && !locating && (
-                  <View style={{ gap: 6 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name="warning-outline" size={14} color="#d97706" />
-                      <Text style={{ fontSize: 12, color: '#92400e', flex: 1 }}>{locationError}</Text>
+
+                {/* Error states */}
+                {!locating && locationError && (
+                  <View style={{ gap: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+                      <Ionicons name="warning-outline" size={15} color="#ea580c" style={{ marginTop: 1 }} />
+                      <Text style={{ fontSize: 12, color: '#9a3412', flex: 1, lineHeight: 18 }}>
+                        {locationError.msg}
+                      </Text>
                     </View>
-                    <Pressable onPress={getLocation}>
-                      <Text style={{ fontSize: 12, color: '#6366f1', fontWeight: '700' }}>Retry</Text>
-                    </Pressable>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Pressable
+                        onPress={getLocation}
+                        style={({ pressed }) => ({
+                          flex: 1, paddingVertical: 8, borderRadius: 10,
+                          backgroundColor: pressed ? '#e0e7ff' : '#eef2ff',
+                          alignItems: 'center',
+                        })}
+                      >
+                        <Text style={{ fontSize: 12, color: '#4f46e5', fontWeight: '800' }}>Retry</Text>
+                      </Pressable>
+                      {locationError.canOpenSettings && (
+                        <Pressable
+                          onPress={openAppSettings}
+                          style={({ pressed }) => ({
+                            flex: 1, paddingVertical: 8, borderRadius: 10,
+                            backgroundColor: pressed ? '#fed7aa' : '#fff7ed',
+                            alignItems: 'center', flexDirection: 'row',
+                            justifyContent: 'center', gap: 4,
+                          })}
+                        >
+                          <Ionicons name="settings-outline" size={12} color="#ea580c" />
+                          <Text style={{ fontSize: 12, color: '#ea580c', fontWeight: '800' }}>Open Settings</Text>
+                        </Pressable>
+                      )}
+                    </View>
                   </View>
                 )}
-                {!location && !locating && !locationError && (
-                  <Text style={{ fontSize: 12, color: '#9ca3af' }}>Acquiring GPS…</Text>
+
+                {/* Initial state before result comes back */}
+                {!locating && !locationResult && !locationError && (
+                  <Text style={{ fontSize: 12, color: '#94a3b8' }}>Waiting for GPS…</Text>
                 )}
               </View>
 
@@ -928,7 +1009,7 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
                   <ActionCard icon="megaphone-outline" label="Post Announcement" desc="Broadcast school-wide" color="#d97706" bg="#fffbeb" onPress={() => setActiveModal('announcement')} />
                   <ActionCard icon="calendar-outline" label="Create Event" desc="Add a calendar event" color="#7c3aed" bg="#f5f3ff" onPress={() => setActiveModal('event')} />
                   <ActionCard icon="checkmark-done-outline" label="Approve Reports" desc="Review submitted reports" color="#16a34a" bg="#f0fdf4" onPress={() => setActiveModal('approve')} />
-                  <ActionCard icon="people-outline" label="View Classrooms" desc="All classes & enrollment" color="#0284c7" bg="#eff6ff" onPress={() => nav('/classroom')} />
+                  <ActionCard icon="people-outline" label="View Classrooms" desc="All classes & enrollment" color="#0284c7" bg="#eff6ff" onPress={() => nav('/features')} />
                   <ActionCard icon="trophy-outline" label="Results Overview" desc="Term results & grades" color="#e11d48" bg="#fff1f2" onPress={() => nav('/account/results')} />
                   <ActionCard icon="wallet-outline" label="School Finance" desc="Budget & transactions" color="#059669" bg="#f0fdf4" onPress={() => nav('/account/finances')} />
                 </View>

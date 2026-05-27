@@ -58,3 +58,9 @@ export interface CreateEnquiry {
   message: string;
   specificQuestions?: string[];
 }
+
+export interface ReplyEnquiry {
+  reply: string;
+  schoolInfo?: Record<string, string>;
+  status?: EnquiryStatus;
+}
