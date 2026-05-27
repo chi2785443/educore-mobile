@@ -17,6 +17,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="my-enrollments" options={{ href: null }} />
       <Tabs.Screen name="my-enquiries" options={{ href: null }} />
       <Tabs.Screen name="school-enquiries" options={{ href: null }} />
+      <Tabs.Screen name="subscription" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -134,7 +134,7 @@ export default function FeaturesTab() {
     ...(isSuperAdmin ? [{
       icon: 'card-outline' as const, iconColor: '#0f172a', iconBg: '#f1f5f9',
       title: 'Subscription', subtitle: 'Plan status & usage',
-      route: '/account/subscription',
+      route: '/subscription',
     }] : []),
     ...(!isStudent && !isParent ? [{
       icon: 'briefcase-outline' as const, iconColor: '#0284c7', iconBg: '#e0f2fe',

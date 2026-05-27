@@ -7,7 +7,6 @@ export default function AccountStackLayout() {
       <Stack.Screen name="finances" />
       <Stack.Screen name="attendance" />
       <Stack.Screen name="results" />
-      <Stack.Screen name="subscription" />
       <Stack.Screen name="question-bank" />
       <Stack.Screen name="library" />
       <Stack.Screen name="documents" />
