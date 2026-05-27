@@ -9,10 +9,11 @@ import { useSalaryStructure, useMyStudentFees } from '@/hooks/useFinance';
 import { SalaryComponent } from '@/interface/finance.interface';
 
 /* ── Currency formatter ─────────────────────────────────────────── */
-function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `₦${(n / 1_000).toFixed(0)}K`;
-  return `₦${n.toLocaleString()}`;
+function fmt(n: number | undefined | null): string {
+  const v = n ?? 0;
+  if (v >= 1_000_000) return `₦${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `₦${(v / 1_000).toFixed(0)}K`;
+  return `₦${v.toLocaleString()}`;
 }
 
 const COMPONENT_COLORS: Record<string, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; sign: '+' | '-' }> = {

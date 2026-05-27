@@ -90,45 +90,45 @@ export default function FeaturesTab() {
       icon: 'wallet-outline', iconColor: '#6366f1', iconBg: '#eef2ff',
       title: 'My Finances',
       subtitle: isStudent ? 'Fee balance & payments' : 'Salary & advances',
-      route: '/account/finances',
+      route: '/finances',
     },
     {
       icon: 'time-outline', iconColor: '#059669', iconBg: '#f0fdf4',
       title: 'Attendance', subtitle: 'Clock records & logs',
-      route: '/account/attendance',
+      route: '/attendance',
     },
     {
       icon: 'library-outline', iconColor: '#7c3aed', iconBg: '#f5f3ff',
       title: 'Library', subtitle: 'School resources',
-      route: '/account/library',
+      route: '/library',
     },
     {
       icon: 'document-text-outline', iconColor: '#d97706', iconBg: '#fffbeb',
       title: 'My Documents', subtitle: 'Personal files',
-      route: '/account/documents',
+      route: '/documents',
     },
     ...(isStudent ? [
       {
         icon: 'trophy-outline' as const, iconColor: '#0ea5e9', iconBg: '#f0f9ff',
         title: 'My Results', subtitle: 'Term results & grades',
-        route: '/account/results',
+        route: '/results',
       },
       {
         icon: 'clipboard-outline' as const, iconColor: '#6366f1', iconBg: '#eef2ff',
         title: 'My Assessments', subtitle: 'Tests & quizzes assigned',
-        route: '/account/my-assessments',
+        route: '/my-assessments',
       },
     ] : []),
     ...((isStaff || isAdmin) ? [
       {
         icon: 'clipboard-outline' as const, iconColor: '#6366f1', iconBg: '#eef2ff',
         title: 'Assessments', subtitle: 'Manage tests & quizzes',
-        route: '/account/assessments',
+        route: '/assessments',
       },
       {
         icon: 'help-circle-outline' as const, iconColor: '#e11d48', iconBg: '#fff1f2',
         title: 'Question Bank', subtitle: 'Browse & create questions',
-        route: '/account/question-bank',
+        route: '/question-bank',
       },
     ] : []),
     ...(isSuperAdmin ? [{
