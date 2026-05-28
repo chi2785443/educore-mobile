@@ -17,7 +17,6 @@ import {
 import { useClassroomTimetable } from '@/hooks/useTimetable';
 import { useMyAssessments, useClassroomAssessments } from '@/hooks/useAssessment';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
-import TimetableDay from '@/components/classroom/TimetableDay';
 import MemberRow from '@/components/classroom/MemberRow';
 import AssessmentCard from '@/components/assessment/AssessmentCard';
 import CreateAssessmentSheet from '@/components/assessment/CreateAssessmentSheet';
@@ -68,6 +67,180 @@ function EmptyState({ icon, title, subtitle }: {
   );
 }
 
+/* ── Timetable grid ────────────────────────────────────────────── */
+function TimetableGrid({
+  timetable,
+  pal,
+  refreshing,
+  onRefresh,
+}: {
+  timetable: Partial<Record<DayOfWeek, import('@/interface/timetable.interface').TimetableEntry[]>>;
+  pal: { fg: string; grad: string };
+  refreshing: boolean;
+  onRefresh: () => void;
+}) {
+  const today = getTodayDayOfWeek();
+
+  // Collect all unique time slots sorted by start time
+  const slots = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { start: string; end: string; key: string }[] = [];
+    ORDERED_DAYS.forEach(day => {
+      (timetable[day] ?? []).forEach(e => {
+        const key = `${e.startTime}|${e.endTime}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({ start: e.startTime, end: e.endTime, key });
+        }
+      });
+    });
+    return list.sort((a, b) => a.start.localeCompare(b.start));
+  }, [timetable]);
+
+  const hasAny = ORDERED_DAYS.some(d => (timetable[d]?.length ?? 0) > 0);
+
+  if (!hasAny) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
+        <View style={{ width: 60, height: 60, borderRadius: 20, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="calendar-outline" size={28} color="#9ca3af" />
+        </View>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: '#374151', textAlign: 'center' }}>No timetable set</Text>
+        <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 }}>
+          No periods have been scheduled for this classroom yet.
+        </Text>
+      </View>
+    );
+  }
+
+  // Time column width and day column width
+  const TIME_W = 62;
+  const DAY_W = 56;
+
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 36 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={pal.fg} colors={[pal.fg]} />}
+    >
+      {/* Header row */}
+      <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+        <View style={{ width: TIME_W }} />
+        {ORDERED_DAYS.map(day => {
+          const isToday = day === today;
+          return (
+            <View
+              key={day}
+              style={{
+                width: DAY_W, alignItems: 'center', paddingVertical: 6,
+                borderRadius: 10,
+                backgroundColor: isToday ? pal.fg : 'transparent',
+                marginHorizontal: 1,
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '800', color: isToday ? '#fff' : '#9ca3af', letterSpacing: 0.3 }}>
+                {DAY_LABELS[day]}
+              </Text>
+              {isToday && (
+                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)', marginTop: 2 }} />
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Time slot rows */}
+      {slots.map((slot, rowIdx) => (
+        <View
+          key={slot.key}
+          style={{
+            flexDirection: 'row',
+            marginBottom: 6,
+            backgroundColor: rowIdx % 2 === 0 ? '#fff' : '#f8fafc',
+            borderRadius: 12,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: '#f1f5f9',
+          }}
+        >
+          {/* Time label */}
+          <View style={{ width: TIME_W, paddingVertical: 10, paddingHorizontal: 8, justifyContent: 'center', borderRightWidth: 1, borderRightColor: '#f1f5f9' }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#4C3FC4', lineHeight: 14 }}>
+              {slot.start}
+            </Text>
+            <Text style={{ fontSize: 9, color: '#9ca3af', lineHeight: 12, marginTop: 1 }}>
+              {slot.end}
+            </Text>
+          </View>
+
+          {/* Day cells */}
+          {ORDERED_DAYS.map(day => {
+            const entry = (timetable[day] ?? []).find(
+              e => e.startTime === slot.start && e.endTime === slot.end,
+            );
+            const isToday = day === today;
+            const color = entry?.subject?.color ?? null;
+            const subjectName = entry?.subject?.name ?? null;
+            const abbrev = subjectName
+              ? subjectName.length <= 5
+                ? subjectName
+                : subjectName.slice(0, 4).trim() + '.'
+              : null;
+
+            return (
+              <View
+                key={day}
+                style={{
+                  width: DAY_W,
+                  marginHorizontal: 1,
+                  paddingVertical: 8,
+                  paddingHorizontal: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: entry
+                    ? color ? color + '22' : pal.fg + '15'
+                    : isToday ? pal.fg + '08' : 'transparent',
+                  borderRadius: 8,
+                }}
+              >
+                {entry ? (
+                  <>
+                    <Text
+                      style={{
+                        fontSize: 11, fontWeight: '800', textAlign: 'center', lineHeight: 14,
+                        color: color ?? pal.fg,
+                      }}
+                      numberOfLines={2}
+                    >
+                      {abbrev}
+                    </Text>
+                    {entry.periodNumber !== undefined && (
+                      <Text style={{ fontSize: 9, color: color ? color + 'aa' : pal.fg + 'aa', marginTop: 2, fontWeight: '600' }}>
+                        P{entry.periodNumber}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <View style={{ width: 14, height: 1.5, backgroundColor: '#e5e7eb', borderRadius: 1 }} />
+                )}
+              </View>
+            );
+          })}
+        </View>
+      ))}
+
+      {/* Legend */}
+      {slots.length > 0 && (
+        <View style={{ marginTop: 8, padding: 10, backgroundColor: '#f8fafc', borderRadius: 10, borderWidth: 1, borderColor: '#f1f5f9' }}>
+          <Text style={{ fontSize: 10, color: '#9ca3af', textAlign: 'center' }}>
+            Tap a subject in the grid to see full details below
+          </Text>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
 /* ── Main screen ───────────────────────────────────────────────── */
 export default function ClassroomDetailScreen() {
   const { classroomId } = useLocalSearchParams<{ classroomId: string }>();
@@ -85,7 +258,6 @@ export default function ClassroomDetailScreen() {
   const isStudent = role === UserRole.STUDENT;
 
   const [activeTab, setActiveTab] = useState<DetailTab>('schedule');
-  const [selectedDay, setSelectedDay] = useState<DayOfWeek>(getTodayDayOfWeek());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [showCreate, setShowCreate] = useState(false);
 
@@ -171,12 +343,6 @@ export default function ClassroomDetailScreen() {
               </Text>
             )}
           </View>
-          {/* Grade badge */}
-          {classroom?.grade && (
-            <View style={{ backgroundColor: pal.grad, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{classroom.grade}</Text>
-            </View>
-          )}
         </View>
 
         {/* Meta row */}
@@ -211,69 +377,12 @@ export default function ClassroomDetailScreen() {
       {/* SCHEDULE TAB */}
       {activeTab === 'schedule' && (
         <View style={{ flex: 1 }}>
-          {/* Day selector — compact circles, visually distinct from main tabs */}
-          <View style={{
-            backgroundColor: '#fff',
-            borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
-            flexDirection: 'row',
-            paddingHorizontal: 16, paddingVertical: 10,
-            justifyContent: 'space-between',
-          }}>
-            {ORDERED_DAYS.map(day => {
-              const isActive = selectedDay === day;
-              const isToday = getTodayDayOfWeek() === day;
-              return (
-                <Pressable
-                  key={day}
-                  onPress={() => setSelectedDay(day)}
-                  style={{
-                    width: 44, height: 44, borderRadius: 22,
-                    alignItems: 'center', justifyContent: 'center',
-                    backgroundColor: isActive ? pal.fg : isToday ? pal.fg + '18' : 'transparent',
-                  }}
-                >
-                  <Text style={{
-                    fontSize: 12,
-                    fontWeight: isActive ? '800' : '600',
-                    color: isActive ? '#fff' : isToday ? pal.fg : '#6b7280',
-                  }}>
-                    {DAY_LABELS[day]}
-                  </Text>
-                  {/* Today dot */}
-                  {isToday && !isActive && (
-                    <View style={{
-                      width: 4, height: 4, borderRadius: 2,
-                      backgroundColor: pal.fg,
-                      position: 'absolute', bottom: 5,
-                    }} />
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-
           {loadingTimetable ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator color={pal.fg} />
             </View>
           ) : (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 36 }}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
-            >
-              {(timetable[selectedDay] ?? []).length === 0 ? (
-                <EmptyState
-                  icon="calendar-outline"
-                  title={`No periods on ${selectedDay.charAt(0) + selectedDay.slice(1).toLowerCase()}`}
-                  subtitle="No classes are scheduled for this day."
-                />
-              ) : (
-                (timetable[selectedDay] ?? []).map(entry => (
-                  <TimetableDay key={entry.id} entry={entry} />
-                ))
-              )}
-            </ScrollView>
+            <TimetableGrid timetable={timetable} pal={pal} refreshing={refreshing} onRefresh={onRefresh} />
           )}
         </View>
       )}
@@ -403,10 +512,10 @@ export default function ClassroomDetailScreen() {
                 width: 56,
                 height: 56,
                 borderRadius: 28,
-                backgroundColor: pressed ? '#4f46e5' : '#6366f1',
+                backgroundColor: pressed ? '#3b32a0' : '#4C3FC4',
                 alignItems: 'center',
                 justifyContent: 'center',
-                shadowColor: '#6366f1',
+                shadowColor: '#4C3FC4',
                 shadowOpacity: 0.45,
                 shadowOffset: { width: 0, height: 6 },
                 shadowRadius: 12,
