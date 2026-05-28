@@ -336,26 +336,52 @@ export default function DashboardTab() {
           style={{ width: 100, height: 28 }}
           contentFit="contain"
         />
-        <Pressable
-          onPress={() => router.push('/notifications')}
-          style={{ padding: 4, position: 'relative' }}
-          hitSlop={8}
-        >
-          <Ionicons name="notifications-outline" size={24} color="#0f172a" />
-          {unreadCount > 0 && (
-            <View style={{
-              position: 'absolute', top: 2, right: 2,
-              minWidth: 16, height: 16, borderRadius: 8,
-              backgroundColor: '#ef4444',
-              alignItems: 'center', justifyContent: 'center',
-              paddingHorizontal: 3,
-            }}>
-              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
-                {unreadCount > 99 ? '99+' : String(unreadCount)}
-              </Text>
-            </View>
-          )}
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Pressable
+            onPress={() => router.push('/notifications')}
+            style={{ padding: 4, position: 'relative' }}
+            hitSlop={8}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#0f172a" />
+            {unreadCount > 0 && (
+              <View style={{
+                position: 'absolute', top: 2, right: 2,
+                minWidth: 16, height: 16, borderRadius: 8,
+                backgroundColor: '#ef4444',
+                alignItems: 'center', justifyContent: 'center',
+                paddingHorizontal: 3,
+              }}>
+                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
+                  {unreadCount > 99 ? '99+' : String(unreadCount)}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/(tabs)/account')}
+            style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+            hitSlop={4}
+          >
+            {user?.profilePicture ? (
+              <Image
+                source={{ uri: user.profilePicture }}
+                style={{ width: 34, height: 34, borderRadius: 11, borderWidth: 2, borderColor: '#4C3FC4' }}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={{
+                width: 34, height: 34, borderRadius: 11,
+                backgroundColor: '#4C3FC4',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>
+                  {`${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || '?'}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* Content */}
