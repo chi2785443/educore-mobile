@@ -2,6 +2,7 @@ import { apiClient } from './axios.service';
 import {
   TodayStatus, AttendanceRecord, AttendanceListResponse,
   AttendanceSettings, ClockPayload, DailyAttendanceResponse,
+  AdminTodayAttendanceResponse,
 } from '@/interface/attendance.interface';
 
 const ex = <T>(d: unknown): T => {
@@ -50,5 +51,10 @@ export const attendanceService = {
       params: { month, year },
     });
     return ex<DailyAttendanceResponse>(res.data);
+  },
+
+  getAdminTodayAttendance: async (schoolId: string): Promise<AdminTodayAttendanceResponse> => {
+    const res = await apiClient.get(`/attendance/schools/${schoolId}/admin/today`);
+    return ex<AdminTodayAttendanceResponse>(res.data);
   },
 };

@@ -44,6 +44,107 @@ function formatSize(bytes: number): string {
   return `${bytes} B`;
 }
 
+/* ── Member picker modal ─────────────────────────────────────────── */
+function MemberPickerModal({
+  visible,
+  members,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  members: SchoolMember[];
+  onSelect: (m: SchoolMember) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return members.slice(0, 50);
+    const s = search.toLowerCase();
+    return members.filter(m =>
+      `${m.user.firstName} ${m.user.lastName}`.toLowerCase().includes(s) ||
+      m.user.email.toLowerCase().includes(s),
+    ).slice(0, 50);
+  }, [members, search]);
+
+  const handleClose = () => { setSearch(''); onClose(); };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+          <Pressable onPress={handleClose} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="close" size={18} color="#374151" />
+          </Pressable>
+          <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>Select Member</Text>
+          <View style={{ width: 34 }} />
+        </View>
+
+        {/* Search */}
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f8fafc', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: '#e5e7eb' }}>
+            <Ionicons name="search-outline" size={16} color="#9ca3af" />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search by name or email…"
+              placeholderTextColor="#9ca3af"
+              style={{ flex: 1, fontSize: 14, color: '#0f172a', paddingVertical: 0 }}
+              autoFocus
+            />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={16} color="#9ca3af" />
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* Member list */}
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {filtered.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
+              <Ionicons name="person-outline" size={32} color="#d1d5db" />
+              <Text style={{ fontSize: 14, color: '#9ca3af' }}>No members found</Text>
+            </View>
+          ) : (
+            filtered.map((m, idx) => (
+              <Pressable
+                key={m.userId}
+                onPress={() => { setSearch(''); onSelect(m); }}
+                style={({ pressed }) => ({ backgroundColor: pressed ? '#f8fafc' : '#fff' })}
+              >
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 12,
+                  paddingHorizontal: 16, paddingVertical: 13,
+                  borderBottomWidth: idx < filtered.length - 1 ? 1 : 0,
+                  borderBottomColor: '#f1f5f9',
+                }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#F0EEFF', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Text style={{ color: '#4C3FC4', fontWeight: '800', fontSize: 14 }}>
+                      {`${m.user.firstName[0] ?? ''}${m.user.lastName[0] ?? ''}`.toUpperCase() || '?'}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }}>
+                      {m.user.firstName} {m.user.lastName}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }} numberOfLines={1}>
+                      {m.user.email} · {m.role}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={15} color="#d1d5db" />
+                </View>
+              </Pressable>
+            ))
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 /* ── Admin upload modal ─────────────────────────────────────────── */
 interface UploadDocModalProps {
   visible: boolean;
@@ -52,7 +153,7 @@ interface UploadDocModalProps {
 }
 
 function UploadDocModal({ visible, schoolId, onClose }: UploadDocModalProps) {
-  const [memberSearch, setMemberSearch] = useState('');
+  const [showMemberPicker, setShowMemberPicker] = useState(false);
   const [selectedMember, setSelectedMember] = useState<SchoolMember | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -62,17 +163,8 @@ function UploadDocModal({ visible, schoolId, onClose }: UploadDocModalProps) {
   const { data: members = [] } = useSchoolMembers(schoolId);
   const { mutate: upload, isPending } = useAdminUploadMemberDocument(schoolId);
 
-  const filteredMembers = useMemo(() => {
-    if (!memberSearch.trim()) return members.slice(0, 20);
-    const s = memberSearch.toLowerCase();
-    return members.filter(m =>
-      `${m.user.firstName} ${m.user.lastName}`.toLowerCase().includes(s) ||
-      m.user.email.toLowerCase().includes(s)
-    ).slice(0, 20);
-  }, [members, memberSearch]);
-
   const reset = () => {
-    setMemberSearch(''); setSelectedMember(null); setTitle('');
+    setSelectedMember(null); setTitle('');
     setDescription(''); setVisibility('private'); setFile(null);
   };
 
@@ -101,116 +193,124 @@ function UploadDocModal({ visible, schoolId, onClose }: UploadDocModalProps) {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-          <Pressable onPress={handleClose} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="close" size={18} color="#374151" />
-          </Pressable>
-          <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>Upload for Member</Text>
-          <View style={{ width: 34 }} />
-        </View>
+    <>
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+            <Pressable onPress={handleClose} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="close" size={18} color="#374151" />
+            </Pressable>
+            <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>Upload for Member</Text>
+            <View style={{ width: 34 }} />
+          </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} keyboardShouldPersistTaps="handled">
-          {/* Member search */}
-          <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Member *</Text>
-            {selectedMember ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#f0fdf4', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#86efac' }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }}>{selectedMember.user.firstName} {selectedMember.user.lastName}</Text>
-                  <Text style={{ fontSize: 12, color: '#6b7280' }}>{selectedMember.user.email}</Text>
-                </View>
-                <Pressable onPress={() => { setSelectedMember(null); setMemberSearch(''); }} hitSlop={8}>
-                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
-                </Pressable>
-              </View>
-            ) : (
-              <>
-                <TextInput
-                  value={memberSearch} onChangeText={setMemberSearch}
-                  placeholder="Search by name or email..."
-                  placeholderTextColor="#9ca3af"
-                  style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa' }}
-                />
-                {filteredMembers.length > 0 && (
-                  <View style={{ marginTop: 6, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden', maxHeight: 200 }}>
-                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                      {filteredMembers.map(m => (
-                        <Pressable key={m.userId} onPress={() => { setSelectedMember(m); setMemberSearch(''); }}
-                          style={({ pressed }) => ({ backgroundColor: pressed ? '#f9fafb' : '#fff', paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' })}>
-                          <Text style={{ fontSize: 13, fontWeight: '700', color: '#0f172a' }}>{m.user.firstName} {m.user.lastName}</Text>
-                          <Text style={{ fontSize: 11, color: '#9ca3af' }}>{m.user.email} · {m.role}</Text>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} keyboardShouldPersistTaps="handled">
+
+            {/* Member dropdown selector */}
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Member *</Text>
+              {selectedMember ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8F5EE', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#86efac' }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#4C3FC4', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                      {`${selectedMember.user.firstName[0] ?? ''}${selectedMember.user.lastName[0] ?? ''}`.toUpperCase() || '?'}
+                    </Text>
                   </View>
-                )}
-              </>
-            )}
-          </View>
-
-          {/* Title */}
-          <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Document title *</Text>
-            <TextInput
-              value={title} onChangeText={setTitle}
-              placeholder="e.g. Staff Contract 2025"
-              placeholderTextColor="#9ca3af"
-              style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa' }}
-            />
-          </View>
-
-          {/* Description */}
-          <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Description</Text>
-            <TextInput
-              value={description} onChangeText={setDescription} multiline numberOfLines={3}
-              placeholder="Optional notes..."
-              placeholderTextColor="#9ca3af"
-              style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa', minHeight: 72, textAlignVertical: 'top' }}
-            />
-          </View>
-
-          {/* Visibility */}
-          <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Visibility</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {(['private', 'public'] as const).map(v => {
-                const active = visibility === v;
-                return (
-                  <Pressable key={v} onPress={() => setVisibility(v)}
-                    style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: active ? '#d97706' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#d97706' : '#e5e7eb' }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{v === 'private' ? 'Private' : 'Public'}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }}>
+                      {selectedMember.user.firstName} {selectedMember.user.lastName}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#6b7280' }}>{selectedMember.user.email}</Text>
+                  </View>
+                  <Pressable onPress={() => setSelectedMember(null)} hitSlop={8}>
+                    <Ionicons name="close-circle" size={22} color="#9ca3af" />
                   </Pressable>
-                );
-              })}
+                </View>
+              ) : (
+                <Pressable
+                  onPress={() => setShowMemberPicker(true)}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 14, padding: 14, backgroundColor: '#fafafa' }}>
+                    <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="person-outline" size={18} color="#9ca3af" />
+                    </View>
+                    <Text style={{ flex: 1, fontSize: 14, color: '#9ca3af' }}>Select a member…</Text>
+                    <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+                  </View>
+                </Pressable>
+              )}
             </View>
-          </View>
 
-          {/* File picker */}
-          <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>File *</Text>
-            <Pressable onPress={pickFile} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
-              <View style={{ borderWidth: 2, borderColor: file ? '#d97706' : '#e5e7eb', borderStyle: 'dashed', borderRadius: 14, padding: 16, alignItems: 'center', gap: 6, backgroundColor: file ? '#fffbeb' : '#fafafa' }}>
-                <Ionicons name={file ? 'document-attach' : 'cloud-upload-outline'} size={28} color={file ? '#d97706' : '#9ca3af'} />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: file ? '#d97706' : '#6b7280' }}>
-                  {file ? file.name : 'Tap to select file'}
-                </Text>
-                {file && <Text style={{ fontSize: 11, color: '#9ca3af' }}>Tap to change</Text>}
+            {/* Title */}
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Document title *</Text>
+              <TextInput
+                value={title} onChangeText={setTitle}
+                placeholder="e.g. Staff Contract 2025"
+                placeholderTextColor="#9ca3af"
+                style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa' }}
+              />
+            </View>
+
+            {/* Description */}
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Description</Text>
+              <TextInput
+                value={description} onChangeText={setDescription} multiline numberOfLines={3}
+                placeholder="Optional notes..."
+                placeholderTextColor="#9ca3af"
+                style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa', minHeight: 72, textAlignVertical: 'top' }}
+              />
+            </View>
+
+            {/* Visibility */}
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Visibility</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {(['private', 'public'] as const).map(v => {
+                  const active = visibility === v;
+                  return (
+                    <Pressable key={v} onPress={() => setVisibility(v)}
+                      style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: active ? '#d97706' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#d97706' : '#e5e7eb' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{v === 'private' ? 'Private' : 'Public'}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* File picker */}
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>File *</Text>
+              <Pressable onPress={pickFile} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                <View style={{ borderWidth: 2, borderColor: file ? '#d97706' : '#e5e7eb', borderStyle: 'dashed', borderRadius: 14, padding: 16, alignItems: 'center', gap: 6, backgroundColor: file ? '#fffbeb' : '#fafafa' }}>
+                  <Ionicons name={file ? 'document-attach' : 'cloud-upload-outline'} size={28} color={file ? '#d97706' : '#9ca3af'} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: file ? '#d97706' : '#6b7280' }}>
+                    {file ? file.name : 'Tap to select file'}
+                  </Text>
+                  {file && <Text style={{ fontSize: 11, color: '#9ca3af' }}>Tap to change</Text>}
+                </View>
+              </Pressable>
+            </View>
+
+            <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ opacity: pressed || isPending ? 0.75 : 1 })}>
+              <View style={{ backgroundColor: '#d97706', borderRadius: 14, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+                {isPending && <ActivityIndicator size="small" color="#fff" />}
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{isPending ? 'Uploading…' : 'Upload Document'}</Text>
               </View>
             </Pressable>
-          </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
-          <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ opacity: pressed || isPending ? 0.75 : 1 })}>
-            <View style={{ backgroundColor: '#d97706', borderRadius: 14, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-              {isPending && <ActivityIndicator size="small" color="#fff" />}
-              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{isPending ? 'Uploading…' : 'Upload Document'}</Text>
-            </View>
-          </Pressable>
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+      <MemberPickerModal
+        visible={showMemberPicker}
+        members={members}
+        onSelect={(m) => { setSelectedMember(m); setShowMemberPicker(false); }}
+        onClose={() => setShowMemberPicker(false)}
+      />
+    </>
   );
 }
 

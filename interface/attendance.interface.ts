@@ -102,3 +102,21 @@ export interface DailyAttendanceResponse {
     profilePicture?: string | null;
   };
 }
+
+export interface StaffTodayStatus {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  profilePicture?: string | null;
+  jobTitle?: string | null;
+  clockedIn: boolean;
+  clockedOut: boolean;
+  clockInTime: string | null;
+  clockOutTime: string | null;
+}
+
+export interface AdminTodayAttendanceResponse {
+  date: string;
+  summary: { total: number; present: number; absent: number };
+  staff: StaffTodayStatus[];
+}

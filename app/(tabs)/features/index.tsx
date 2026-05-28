@@ -142,6 +142,14 @@ export default function FeaturesTab() {
       title: 'Enrollments', subtitle: 'School enrollment applications',
       route: '/my-enrollments',
     },
+    ...(isAdmin ? [
+      {
+        icon: 'people-circle-outline' as const, iconColor: '#059669', iconBg: '#E8F5EE',
+        title: 'Staff Attendance',
+        subtitle: "Today's clock-in overview",
+        route: '/admin-attendance',
+      },
+    ] : []),
     ...(isAdmin ? [{
       icon: 'chatbubbles-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
       title: 'Enquiries', subtitle: 'View & respond to parent enquiries',
