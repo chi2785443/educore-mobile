@@ -41,99 +41,80 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
   const initials = classroom.name.slice(0, 2).toUpperCase();
   const occupancy = classroom.currentStudentCount ?? 0;
   const cap = classroom.capacity ?? 0;
-  const pct = cap > 0 ? Math.min((occupancy / cap) * 100, 100) : 0;
-  const barColor = pct > 85 ? '#ef4444' : pct > 60 ? '#f59e0b' : '#10b981';
+  const isInactive = classroom.isActive === false;
 
   return (
     <Pressable
       onPress={() => router.push(`/features/${classroom.id}`)}
-      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginBottom: 12 })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1, marginBottom: 10 })}
     >
       <View style={{
         backgroundColor: '#fff',
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#f1f5f9',
+        borderRadius: 18,
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 0, height: 3 },
-        shadowRadius: 8,
+        flexDirection: 'row',
+        shadowColor: pal.fg,
+        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 10,
         elevation: 3,
       }}>
-      <View style={{
-        height: 56, backgroundColor: pal.grad,
-        flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10,
-      }}>
-        <View style={{
-          width: 36, height: 36, borderRadius: 12,
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 14 }}>{initials}</Text>
+        {/* Colored left accent */}
+        <View style={{ width: 6, backgroundColor: pal.fg }} />
+
+        {/* Avatar */}
+        <View style={{ paddingVertical: 16, paddingLeft: 14, paddingRight: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{
+            width: 48, height: 48, borderRadius: 16,
+            backgroundColor: pal.bg,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Text style={{ color: pal.fg, fontWeight: '900', fontSize: 16 }}>{initials}</Text>
+          </View>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, lineHeight: 19 }} numberOfLines={1}>
+
+        {/* Info */}
+        <View style={{ flex: 1, paddingVertical: 14, paddingHorizontal: 12, gap: 5 }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: '#0f172a', letterSpacing: -0.2 }} numberOfLines={1}>
             {classroom.name}
           </Text>
-          {classroom.grade && (
-            <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11, fontWeight: '600', marginTop: 1 }}>
-              {classroom.grade}{classroom.section ? ` · Section ${classroom.section}` : ''}
-            </Text>
-          )}
-        </View>
-        {classroom.isActive === false ? (
-          <View style={{ backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 }}>
-            <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700' }}>INACTIVE</Text>
+
+          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            {classroom.grade && (
+              <View style={{ backgroundColor: pal.bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text style={{ color: pal.fg, fontSize: 11, fontWeight: '700' }}>
+                  {classroom.grade}{classroom.section ? ` · ${classroom.section}` : ''}
+                </Text>
+              </View>
+            )}
+            {cap > 0 && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <Ionicons name="people-outline" size={11} color="#9ca3af" />
+                <Text style={{ fontSize: 11, color: '#9ca3af', fontWeight: '600' }}>{occupancy}/{cap}</Text>
+              </View>
+            )}
+            {classroom.roomNumber && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <Ionicons name="location-outline" size={11} color="#9ca3af" />
+                <Text style={{ fontSize: 11, color: '#9ca3af', fontWeight: '600' }}>{classroom.roomNumber}</Text>
+              </View>
+            )}
           </View>
-        ) : (
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4ade80' }} />
-        )}
-      </View>
 
-      <View style={{ padding: 14, gap: 12 }}>
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-          {classroom.roomNumber && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f8fafc', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#f1f5f9' }}>
-              <Ionicons name="location-outline" size={11} color="#9ca3af" />
-              <Text style={{ fontSize: 11, color: '#6b7280', fontWeight: '600' }}>{classroom.roomNumber}</Text>
-            </View>
-          )}
-          {cap > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#f8fafc', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#f1f5f9' }}>
-              <Ionicons name="people-outline" size={11} color="#9ca3af" />
-              <Text style={{ fontSize: 11, color: '#6b7280', fontWeight: '600' }}>
-                {occupancy}/{cap} students
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {cap > 0 && (
-          <View style={{ gap: 6 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 10, fontWeight: '600', color: '#9ca3af' }}>Occupancy</Text>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: barColor }}>{Math.round(pct)}%</Text>
-            </View>
-            <View style={{ height: 4, backgroundColor: '#f3f4f6', borderRadius: 2 }}>
-              <View style={{ height: 4, borderRadius: 2, backgroundColor: barColor, width: `${pct}%` as `${number}%` }} />
-            </View>
-          </View>
-        )}
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: classroom.isActive === false ? '#d1d5db' : '#4ade80' }} />
-            <Text style={{ fontSize: 11, color: '#9ca3af', fontWeight: '500' }}>
-              {classroom.isActive === false ? 'Inactive' : 'Active'}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isInactive ? '#d1d5db' : '#4ade80' }} />
+            <Text style={{ fontSize: 10, color: isInactive ? '#9ca3af' : '#22c55e', fontWeight: '600' }}>
+              {isInactive ? 'Inactive' : 'Active'}
             </Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontSize: 11, color: pal.fg, fontWeight: '700' }}>View details</Text>
-            <Ionicons name="arrow-forward" size={12} color={pal.fg} />
+        </View>
+
+        {/* Arrow */}
+        <View style={{ paddingRight: 14, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: pal.bg, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="chevron-forward" size={15} color={pal.fg} />
           </View>
         </View>
-      </View>
       </View>
     </Pressable>
   );
@@ -199,18 +180,13 @@ export default function ClassroomListScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <View>
-            <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
-              {pageTitle}
-            </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 2 }}>
-              {filtered.length} classroom{filtered.length !== 1 ? 's' : ''}
-            </Text>
-          </View>
-          <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="grid-outline" size={18} color="rgba(255,255,255,0.6)" />
-          </View>
+        <View style={{ marginBottom: 14 }}>
+          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
+            {pageTitle}
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 }}>
+            {filtered.length} classroom{filtered.length !== 1 ? 's' : ''}
+          </Text>
         </View>
 
         <View style={{
