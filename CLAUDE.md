@@ -5,12 +5,18 @@
 
 ---
 
-## Styling
+## Styling & Theme
 
 - **NativeWind v4** — use `className` always. `style={{}}` only for dynamic values (colors, calculated dims).
 - **SVG logos:** `expo-image` with `require('@/assets/images/educore_*.svg')` — never RN `<Image>` for SVGs
 - **Icons:** `Ionicons` from `@expo/vector-icons`
 - **Pressable:** never set `backgroundColor` in callback style — put it on an inner `View`; callback for opacity/transform only
+- **Font:** Poppins via `@expo-google-fonts/poppins` — loaded in `app/_layout.tsx`
+- **Color palette:** primary purple `#4C3FC4`, accent coral `#F5486A`, pastels: mint `#E8F5EE`, salmon `#FFF0F0`, sky `#E8F4FF`, lavender `#F0EEFF`
+- **Screen headers:** dark background + `borderBottomLeftRadius: 28, borderBottomRightRadius: 28` + `paddingBottom: 24` — every screen, color varies per module
+- **Phone fields:** always `PhoneInput` from `@/components/ui/PhoneInput` — never plain `TextInput`
+- **Buttons:** primary = coral `#F5486A` pill (`rounded-full`), secondary = purple `#4C3FC4` pill
+- **Tab bar:** white background, purple active, coral FAB
 
 ---
 
@@ -26,7 +32,7 @@
 
 ## Navigation
 
-- **5 tabs:** Home (`index`) · Classroom (`classroom/`) · Action (FAB, `href: null`) · Chat (`chat/`) · Account (`account/`)
+- **5 tabs:** Home (`index`) · Features (`features/`) · Action (FAB, `href: null`) · Chat (`chat/`) · Account (`account/`)
 - `router.replace()` for auth transitions; `router.back()` for in-flow back
 - `tsconfig.json` `@/*` alias points to repo root
 
@@ -35,9 +41,18 @@
 ## Role-Based Dashboard
 
 - `isAdmin → MobileAdminDashboard` · `isStaff → MobileStaffDashboard` · `isStudent → MobileStudentDashboard` · `isParent → MobileParentDashboard` · no school → `NoSchoolState`
-- Components in `components/dashboard/` — dark hero + gradient stat cards
+- Components in `components/dashboard/` — purple/role-colored hero + gradient stat cards
 - Shared primitives: `DashboardPrimitives.tsx` — `GradCard`, `Card`, `SectionLabel`, `DashLoader`
 - No charts on mobile — stat counts only
+
+---
+
+## School Data
+
+- `SchoolInfo` (in `user.interface.ts`) includes `currentSession` and `currentTerm` — both returned from `GET /auth/profile`
+- For fresh school data (term, session) use `useSchoolById(schoolId)` — never rely on the auth store alone as it can be stale
+- Allowed assessment types come from `useGradeConfigs(schoolId)` → `gradeConfigs[0].enabledAssessmentTypes`
+- `academicYear` and `term` are **never typed by users** — always auto-injected from school data
 
 ---
 
@@ -45,6 +60,21 @@
 
 - Backend join tables: `classroom_teachers` (classroomId, teacherId), `classroom_students` (classroomId, studentId)
 - Assessment questions from `GET /assessment-questions/:assessmentId` — NOT from `attempt.answerSubmissions`
+- Member detail page: `app/(tabs)/features/[classroomId]/member/[memberId].tsx` — pass all member fields as URL params
+
+---
+
+## Assessments
+
+- `CreateAssessmentSheet` takes `classrooms` (array) and `schoolId` props — **no `classroomId` prop** (classroom is selected inside the sheet)
+- Types come from grade config; term/year auto-filled; date/time use built-in picker modals (no external library)
+
+---
+
+## Modals — Critical Rule
+
+- **Never render a `Modal` outside another open `Modal`** — it renders behind the parent and is invisible
+- Always nest sub-pickers (date, time, member, subject) **inside** the parent `Modal`'s `SafeAreaView`
 
 ---
 
@@ -59,37 +89,9 @@
 
 - `lib/currency.ts` — 7 currencies (NGN default), `formatCurrency()`, `formatCompact()`, Hermes-safe compact fallback (K/M suffixes)
 - `hooks/useCurrency.ts` — reads `selectedSchoolId` + `user.schools` from authStore, returns `{ currency, symbol, format, formatCompact }`
-- `interface/user.interface.ts` — `SchoolInfo` has `currency?: string`
 - **Always use `useCurrency()` for financial amounts** — never hardcode `₦` or any symbol
 
 ---
-
-## Screen Header (Curved Topbar)
-
-Every app-level screen uses a dark curved header. Required shape:
-
-```tsx
-<SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
-  <View style={{
-    backgroundColor: HEADER_COLOR,
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24,
-    borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
-  }}>
-    {/* back button + title + subtitle + optional actions */}
-  </View>
-```
-
-- `borderBottomLeftRadius: 28, borderBottomRightRadius: 28` — always, no exceptions
-- `paddingBottom: 24` — standard; use more only if the header has extra content (stats strip, search bar)
-- Back button: `width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)'`
-- Title: `fontSize: 20, fontWeight: '900', color: '#fff'`
-- Subtitle: `fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 1`
-
-## Phone Input
-
-- Always use `PhoneInput` from `@/components/ui/PhoneInput` — never plain `TextInput` for phone fields
-- Supports `label`, `value`, `onChange`, `error`, `optional` props
-- Country list in `lib/countryCodes.ts` (32 countries, Nigeria default)
 
 ## Loading & UI
 
