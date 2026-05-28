@@ -236,9 +236,10 @@ export default function ClassroomListScreen() {
       </View>
 
       {grades.length > 1 && (
+        <View style={{ height: 46, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
         <ScrollView
           horizontal showsHorizontalScrollIndicator={false}
-          style={{ flexShrink: 0, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}
+          style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' }}
         >
           <Pressable
@@ -269,6 +270,7 @@ export default function ClassroomListScreen() {
             );
           })}
         </ScrollView>
+        </View>
       )}
 
       <View style={{ flex: 1 }}>
