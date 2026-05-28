@@ -1,5 +1,5 @@
 import { apiClient } from './axios.service';
-import { School, CreateSchool } from '@/interface/school.interface';
+import { School, CreateSchool, SchoolSettings } from '@/interface/school.interface';
 import { UserRole } from '@/interface/user.interface';
 
 export interface SchoolMember {
@@ -29,5 +29,14 @@ export const schoolService = {
     const res = await apiClient.get(`/schools/${schoolId}/members`);
     const d = res.data?.data ?? res.data;
     return Array.isArray(d) ? d : [];
+  },
+
+  getSettings: async (schoolId: string): Promise<SchoolSettings | null> => {
+    try {
+      const res = await apiClient.get(`/schools/${schoolId}/settings`);
+      return res.data?.data ?? res.data ?? null;
+    } catch {
+      return null;
+    }
   },
 };

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { schoolService } from '@/services/school.service';
-import { CreateSchool } from '@/interface/school.interface';
+import { CreateSchool, SchoolSettings } from '@/interface/school.interface';
 
 export function useBrowseSchools(params?: { search?: string; city?: string }) {
   return useQuery({
@@ -23,5 +23,14 @@ export function useSchoolMembers(schoolId: string | undefined) {
     queryFn: () => schoolService.getMembers(schoolId!),
     enabled: !!schoolId,
     staleTime: 3 * 60_000,
+  });
+}
+
+export function useSchoolSettings(schoolId: string | undefined) {
+  return useQuery<SchoolSettings | null>({
+    queryKey: ['school-settings', schoolId],
+    queryFn: () => schoolService.getSettings(schoolId!),
+    enabled: !!schoolId,
+    staleTime: 10 * 60_000,
   });
 }

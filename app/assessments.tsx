@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert,
+  View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import { useMyAssessments, useSchoolAssessments } from '@/hooks/useAssessment';
 import { useMyTeacherClassrooms, useClassroomsBySchool } from '@/hooks/useClassroom';
+import { useSchoolSettings } from '@/hooks/useSchool';
 import { Assessment, AssessmentStatus, AssessmentType } from '@/interface/assessment.interface';
 import AssessmentCard from '@/components/assessment/AssessmentCard';
 import CreateAssessmentSheet from '@/components/assessment/CreateAssessmentSheet';
@@ -32,18 +33,17 @@ export default function AssessmentsScreen() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [showCreate, setShowCreate] = useState(false);
-  const [selectedClassroomId, setSelectedClassroomId] = useState('');
 
   // Staff see their own assessments; admins see all school assessments
   const staffResult = useMyAssessments(!isAdmin);
   const adminResult = useSchoolAssessments(isAdmin ? schoolId : undefined);
   const { data: rawData, isLoading, refetch } = isAdmin ? adminResult : staffResult;
 
-  // Classrooms for classroom picker when creating
+  // Classrooms for the create sheet's internal classroom search
   const adminClassrooms = useClassroomsBySchool(isAdmin ? schoolId : undefined);
   const staffClassrooms = useMyTeacherClassrooms(!isAdmin ? schoolId : undefined);
   const classroomData = isAdmin ? adminClassrooms.data : staffClassrooms.data;
-  const classrooms: { id: string; name: string }[] = useMemo(() => {
+  const classrooms: { id: string; name: string; grade?: string; section?: string }[] = useMemo(() => {
     const d = classroomData as unknown;
     if (Array.isArray(d)) return d;
     if (d && typeof d === 'object' && 'data' in d) return (d as { data: { id: string; name: string }[] }).data ?? [];
@@ -76,54 +76,31 @@ export default function AssessmentsScreen() {
     { key: 'completed', label: 'Completed' },
   ];
 
-  const handleCreate = () => {
-    if (classrooms.length === 0) {
-      Alert.alert('No classrooms', 'You have no classrooms assigned. Create or join a classroom first.');
-      return;
-    }
-    // Pre-select first classroom if none chosen
-    if (!selectedClassroomId) setSelectedClassroomId(classrooms[0].id);
-    setShowCreate(true);
-  };
+  const handleCreate = () => setShowCreate(true);
 
-  if (isLoading) return <LoadingScreen color="#7c3aed" message="Loading assessments" />;
+  if (isLoading) return <LoadingScreen color="#4C3FC4" message="Loading assessments" />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       {/* Header */}
-      <View style={{ backgroundColor: '#1e1b4b', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-          <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900' }}>Assessments</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 1 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 1 }}>
               {filtered.length} assessment{filtered.length !== 1 ? 's' : ''}
             </Text>
           </View>
           <Pressable
             onPress={handleCreate}
-            style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center', shadowColor: '#6366f1', shadowOpacity: 0.5, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 6 }}
+            style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: '#F5486A', alignItems: 'center', justifyContent: 'center', shadowColor: '#F5486A', shadowOpacity: 0.5, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 6 }}
           >
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
         </View>
-
-        {/* Classroom picker for create (shown when creating) */}
-        {classrooms.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, flexDirection: 'row', paddingTop: 10, alignItems: 'center' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700' }}>CLASS:</Text>
-            {classrooms.map(c => {
-              const active = selectedClassroomId === c.id;
-              return (
-                <Pressable key={c.id} onPress={() => setSelectedClassroomId(c.id)} style={{ paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, backgroundColor: active ? '#6366f1' : 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: active ? '#6366f1' : 'rgba(255,255,255,0.15)' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>{c.name}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
       </View>
 
       {/* Status filter chips */}
@@ -131,7 +108,7 @@ export default function AssessmentsScreen() {
         {statusTabs.map(s => {
           const active = statusFilter === s.key;
           return (
-            <Pressable key={s.key} onPress={() => setStatusFilter(s.key)} style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: active ? '#6366f1' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#6366f1' : '#e5e7eb' }}>
+            <Pressable key={s.key} onPress={() => setStatusFilter(s.key)} style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{s.label}</Text>
             </Pressable>
           );
@@ -150,7 +127,7 @@ export default function AssessmentsScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 36 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
         >
           {filtered.map(a => (
             <AssessmentCard
@@ -168,7 +145,7 @@ export default function AssessmentsScreen() {
       <CreateAssessmentSheet
         visible={showCreate}
         onClose={() => setShowCreate(false)}
-        classroomId={selectedClassroomId || (classrooms[0]?.id ?? '')}
+        classrooms={classrooms}
         schoolId={schoolId}
       />
     </SafeAreaView>

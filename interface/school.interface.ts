@@ -15,6 +15,15 @@ export interface School {
   createdAt: string;
 }
 
+export interface SchoolSettings {
+  id?: string;
+  schoolId?: string;
+  currentSession?: string;
+  currentTerm?: string;
+  allowedAssessmentTypes?: string[];
+  termType?: string;
+}
+
 export interface CreateSchool {
   name: string;
   code: string;
