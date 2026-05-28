@@ -137,8 +137,9 @@ const inputStyle = {
 
 // ─── Admin cards ──────────────────────────────────────────────────────────────
 
-function AdminPostingCard({ item, onPress, onStatusChange, onDelete }: {
+function AdminPostingCard({ item, appCount, onPress, onStatusChange, onDelete }: {
   item: JobPosting;
+  appCount: number;
   onPress: () => void;
   onStatusChange: (status: JobStatus) => void;
   onDelete: () => void;
@@ -210,7 +211,7 @@ function AdminPostingCard({ item, onPress, onStatusChange, onDelete }: {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#f5f3ff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
               <Ionicons name="people-outline" size={13} color="#7c3aed" />
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#7c3aed' }}>
-                {item.applicationsCount ?? 0} applicant{item.applicationsCount !== 1 ? 's' : ''}
+                {appCount} applicant{appCount !== 1 ? 's' : ''}
               </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -226,8 +227,9 @@ function AdminPostingCard({ item, onPress, onStatusChange, onDelete }: {
 
 function AdminApplicationCard({ item, onPress }: { item: JobApplication; onPress: () => void }) {
   const cfg = appStatusCfg(item.status);
-  const name = `${item.applicant?.firstName ?? ''} ${item.applicant?.lastName ?? ''}`.trim() || 'Unknown';
-  const ini = initials(item.applicant?.firstName, item.applicant?.lastName) || '?';
+  const fullName = `${item.applicant?.firstName ?? ''} ${item.applicant?.lastName ?? ''}`.trim();
+  const name = fullName || item.applicant?.email || `Applicant #${item.id.slice(-4)}`;
+  const ini = initials(item.applicant?.firstName, item.applicant?.lastName) || item.applicant?.email?.[0]?.toUpperCase() || '?';
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}>
@@ -488,19 +490,22 @@ function AdminApplicationDetailView({ application, schoolId, onBack, onRefresh, 
             <Text style={{ fontSize: 14, fontWeight: '900', color: '#0f172a' }}>Update Status</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {ACTIONS.map(a => (
-              <Pressable
-                key={a.status}
-                onPress={() => doUpdate(a.status)}
-                disabled={isPending || application.status === a.status}
-                style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.8 : application.status === a.status ? 0.4 : 1 })}
-              >
-                <View style={{ backgroundColor: a.color, borderRadius: 14, paddingVertical: 11, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 4 }}>
-                  <Ionicons name={a.icon} size={14} color="#fff" />
-                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{a.label}</Text>
-                </View>
-              </Pressable>
-            ))}
+            {ACTIONS.map(a => {
+              const isActive = application.status === a.status;
+              return (
+                <Pressable
+                  key={a.status}
+                  onPress={() => doUpdate(a.status)}
+                  disabled={isPending || isActive}
+                  style={{ flex: 1, opacity: isActive ? 0.4 : 1 }}
+                >
+                  <View style={{ backgroundColor: a.color, borderRadius: 14, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+                    <Ionicons name={a.icon} size={14} color="#fff" />
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{a.label}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
 
           {/* Reject toggle */}
@@ -909,6 +914,7 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
   const { data: postings = [], isLoading: loadingPostings, refetch: refetchPostings } = useSchoolPostings(
     schoolId, postingFilter === 'all' ? undefined : postingFilter,
   );
+  const { data: allApplications = [] } = useSchoolApplications(schoolId);
   const { data: applications = [], isLoading: loadingApps, refetch: refetchApps } = useSchoolApplications(
     schoolId, appFilter === 'all' ? undefined : appFilter,
   );
@@ -965,8 +971,12 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
     );
   }
 
+  const appCountByPosting = (postingId: string) => {
+    const fromLoaded = allApplications.filter(a => a.jobPosting?.id === postingId).length;
+    return fromLoaded || (postings.find(p => p.id === postingId)?.applicationsCount ?? 0);
+  };
+
   const activePostings = postings.filter(p => p.status === 'active').length;
-  const pendingApps = applications.filter(a => ['submitted', 'under_review'].includes(a.status)).length;
   const upcomingIvs = interviews.filter(i => i.status === 'scheduled' || i.status === 'confirmed').length;
 
   return (
@@ -994,7 +1004,7 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
           {[
             { label: 'Total Jobs',    value: postings.length,  color: '#a5b4fc' },
             { label: 'Active',        value: activePostings,   color: '#4ade80' },
-            { label: 'Applicants',    value: applications.length, color: '#fbbf24' },
+            { label: 'Applicants',    value: allApplications.length, color: '#fbbf24' },
             { label: 'Interviews',    value: upcomingIvs,      color: '#67e8f9' },
           ].map(s => (
             <View key={s.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, padding: 10, alignItems: 'center' }}>
@@ -1009,7 +1019,7 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
       <View style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}>
         {([
           { id: 'postings' as AdminTab,     label: 'Jobs',        badge: postings.length },
-          { id: 'applications' as AdminTab, label: 'Applicants',  badge: pendingApps },
+          { id: 'applications' as AdminTab, label: 'Applicants',  badge: applications.length },
           { id: 'interviews' as AdminTab,   label: 'Interviews',  badge: upcomingIvs },
         ]).map(t => {
           const active = adminTab === t.id;
@@ -1076,6 +1086,7 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
               <AdminPostingCard
                 key={p.id}
                 item={p}
+                appCount={appCountByPosting(p.id)}
                 onPress={() => { setAdminTab('applications'); }}
                 onStatusChange={(status) => updatePosting({ id: p.id, data: { status } as Partial<CreateJobPosting> })}
                 onDelete={() => handleDeletePosting(p.id, p.title)}
