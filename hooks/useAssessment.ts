@@ -2,6 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assessmentService } from '@/services/assessment.service';
 import { AssessmentQuestion, CreateAssessmentPayload, UpdateAssessmentPayload } from '@/interface/assessment.interface';
 
+export const useGradeConfigs = (schoolId: string | undefined) =>
+  useQuery<{ id: string; enabledAssessmentTypes: string[] }[]>({
+    queryKey: ['grade-configs', schoolId],
+    queryFn: async () => {
+      const { apiClient } = await import('@/services/axios.service');
+      const res = await apiClient.get('/grade-configurations', { params: { schoolId } });
+      const d = res.data?.data ?? res.data;
+      return Array.isArray(d) ? d : [];
+    },
+    enabled: !!schoolId,
+    staleTime: 5 * 60_000,
+  });
+
 const STALE = 60_000;
 
 export const useClassroomAssessments = (

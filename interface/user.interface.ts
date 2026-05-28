@@ -12,6 +12,8 @@ export interface SchoolInfo {
   code: string;
   logo?: string;
   currency?: string;
+  currentSession?: string | null;
+  currentTerm?: string | null;
 }
 
 export interface UserSchoolMembership {

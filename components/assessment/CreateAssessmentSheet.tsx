@@ -9,8 +9,7 @@ import {
   createAssessmentSchema,
   CreateAssessmentFormValues,
 } from '@/schemas/assessment.schema';
-import { useCreateAssessment, useSubjects } from '@/hooks/useAssessment';
-import { useSchoolSettings } from '@/hooks/useSchool';
+import { useCreateAssessment, useSubjects, useGradeConfigs } from '@/hooks/useAssessment';
 import { AssessmentType, QuestionType } from '@/interface/assessment.interface';
 import { useAuthStore } from '@/store/authStore';
 
@@ -377,8 +376,20 @@ function TimePickerModal({ visible, value, label, onSelect, onClose }: {
 
 /* ── Main sheet ─────────────────────────────────────────────────── */
 export default function CreateAssessmentSheet({ visible, onClose, classrooms, schoolId }: Props) {
+  const user = useAuthStore(s => s.user);
+  const selectedSchoolId = useAuthStore(s => s.selectedSchoolId);
+
+  // Read term/session from the school object already in auth store
+  const schoolInfo = useMemo(() => {
+    const memberships = user?.schools ?? [];
+    return (
+      memberships.find(m => m.schoolId === selectedSchoolId)?.school ??
+      memberships[0]?.school ?? null
+    );
+  }, [user, selectedSchoolId]);
+
   const { data: subjects = [] } = useSubjects(visible ? schoolId : undefined);
-  const { data: schoolSettings } = useSchoolSettings(visible ? schoolId : undefined);
+  const { data: gradeConfigs = [] } = useGradeConfigs(visible ? schoolId : undefined);
   const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
   const [showClassroomPicker, setShowClassroomPicker] = useState(false);
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
@@ -386,17 +397,19 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
-  // Determine allowed assessment types from school config or use all
+  // Allowed assessment types from the latest grade configuration
   const allowedTypes = useMemo(() => {
-    const allowed = schoolSettings?.allowedAssessmentTypes;
-    if (allowed && allowed.length > 0) {
-      return ALL_TYPES.filter(t => allowed.includes(t.value));
+    const latest = gradeConfigs[0];
+    const enabled = latest?.enabledAssessmentTypes;
+    if (enabled && enabled.length > 0) {
+      return ALL_TYPES.filter(t => (enabled as string[]).includes(t.value));
     }
     return ALL_TYPES;
-  }, [schoolSettings]);
+  }, [gradeConfigs]);
 
-  const currentTerm = schoolSettings?.currentTerm ?? '';
-  const currentSession = schoolSettings?.currentSession ?? '';
+  // Term and academic year from the school object in auth store
+  const currentTerm = schoolInfo?.currentTerm ?? '';
+  const currentSession = schoolInfo?.currentSession ?? '';
 
   const createMutation = useCreateAssessment(selectedClassroom?.id ?? '');
 
