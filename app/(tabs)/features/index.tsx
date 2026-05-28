@@ -131,11 +131,6 @@ export default function FeaturesTab() {
         route: '/question-bank',
       },
     ] : []),
-    ...(isSuperAdmin ? [{
-      icon: 'card-outline' as const, iconColor: '#0f172a', iconBg: '#f1f5f9',
-      title: 'Subscription', subtitle: 'Plan status & usage',
-      route: '/subscription',
-    }] : []),
     ...(!isStudent && !isParent ? [{
       icon: 'briefcase-outline' as const, iconColor: '#0284c7', iconBg: '#e0f2fe',
       title: isAdmin ? 'Manage Jobs' : 'My Jobs',

@@ -66,6 +66,19 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-jobs" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-enrollments" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-enquiries" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="school-enquiries" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="subscription" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="finances" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="attendance" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="library" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="documents" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="results" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-assessments" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="assessments" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="question-bank" options={{ animation: 'slide_from_right' }} />
           </Stack>
         )}
       </ToastProvider>

@@ -235,6 +235,7 @@ export default function AccountTab() {
 
   const role = primaryMembership?.role ?? '';
   const isAdmin = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin;
+  const isSuperAdmin = role === UserRole.SUPER_ADMIN || !!user?.isAdmin;
   const isStudent = role === UserRole.STUDENT;
   const isParent = role === UserRole.PARENT;
 
@@ -447,6 +448,13 @@ export default function AccountTab() {
                 label="School Enquiries" value="View & respond to parent enquiries"
                 onPress={() => router.push('/school-enquiries' as never)}
               />
+              {isSuperAdmin && (
+                <SettingsRow
+                  icon="card-outline" iconBg="#f1f5f9" iconColor="#0f172a"
+                  label="Subscription" value="Plan status & usage"
+                  onPress={() => router.push('/subscription' as never)}
+                />
+              )}
             </SettingsGroup>
           )}
 
