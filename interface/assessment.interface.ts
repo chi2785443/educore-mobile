@@ -60,13 +60,13 @@ export interface AssessmentQuestion {
   assessmentId: string;
   questionId: string;
   marks: number;
-  order: number;
+  questionOrder: number;
   question: {
     id: string;
-    question: string;
-    questionType: 'objective' | 'theory';
-    options?: string[];
-    correctAnswer?: string;
-    marks: number;
+    questionText: string;
+    questionImage: string | null;
+    type: 'objective' | 'theory';
+    options?: string[] | null;
+    correctAnswer?: string | null;
   };
 }

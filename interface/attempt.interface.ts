@@ -9,6 +9,7 @@ export interface AnswerSubmission {
   question?: {
     id: string;
     question: string;
+    questionImage?: string | null;
     options?: string[];
     questionType: string;
     marks: number;

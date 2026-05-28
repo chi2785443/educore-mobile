@@ -41,7 +41,13 @@ export const studentAttemptService = {
         assessmentQuestion?: {
           id: string;
           marks: number;
-          question?: { id: string; question: string; questionType: string; options?: string[] };
+          question?: {
+            id: string;
+            questionText: string;
+            questionImage?: string | null;
+            type: string;
+            options?: string[] | null;
+          };
         };
       };
       const raw = d as { attempt: StudentAttempt; answers: RawAnswer[] };
@@ -55,9 +61,10 @@ export const studentAttemptService = {
           question: a.assessmentQuestion?.question
             ? {
                 id: a.assessmentQuestion.question.id,
-                question: a.assessmentQuestion.question.question,
-                questionType: a.assessmentQuestion.question.questionType,
-                options: a.assessmentQuestion.question.options,
+                question: a.assessmentQuestion.question.questionText,
+                questionImage: a.assessmentQuestion.question.questionImage ?? null,
+                questionType: a.assessmentQuestion.question.type,
+                options: a.assessmentQuestion.question.options ?? [],
                 marks: a.assessmentQuestion.marks,
               }
             : undefined,
