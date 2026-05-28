@@ -39,9 +39,9 @@ export function OtpStep({ onSuccess, onBack }: Props) {
 
   return (
     <View className="gap-5">
-      <View className="rounded-xl bg-indigo-50 border border-indigo-100 p-4 gap-1">
-        <Text className="text-sm font-semibold text-indigo-700">Check your email</Text>
-        <Text className="text-sm text-indigo-600">
+      <View className="rounded-xl bg-[#F0EEFF] border border-[#4C3FC4]/20 p-4 gap-1">
+        <Text className="text-sm font-semibold text-[#4C3FC4]">Check your email</Text>
+        <Text className="text-sm text-[#4C3FC4]/80">
           We sent a verification code to{' '}
           <Text className="font-semibold">{user?.email}</Text>
         </Text>

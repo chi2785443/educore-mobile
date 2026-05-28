@@ -24,8 +24,8 @@ import MessageInput from '@/components/chat/MessageInput';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
 const TYPE_CONFIG: Record<string, { icon: React.ComponentProps<typeof Ionicons>['name']; bg: string; fg: string }> = {
-  school: { icon: 'school',  bg: '#ede9fe', fg: '#7c3aed' },
-  team:   { icon: 'shield',  bg: '#e0e7ff', fg: '#6366f1' },
+  school: { icon: 'school',  bg: '#F0EEFF', fg: '#4C3FC4' },
+  team:   { icon: 'shield',  bg: '#F0EEFF', fg: '#4C3FC4' },
   class:  { icon: 'book',    bg: '#d1fae5', fg: '#059669' },
   group:  { icon: 'people',  bg: '#fef3c7', fg: '#d97706' },
   direct: { icon: 'person',  bg: '#f1f5f9', fg: '#64748b' },
@@ -43,9 +43,9 @@ function LoadOlderButton({ onPress, loading }: { onPress: () => void; loading: b
           paddingHorizontal: 16,
           paddingVertical: 7,
           borderRadius: 20,
-          backgroundColor: pressed ? '#e0e7ff' : '#eff6ff',
+          backgroundColor: pressed ? '#F0EEFF' : '#f8f7ff',
           borderWidth: 1,
-          borderColor: '#bfdbfe',
+          borderColor: '#d4d0f5',
         }}>
           {loading
             ? <ActivityIndicator size="small" color="#2563eb" />
@@ -220,7 +220,7 @@ export default function ChatRoomScreen() {
   const participantCount = conversation?.participantIds?.length;
 
   if (loadingConv || loadingMsgs) {
-    return <LoadingScreen color="#6366f1" message="Opening chat" />;
+    return <LoadingScreen color="#4C3FC4" message="Opening chat" />;
   }
 
   return (
@@ -233,7 +233,7 @@ export default function ChatRoomScreen() {
 
         {/* ── Header ───────────────────────────────────────────── */}
         <View style={{
-          backgroundColor: '#0B0F14',
+          backgroundColor: '#4C3FC4',
           paddingHorizontal: 16, paddingVertical: 12,
           flexDirection: 'row', alignItems: 'center', gap: 12,
         }}>
@@ -276,8 +276,8 @@ export default function ChatRoomScreen() {
           }
           ListEmptyComponent={
             <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 }}>
-              <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: '#e0e7ff', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="chatbubbles-outline" size={26} color="#6366f1" />
+              <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: '#F0EEFF', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="chatbubbles-outline" size={26} color="#4C3FC4" />
               </View>
               <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151' }}>No messages yet</Text>
               <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 24 }}>

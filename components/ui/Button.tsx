@@ -13,17 +13,17 @@ interface ButtonProps extends PressableProps {
 }
 
 const variantStyles: Record<Variant, { container: string; text: string }> = {
-  primary: { container: 'bg-brand-dark', text: 'text-white font-semibold' },
-  secondary: { container: 'bg-indigo-600', text: 'text-white font-semibold' },
+  primary: { container: 'bg-[#F5486A]', text: 'text-white font-bold' },
+  secondary: { container: 'bg-[#4C3FC4]', text: 'text-white font-semibold' },
   outline: { container: 'border border-gray-300 bg-white', text: 'text-gray-800 font-semibold' },
-  ghost: { container: 'bg-transparent', text: 'text-brand-dark font-semibold' },
-  destructive: { container: 'bg-red-600', text: 'text-white font-semibold' },
+  ghost: { container: 'bg-transparent', text: 'text-[#4C3FC4] font-semibold' },
+  destructive: { container: 'bg-red-500', text: 'text-white font-semibold' },
 };
 
 const sizeStyles: Record<Size, { container: string; text: string }> = {
-  sm: { container: 'px-3 py-2 rounded-lg', text: 'text-sm' },
-  md: { container: 'px-4 py-3 rounded-xl', text: 'text-base' },
-  lg: { container: 'px-6 py-4 rounded-xl', text: 'text-base' },
+  sm: { container: 'px-3 py-2 rounded-full', text: 'text-sm' },
+  md: { container: 'px-4 py-3 rounded-full', text: 'text-base' },
+  lg: { container: 'px-8 py-4 rounded-full', text: 'text-base font-bold' },
 };
 
 export function Button({
@@ -46,7 +46,7 @@ export function Button({
       disabled={isDisabled}
       className={`flex-row items-center justify-center gap-2 ${v.container} ${s.container} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`}
     >
-      {loading && <ActivityIndicator size="small" color={variant === 'outline' ? '#140626' : '#fff'} />}
+      {loading && <ActivityIndicator size="small" color={variant === 'outline' ? '#4C3FC4' : '#fff'} />}
       <Text className={`${v.text} ${s.text}`}>{children}</Text>
     </Pressable>
   );

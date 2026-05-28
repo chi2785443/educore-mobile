@@ -6,14 +6,23 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          dark: "#140626",
-          red: "#ec1c24",
+          dark: "#4C3FC4",
+          red: "#F5486A",
           orange: "#ff6600",
           blue: "#131d3b",
+          pink: "#F5486A",
+          mint: "#E8F5EE",
+          salmon: "#FFF0F0",
+          sky: "#E8F4FF",
+          lavender: "#F0EEFF",
+          amber: "#FEF3C7",
         },
       },
       fontFamily: {
-        sans: ["System"],
+        sans: ["Poppins_400Regular", "System"],
+        semibold: ["Poppins_600SemiBold", "System"],
+        bold: ["Poppins_700Bold", "System"],
+        extrabold: ["Poppins_800ExtraBold", "System"],
       },
     },
   },

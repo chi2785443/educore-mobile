@@ -12,26 +12,26 @@ import { UserRole, UserSchoolMembership } from '@/interface/user.interface';
 
 /* ── Role config ────────────────────────────────────────────────── */
 const ROLE_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  super_admin:  { label: 'Super Admin',  color: '#6366f1', bg: '#e0e7ff' },
-  school_admin: { label: 'School Admin', color: '#7c3aed', bg: '#ede9fe' },
-  staff:        { label: 'Staff',        color: '#0284c7', bg: '#e0f2fe' },
-  student:      { label: 'Student',      color: '#059669', bg: '#d1fae5' },
-  parent:       { label: 'Parent',       color: '#d97706', bg: '#fef3c7' },
+  super_admin:  { label: 'Super Admin',  color: '#4C3FC4', bg: '#F0EEFF' },
+  school_admin: { label: 'School Admin', color: '#4C3FC4', bg: '#F0EEFF' },
+  staff:        { label: 'Staff',        color: '#059669', bg: '#E8F5EE' },
+  student:      { label: 'Student',      color: '#4C3FC4', bg: '#F0EEFF' },
+  parent:       { label: 'Parent',       color: '#F5486A', bg: '#FFF0F0' },
 };
 
 const ROLE_HERO_BG: Record<string, string> = {
-  super_admin:  '#1e1b4b',
-  school_admin: '#1e1b4b',
-  staff:        '#0c2a24',
-  student:      '#0c1a40',
-  parent:       '#3b0a1e',
+  super_admin:  '#4C3FC4',
+  school_admin: '#4C3FC4',
+  staff:        '#059669',
+  student:      '#4C3FC4',
+  parent:       '#F5486A',
 };
 const ROLE_ACCENT: Record<string, string> = {
-  super_admin:  '#6366f1',
-  school_admin: '#7c3aed',
+  super_admin:  '#F5486A',
+  school_admin: '#F5486A',
   staff:        '#10b981',
-  student:      '#0ea5e9',
-  parent:       '#f43f5e',
+  student:      '#F5486A',
+  parent:       '#ffffff',
 };
 
 /* ── Settings row ────────────────────────────────────────────────── */
@@ -239,8 +239,8 @@ export default function AccountTab() {
   const isStudent = role === UserRole.STUDENT;
   const isParent = role === UserRole.PARENT;
 
-  const heroBg = ROLE_HERO_BG[role] ?? '#0B0F14';
-  const accent = ROLE_ACCENT[role] ?? '#6366f1';
+  const heroBg = ROLE_HERO_BG[role] ?? '#4C3FC4';
+  const accent = ROLE_ACCENT[role] ?? '#F5486A';
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || '?';
   const roleInfo = ROLE_CONFIG[role] ?? { label: 'Member', color: '#6b7280', bg: '#f3f4f6' };
@@ -255,7 +255,7 @@ export default function AccountTab() {
         style={{ backgroundColor: '#f8fafc' }}
       >
         {/* ── Hero header ──────────────────────────────────────────── */}
-        <View style={{ backgroundColor: heroBg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48 }}>
+        <View style={{ backgroundColor: heroBg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
           <View style={{ alignItems: 'center', gap: 14 }}>
             {/* Avatar */}
             <Pressable onPress={() => router.push('/account/edit-profile' as never)} style={{ position: 'relative' }}>
@@ -444,7 +444,7 @@ export default function AccountTab() {
           {isAdmin && (
             <SettingsGroup label="School Management">
               <SettingsRow
-                icon="chatbubbles-outline" iconBg="#e0e7ff" iconColor="#4f46e5"
+                icon="chatbubbles-outline" iconBg="#F0EEFF" iconColor="#4C3FC4"
                 label="School Enquiries" value="View & respond to parent enquiries"
                 onPress={() => router.push('/school-enquiries' as never)}
               />
@@ -461,7 +461,7 @@ export default function AccountTab() {
           {/* ── Profile & security ───────────────────────────────── */}
           <SettingsGroup label="Profile & Security">
             <SettingsRow
-              icon="person-outline" iconBg="#e0e7ff" iconColor="#6366f1"
+              icon="person-outline" iconBg="#F0EEFF" iconColor="#4C3FC4"
               label="Edit Profile"
               value={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Update your info'}
               onPress={() => router.push('/account/edit-profile')}
@@ -475,7 +475,7 @@ export default function AccountTab() {
 
           {/* ── Account settings ─────────────────────────────────── */}
           <SettingsGroup label="Account">
-            <SettingsRow icon="mail-outline" iconBg="#e0e7ff" iconColor="#6366f1" label="Email" value={user?.email ?? '—'} />
+            <SettingsRow icon="mail-outline" iconBg="#F0EEFF" iconColor="#4C3FC4" label="Email" value={user?.email ?? '—'} />
             <SettingsRow icon="call-outline" iconBg="#d1fae5" iconColor="#059669" label="Phone" value={user?.phoneNumber ?? 'Not set'} />
             <SettingsRow
               icon="checkmark-circle-outline"

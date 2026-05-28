@@ -17,19 +17,33 @@ export default function SignInScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="flex-1 px-6 py-10 gap-8 justify-center">
-            <View className="gap-4">
-              <Image
-                source={require('@/assets/images/educore_logo.svg')}
-                style={{ width: 140, height: 40 }}
-                contentFit="contain"
-              />
-              <View className="gap-1">
-                <Text className="text-3xl font-bold text-brand-dark">Welcome back</Text>
-                <Text className="text-base text-gray-500">Sign in to your account</Text>
-              </View>
+          {/* Purple wave hero */}
+          <View style={{
+            backgroundColor: '#4C3FC4',
+            borderBottomLeftRadius: 36,
+            borderBottomRightRadius: 36,
+            paddingTop: 52,
+            paddingBottom: 44,
+            paddingHorizontal: 28,
+            alignItems: 'center',
+            gap: 12,
+            overflow: 'hidden',
+          }}>
+            <View style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            <View style={{ position: 'absolute', bottom: -30, left: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(245,72,106,0.10)' }} />
+            <Image
+              source={require('@/assets/images/educore_logo_dark.svg')}
+              style={{ width: 130, height: 37 }}
+              contentFit="contain"
+            />
+            <View style={{ alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Welcome back</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }}>Sign in to your account</Text>
             </View>
+          </View>
 
+          {/* White form section */}
+          <View style={{ paddingHorizontal: 24, paddingTop: 36, paddingBottom: 40 }}>
             <SignInForm />
           </View>
         </ScrollView>

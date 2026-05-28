@@ -195,7 +195,7 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
 
   return (
     <View style={{
-      backgroundColor: clockedIn ? '#0c2a24' : '#0f172a',
+      backgroundColor: clockedIn ? '#059669' : '#4C3FC4',
       borderRadius: 20, padding: 16, gap: 14, marginBottom: 4,
       borderWidth: 1,
       borderColor: clockedIn ? '#10b981' + '40' : 'rgba(255,255,255,0.08)',
@@ -285,7 +285,7 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
                 {/* Acquiring */}
                 {locating && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <ActivityIndicator size="small" color="#6366f1" />
+                    <ActivityIndicator size="small" color="#4C3FC4" />
                     <Text style={{ fontSize: 12, color: '#6b7280' }}>Detecting your location…</Text>
                   </View>
                 )}
@@ -483,7 +483,7 @@ function EventFormContent({ schoolId, onDone }: { schoolId: string; onDone: () =
     { value: 'academic', label: 'Academic', icon: 'book-outline', color: '#2563eb' },
     { value: 'exam', label: 'Exam', icon: 'document-text-outline', color: '#dc2626' },
     { value: 'sports', label: 'Sports', icon: 'football-outline', color: '#16a34a' },
-    { value: 'cultural', label: 'Cultural', icon: 'color-palette-outline', color: '#7c3aed' },
+    { value: 'cultural', label: 'Cultural', icon: 'color-palette-outline', color: '#4C3FC4' },
     { value: 'meeting', label: 'Meeting', icon: 'people-outline', color: '#d97706' },
     { value: 'holiday', label: 'Holiday', icon: 'sunny-outline', color: '#f59e0b' },
     { value: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline', color: '#64748b' },
@@ -510,7 +510,7 @@ function EventFormContent({ schoolId, onDone }: { schoolId: string; onDone: () =
       </View>
       <Field label="Location (optional)"><TextInput value={location} onChangeText={setLocation} placeholder="School hall..." placeholderTextColor="#9ca3af" style={inputStyle} /></Field>
       <Field label="Meeting Link (optional)"><TextInput value={meetingLink} onChangeText={setMeetingLink} placeholder="https://..." placeholderTextColor="#9ca3af" style={inputStyle} autoCapitalize="none" /></Field>
-      <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ backgroundColor: pressed || createMutation.isPending ? '#5b21b6' : '#7c3aed', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 })}>
+      <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ backgroundColor: pressed || createMutation.isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 })}>
         {createMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
         <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createMutation.isPending ? 'Creating…' : 'Create Event'}</Text>
       </Pressable>
@@ -558,7 +558,7 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
       <Field label="Classroom" required>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {rawClassrooms.map(c => { const active = classroomId === c.id; return <Pressable key={c.id} onPress={() => { setClassroomId(c.id); setStudentId(''); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#6366f1' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#6366f1' : '#e5e7eb' }}><Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{c.name}</Text></Pressable>; })}
+            {rawClassrooms.map(c => { const active = classroomId === c.id; return <Pressable key={c.id} onPress={() => { setClassroomId(c.id); setStudentId(''); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}><Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{c.name}</Text></Pressable>; })}
           </View>
         </ScrollView>
       </Field>
@@ -574,7 +574,7 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
         </Field>
       ) : <Text style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Select a classroom to see students</Text>}
       <View style={{ flexDirection: 'row', gap: 10 }}>
-        <View style={{ flex: 1 }}><Field label="Report Type">{REPORT_TYPES.map(rt => { const active = reportType === rt.value; return <Pressable key={rt.value} onPress={() => setReportType(rt.value)} style={{ paddingVertical: 7, paddingHorizontal: 10, borderRadius: 10, marginBottom: 6, backgroundColor: active ? '#6366f1' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#6366f1' : '#e5e7eb' }}><Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280', textAlign: 'center' }}>{rt.label}</Text></Pressable>; })}</Field></View>
+        <View style={{ flex: 1 }}><Field label="Report Type">{REPORT_TYPES.map(rt => { const active = reportType === rt.value; return <Pressable key={rt.value} onPress={() => setReportType(rt.value)} style={{ paddingVertical: 7, paddingHorizontal: 10, borderRadius: 10, marginBottom: 6, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}><Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280', textAlign: 'center' }}>{rt.label}</Text></Pressable>; })}</Field></View>
         <View style={{ flex: 1 }}><Field label="Term">{TERMS.map(t => { const active = term === t.value; return <Pressable key={t.value} onPress={() => setTerm(t.value)} style={{ paddingVertical: 7, paddingHorizontal: 10, borderRadius: 10, marginBottom: 6, backgroundColor: active ? '#0ea5e9' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#0ea5e9' : '#e5e7eb' }}><Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280', textAlign: 'center' }}>{t.label}</Text></Pressable>; })}</Field></View>
       </View>
       <Field label="Behavior Rating">
@@ -585,7 +585,7 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
       <Field label="General Remarks" required>
         <TextInput value={remarks} onChangeText={setRemarks} placeholder="Overall performance and observations..." placeholderTextColor="#9ca3af" multiline numberOfLines={4} textAlignVertical="top" style={[inputStyle, { minHeight: 90 }]} />
       </Field>
-      <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ backgroundColor: pressed || isPending ? '#4f46e5' : '#6366f1', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 })}>
+      <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ backgroundColor: pressed || isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 })}>
         {isPending && <ActivityIndicator color="#fff" size="small" />}
         <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{isPending ? 'Submitting…' : 'Submit Report'}</Text>
       </Pressable>
@@ -779,7 +779,7 @@ function AssessmentFormContent({ schoolId, isAdmin, onDone }: {
 
   const TYPES: { value: AssessmentType; label: string; color: string }[] = [
     { value: 'quiz', label: 'Quiz', color: '#0ea5e9' },
-    { value: 'test', label: 'Test', color: '#7c3aed' },
+    { value: 'test', label: 'Test', color: '#4C3FC4' },
     { value: 'exam', label: 'Exam', color: '#e11d48' },
     { value: 'assignment', label: 'Assignment', color: '#10b981' },
   ];
@@ -800,7 +800,7 @@ function AssessmentFormContent({ schoolId, isAdmin, onDone }: {
             {rawClassrooms.map(c => {
               const active = classroomId === c.id;
               return (
-                <Pressable key={c.id} onPress={() => setClassroomId(c.id)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#6366f1' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#6366f1' : '#e5e7eb' }}>
+                <Pressable key={c.id} onPress={() => setClassroomId(c.id)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{c.name}</Text>
                 </Pressable>
               );
@@ -831,7 +831,7 @@ function AssessmentFormContent({ schoolId, isAdmin, onDone }: {
           {QTYPES.map(q => {
             const active = questionType === q.value;
             return (
-              <Pressable key={q.value} onPress={() => setQuestionType(q.value)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: active ? '#6366f1' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#6366f1' : '#e5e7eb' }}>
+              <Pressable key={q.value} onPress={() => setQuestionType(q.value)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
                 <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{q.label}</Text>
               </Pressable>
             );
@@ -846,7 +846,7 @@ function AssessmentFormContent({ schoolId, isAdmin, onDone }: {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             {subjects.map(s => {
               const active = subjectId === s.id;
-              const accent = s.color ?? '#6366f1';
+              const accent = s.color ?? '#4C3FC4';
               return (
                 <Pressable key={s.id} onPress={() => setSubjectId(s.id)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? accent : '#f3f4f6', borderWidth: 1, borderColor: active ? accent : '#e5e7eb' }}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{s.name}</Text>
@@ -888,7 +888,7 @@ function AssessmentFormContent({ schoolId, isAdmin, onDone }: {
       </View>
 
       <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-        <View style={{ backgroundColor: createMutation.isPending ? '#4f46e5' : '#6366f1', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+        <View style={{ backgroundColor: createMutation.isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
           {createMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
           <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createMutation.isPending ? 'Creating…' : 'Create Assessment'}</Text>
         </View>
@@ -1007,7 +1007,7 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
               {isAdmin && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                   <ActionCard icon="megaphone-outline" label="Post Announcement" desc="Broadcast school-wide" color="#d97706" bg="#fffbeb" onPress={() => setActiveModal('announcement')} />
-                  <ActionCard icon="calendar-outline" label="Create Event" desc="Add a calendar event" color="#7c3aed" bg="#f5f3ff" onPress={() => setActiveModal('event')} />
+                  <ActionCard icon="calendar-outline" label="Create Event" desc="Add a calendar event" color="#4C3FC4" bg="#F0EEFF" onPress={() => setActiveModal('event')} />
                   <ActionCard icon="checkmark-done-outline" label="Approve Reports" desc="Review submitted reports" color="#16a34a" bg="#f0fdf4" onPress={() => setActiveModal('approve')} />
                   <ActionCard icon="people-outline" label="View Classrooms" desc="All classes & enrollment" color="#0284c7" bg="#eff6ff" onPress={() => nav('/features')} />
                   <ActionCard icon="trophy-outline" label="Results Overview" desc="Term results & grades" color="#e11d48" bg="#fff1f2" onPress={() => nav('/account/results')} />
@@ -1016,17 +1016,17 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
               )}
               {isStaff && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                  <ActionCard icon="create-outline" label="New Assessment" desc="Create a test or quiz" color="#7c3aed" bg="#f5f3ff" onPress={() => setActiveModal('assessment')} />
-                  <ActionCard icon="document-text-outline" label="Write Report" desc="Submit progress report" color="#6366f1" bg="#eef2ff" onPress={() => setActiveModal('report')} />
+                  <ActionCard icon="create-outline" label="New Assessment" desc="Create a test or quiz" color="#4C3FC4" bg="#F0EEFF" onPress={() => setActiveModal('assessment')} />
+                  <ActionCard icon="document-text-outline" label="Write Report" desc="Submit progress report" color="#F5486A" bg="#FFF0F0" onPress={() => setActiveModal('report')} />
                   <ActionCard icon="calendar-outline" label="Create Event" desc="Add a school event" color="#d97706" bg="#fffbeb" onPress={() => setActiveModal('event')} />
-                  <ActionCard icon="library-outline" label="Library" desc="Browse resources" color="#7c3aed" bg="#f5f3ff" onPress={() => nav('/account/library')} />
+                  <ActionCard icon="library-outline" label="Library" desc="Browse resources" color="#4C3FC4" bg="#F0EEFF" onPress={() => nav('/account/library')} />
                 </View>
               )}
               {isStudent && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                   <ActionCard icon="clipboard-outline" label="My Assessments" desc="View pending tests" color="#6366f1" bg="#eef2ff" onPress={() => nav('/account/my-assessments')} />
                   <ActionCard icon="trophy-outline" label="My Results" desc="Term report cards" color="#0ea5e9" bg="#f0f9ff" onPress={() => nav('/account/results')} />
-                  <ActionCard icon="library-outline" label="Library" desc="Browse resources" color="#7c3aed" bg="#f5f3ff" onPress={() => nav('/account/library')} />
+                  <ActionCard icon="library-outline" label="Library" desc="Browse resources" color="#4C3FC4" bg="#F0EEFF" onPress={() => nav('/account/library')} />
                   <ActionCard icon="document-text-outline" label="My Documents" desc="View uploaded files" color="#d97706" bg="#fffbeb" onPress={() => nav('/account/documents')} />
                 </View>
               )}

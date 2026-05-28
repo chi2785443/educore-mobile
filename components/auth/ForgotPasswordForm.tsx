@@ -33,8 +33,8 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <View className="gap-5 items-center py-4">
-        <View className="w-16 h-16 rounded-full bg-indigo-100 items-center justify-center">
-          <Ionicons name="mail-open-outline" size={36} color="#4338ca" />
+        <View className="w-16 h-16 rounded-full bg-[#F0EEFF] items-center justify-center">
+          <Ionicons name="mail-open-outline" size={36} color="#4C3FC4" />
         </View>
         <View className="items-center gap-1">
           <Text className="text-xl font-bold text-gray-900">Check your email</Text>
@@ -45,7 +45,7 @@ export function ForgotPasswordForm() {
         </View>
         <Link href="/(auth)/sign-in" asChild>
           <Pressable>
-            <Text className="text-sm text-indigo-600 font-semibold">Back to Sign In</Text>
+            <Text className="text-sm text-[#4C3FC4] font-semibold">Back to Sign In</Text>
           </Pressable>
         </Link>
       </View>
@@ -86,7 +86,7 @@ export function ForgotPasswordForm() {
         <Pressable className="self-center">
           <Text className="text-sm text-gray-500">
             Remember it?{' '}
-            <Text className="text-indigo-600 font-semibold">Sign In</Text>
+            <Text className="text-[#4C3FC4] font-semibold">Sign In</Text>
           </Text>
         </Pressable>
       </Link>

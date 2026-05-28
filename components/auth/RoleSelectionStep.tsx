@@ -57,13 +57,13 @@ export function RoleSelectionStep({ onSelect, onBack }: Props) {
               onPress={() => setSelected(item.role)}
               className={`flex-row items-center gap-4 rounded-xl border p-4 ${
                 isSelected
-                  ? "border-indigo-500 bg-indigo-50"
+                  ? "border-[#4C3FC4] bg-[#F0EEFF]"
                   : "border-gray-200 bg-white"
               }`}
             >
               <View
                 className={`w-11 h-11 rounded-xl items-center justify-center ${
-                  isSelected ? "bg-indigo-600" : "bg-gray-100"
+                  isSelected ? "bg-[#4C3FC4]" : "bg-gray-100"
                 }`}
               >
                 <Ionicons
@@ -75,7 +75,7 @@ export function RoleSelectionStep({ onSelect, onBack }: Props) {
               <View className="flex-1">
                 <Text
                   className={`text-sm font-semibold ${
-                    isSelected ? "text-indigo-700" : "text-gray-900"
+                    isSelected ? "text-[#4C3FC4]" : "text-gray-900"
                   }`}
                 >
                   {item.label}
@@ -87,7 +87,7 @@ export function RoleSelectionStep({ onSelect, onBack }: Props) {
               <View
                 className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
                   isSelected
-                    ? "border-indigo-600 bg-indigo-600"
+                    ? "border-[#4C3FC4] bg-[#4C3FC4]"
                     : "border-gray-300"
                 }`}
               >

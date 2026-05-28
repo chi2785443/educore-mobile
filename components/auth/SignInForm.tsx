@@ -65,7 +65,7 @@ export function SignInForm() {
 
       <Link href="/(auth)/forgot-password" asChild>
         <Pressable className="self-end">
-          <Text className="text-sm text-indigo-600 font-medium">Forgot password?</Text>
+          <Text className="text-sm text-[#4C3FC4] font-medium">Forgot password?</Text>
         </Pressable>
       </Link>
 
@@ -77,7 +77,7 @@ export function SignInForm() {
         <Text className="text-sm text-gray-500">Don't have an account?</Text>
         <Link href="/(auth)/sign-up" asChild>
           <Pressable>
-            <Text className="text-sm text-indigo-600 font-semibold">Sign Up</Text>
+            <Text className="text-sm text-[#4C3FC4] font-semibold">Sign Up</Text>
           </Pressable>
         </Link>
       </View>

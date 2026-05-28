@@ -22,6 +22,7 @@ export function Input({
   ...props
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [focused, setFocused] = useState(false);
   const isPassword = secureTextEntry;
 
   return (
@@ -31,11 +32,11 @@ export function Input({
       )}
       <View
         className={`flex-row items-center rounded-xl border bg-white px-3 ${
-          error ? 'border-red-400' : 'border-gray-200'
+          error ? 'border-red-400' : focused ? 'border-[#4C3FC4]' : 'border-gray-200'
         }`}
       >
         {leftIcon && (
-          <Ionicons name={leftIcon} size={18} color="#9ca3af" style={{ marginRight: 8 }} />
+          <Ionicons name={leftIcon} size={18} color={focused ? '#4C3FC4' : '#9ca3af'} style={{ marginRight: 8 }} />
         )}
         <TextInput
           {...props}
@@ -43,6 +44,8 @@ export function Input({
           className="flex-1 py-3 text-base text-gray-900"
           placeholderTextColor="#9ca3af"
           autoCapitalize={props.autoCapitalize ?? 'none'}
+          onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
+          onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
         />
         {isPassword ? (
           <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>

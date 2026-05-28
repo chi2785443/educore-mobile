@@ -8,7 +8,7 @@ interface Props {
   color?: string;
 }
 
-export default function LoadingScreen({ message = 'Loading...', color = '#6366f1' }: Props) {
+export default function LoadingScreen({ message = 'Loading...', color = '#F5486A' }: Props) {
   const rotate = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
 
@@ -36,12 +36,12 @@ export default function LoadingScreen({ message = 'Loading...', color = '#6366f1
 
   return (
     <View style={{
-      flex: 1, backgroundColor: '#0B0F14',
+      flex: 1, backgroundColor: '#4C3FC4',
       alignItems: 'center', justifyContent: 'center', gap: 32,
     }}>
       {/* Background decoration */}
-      <View style={{ position: 'absolute', top: '20%', left: '10%', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(99,102,241,0.06)' }} />
-      <View style={{ position: 'absolute', bottom: '15%', right: '5%', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(124,58,237,0.05)' }} />
+      <View style={{ position: 'absolute', top: '20%', left: '10%', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+      <View style={{ position: 'absolute', bottom: '15%', right: '5%', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(245,72,106,0.10)' }} />
 
       {/* Logo + spinner stack */}
       <View style={{ alignItems: 'center', justifyContent: 'center', width: 120, height: 120 }}>
@@ -60,7 +60,7 @@ export default function LoadingScreen({ message = 'Loading...', color = '#6366f1
         <View style={{
           position: 'absolute',
           width: 78, height: 78, borderRadius: 39,
-          borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+          borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)',
         }} />
 
         {/* Logo */}
@@ -81,7 +81,7 @@ export default function LoadingScreen({ message = 'Loading...', color = '#6366f1
           contentFit="contain"
         />
         <Text style={{
-          color: 'rgba(255,255,255,0.35)',
+          color: 'rgba(255,255,255,0.75)',
           fontSize: 12, fontWeight: '500', letterSpacing: 0.5,
         }}>
           {message}

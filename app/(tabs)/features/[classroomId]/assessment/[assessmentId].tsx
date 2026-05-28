@@ -20,13 +20,13 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 
 /* ── Color maps ─────────────────────────────────────────────────── */
 const TYPE_COLORS: Record<AssessmentType, string> = {
-  exam: '#e11d48', test: '#7c3aed', quiz: '#0ea5e9', assignment: '#10b981',
+  exam: '#F5486A', test: '#4C3FC4', quiz: '#0ea5e9', assignment: '#10b981',
 };
 const STATUS_STYLE: Record<AssessmentStatus, { bg: string; text: string; label: string }> = {
   draft:     { bg: '#f3f4f6', text: '#6b7280', label: 'Draft' },
   published: { bg: '#dcfce7', text: '#16a34a', label: 'Published' },
   cancelled: { bg: '#fee2e2', text: '#dc2626', label: 'Cancelled' },
-  completed: { bg: '#ede9fe', text: '#7c3aed', label: 'Completed' },
+  completed: { bg: '#F0EEFF', text: '#4C3FC4', label: 'Completed' },
 };
 
 type StaffTab   = 'info' | 'questions' | 'attempts' | 'scores' | 'retakes';
@@ -96,7 +96,7 @@ export default function AssessmentDetailScreen() {
   const retakeMutation   = useCreateRetakeRequest();
 
   /* Derived */
-  const typeColor = assessment ? (TYPE_COLORS[assessment.type] ?? '#6366f1') : '#6366f1';
+  const typeColor = assessment ? (TYPE_COLORS[assessment.type] ?? '#4C3FC4') : '#4C3FC4';
   const statusSt  = assessment ? STATUS_STYLE[assessment.status] : STATUS_STYLE.draft;
 
   const myPendingRetake = myRetakeRequests.find(
@@ -201,7 +201,7 @@ export default function AssessmentDetailScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <View style={{ backgroundColor: '#0B0F14', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14 }}>
+      <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 22, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           <Pressable onPress={() => router.back()} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
             <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
@@ -362,7 +362,7 @@ export default function AssessmentDetailScreen() {
               style={({ pressed }) => ({ opacity: pressed || startMutation.isPending ? 0.8 : 1 })}
             >
               <View style={{
-                backgroundColor: '#6366f1',
+                backgroundColor: '#4C3FC4',
                 borderRadius: 14, paddingVertical: 14,
                 flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10,
               }}>
@@ -474,7 +474,7 @@ export default function AssessmentDetailScreen() {
             <>
               {stats && (
                 <View style={{
-                  margin: 16, backgroundColor: '#0B0F14', borderRadius: 16, padding: 16,
+                  margin: 16, backgroundColor: '#4C3FC4', borderRadius: 16, padding: 16,
                   flexDirection: 'row', flexWrap: 'wrap', gap: 0,
                 }}>
                   {[
@@ -574,7 +574,7 @@ export default function AssessmentDetailScreen() {
                         >
                           <View style={{
                             paddingVertical: 12, borderRadius: 12,
-                            backgroundColor: '#6366f1',
+                            backgroundColor: '#4C3FC4',
                             alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
                           }}>
                             {retakeMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
@@ -596,8 +596,8 @@ export default function AssessmentDetailScreen() {
                         flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
                         borderWidth: 1, borderColor: '#ddd6fe',
                       }}>
-                        <Ionicons name="refresh-outline" size={16} color="#7c3aed" />
-                        <Text style={{ color: '#7c3aed', fontSize: 14, fontWeight: '800' }}>Request Retake</Text>
+                        <Ionicons name="refresh-outline" size={16} color="#4C3FC4" />
+                        <Text style={{ color: '#4C3FC4', fontSize: 14, fontWeight: '800' }}>Request Retake</Text>
                       </View>
                     </Pressable>
                   )}

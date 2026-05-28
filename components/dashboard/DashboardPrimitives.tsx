@@ -73,7 +73,7 @@ export function Card({
 
 /* ── Card header ────────────────────────────────────────── */
 export function CardHeader({
-  icon, iconColor = '#6366f1', title, actionLabel, onAction,
+  icon, iconColor = '#4C3FC4', title, actionLabel, onAction,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   iconColor?: string;
@@ -89,7 +89,7 @@ export function CardHeader({
       </View>
       {actionLabel && onAction ? (
         <Pressable onPress={onAction}>
-          <Text className="text-xs font-semibold text-indigo-600">{actionLabel}</Text>
+          <Text className="text-xs font-semibold text-[#4C3FC4]">{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -102,8 +102,8 @@ export function AnnouncementRow({
 }: { title: string; timeAgo: string; isLast: boolean }) {
   return (
     <View className={`flex-row items-start gap-3 py-2.5 ${isLast ? '' : 'border-b border-gray-50'}`}>
-      <View className="w-7 h-7 rounded-lg bg-indigo-50 items-center justify-center shrink-0 mt-0.5">
-        <Ionicons name="notifications-outline" size={13} color="#6366f1" />
+      <View className="w-7 h-7 rounded-lg bg-[#F0EEFF] items-center justify-center shrink-0 mt-0.5">
+        <Ionicons name="notifications-outline" size={13} color="#4C3FC4" />
       </View>
       <View className="flex-1">
         <Text className="text-xs font-semibold text-gray-800" numberOfLines={2}>{title}</Text>
@@ -120,8 +120,8 @@ export function EventRow({
   const d = new Date(date);
   const month = d.toLocaleDateString('en', { month: 'short' });
   const day = d.getDate();
-  const bg = color ? `${color}22` : '#e0e7ff';
-  const fg = color || '#6366f1';
+  const bg = color ? `${color}22` : '#F0EEFF';
+  const fg = color || '#4C3FC4';
   return (
     <View className={`flex-row items-center gap-3 py-2.5 ${isLast ? '' : 'border-b border-gray-50'}`}>
       <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -157,17 +157,17 @@ export function PeriodRow({
     <View className={`flex-row items-center gap-3 py-2.5 ${isLast ? '' : 'border-b border-gray-50'}`}>
       <View style={{
         width: 3, height: 36, borderRadius: 2,
-        backgroundColor: isNow ? '#6366f1' : '#e5e7eb',
+        backgroundColor: isNow ? '#4C3FC4' : '#e5e7eb',
       }} />
       <View className="flex-1">
         <Text className="text-xs font-bold text-gray-800">{subject}</Text>
         <Text className="text-[10px] text-gray-400 mt-0.5">{classroom}</Text>
       </View>
       <View className="items-end">
-        <Text className={`text-[10px] font-bold ${isNow ? 'text-indigo-600' : 'text-gray-400'}`}>
+        <Text className={`text-[10px] font-bold ${isNow ? 'text-[#4C3FC4]' : 'text-gray-400'}`}>
           {start} – {end}
         </Text>
-        {isNow ? <Text className="text-[9px] font-bold text-indigo-400 mt-0.5">NOW</Text> : null}
+        {isNow ? <Text className="text-[9px] font-bold text-[#F5486A] mt-0.5">NOW</Text> : null}
       </View>
     </View>
   );

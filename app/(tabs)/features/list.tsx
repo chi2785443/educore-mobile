@@ -14,14 +14,14 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 
 /* ── Grade colour map ──────────────────────────────────────────── */
 const GRADE_PALETTE: Record<string, { fg: string; bg: string; grad: string }> = {
-  JSS1: { fg: '#6366f1', bg: '#e0e7ff', grad: '#6366f1' },
-  JSS2: { fg: '#0ea5e9', bg: '#e0f2fe', grad: '#0ea5e9' },
-  JSS3: { fg: '#14b8a6', bg: '#d1fae5', grad: '#14b8a6' },
-  SS1:  { fg: '#7c3aed', bg: '#ede9fe', grad: '#7c3aed' },
-  SS2:  { fg: '#f59e0b', bg: '#fef3c7', grad: '#f59e0b' },
-  SS3:  { fg: '#e11d48', bg: '#fce7f3', grad: '#e11d48' },
+  JSS1: { fg: '#F5486A', bg: '#FFF0F0', grad: '#F5486A' },
+  JSS2: { fg: '#4C3FC4', bg: '#F0EEFF', grad: '#4C3FC4' },
+  JSS3: { fg: '#059669', bg: '#E8F5EE', grad: '#059669' },
+  SS1:  { fg: '#d97706', bg: '#FEF3C7', grad: '#d97706' },
+  SS2:  { fg: '#0284c7', bg: '#E8F4FF', grad: '#0284c7' },
+  SS3:  { fg: '#7c3aed', bg: '#EDE9FE', grad: '#7c3aed' },
 };
-const DEFAULT_PAL = { fg: '#6366f1', bg: '#e0e7ff', grad: '#6366f1' };
+const DEFAULT_PAL = { fg: '#4C3FC4', bg: '#F0EEFF', grad: '#4C3FC4' };
 const getPalette = (grade?: string) => (grade && GRADE_PALETTE[grade]) ?? DEFAULT_PAL;
 
 interface Classroom {
@@ -194,11 +194,11 @@ export default function ClassroomListScreen() {
 
   const pageTitle = isAdmin ? 'All Classrooms' : isStaff ? 'My Classrooms' : 'My Classes';
 
-  if (isLoading) return <LoadingScreen color="#7c3aed" message="Loading classrooms" />;
+  if (isLoading) return <LoadingScreen color="#4C3FC4" message="Loading classrooms" />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
-      <View style={{ backgroundColor: '#0B0F14', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 16 }}>
+      <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <View>
             <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
@@ -246,8 +246,8 @@ export default function ClassroomListScreen() {
             onPress={() => setActiveGrade(null)}
             style={{
               paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-              backgroundColor: !activeGrade ? '#7c3aed' : '#f3f4f6',
-              borderWidth: 1, borderColor: !activeGrade ? '#7c3aed' : '#e5e7eb',
+              backgroundColor: !activeGrade ? '#4C3FC4' : '#f3f4f6',
+              borderWidth: 1, borderColor: !activeGrade ? '#4C3FC4' : '#e5e7eb',
             }}
           >
             <Text style={{ fontSize: 12, fontWeight: '700', color: !activeGrade ? '#fff' : '#6b7280' }}>All</Text>
@@ -276,8 +276,8 @@ export default function ClassroomListScreen() {
       <View style={{ flex: 1 }}>
       {!primary ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
-          <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="school-outline" size={30} color="#7c3aed" />
+          <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: '#F0EEFF', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="school-outline" size={30} color="#4C3FC4" />
           </View>
           <Text style={{ fontSize: 16, fontWeight: '800', color: '#374151', textAlign: 'center' }}>No school selected</Text>
           <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 }}>
@@ -287,7 +287,7 @@ export default function ClassroomListScreen() {
       ) : filtered.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
           <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="book-outline" size={30} color="#7c3aed" />
+            <Ionicons name="book-outline" size={30} color="#4C3FC4" />
           </View>
           <Text style={{ fontSize: 16, fontWeight: '800', color: '#374151', textAlign: 'center' }}>
             {search ? 'No results found' : 'No classrooms yet'}
@@ -300,7 +300,7 @@ export default function ClassroomListScreen() {
           {(search || activeGrade) && (
             <Pressable
               onPress={() => { setSearch(''); setActiveGrade(null); }}
-              style={{ marginTop: 4, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#7c3aed' }}
+              style={{ marginTop: 4, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#4C3FC4' }}
             >
               <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Clear filters</Text>
             </Pressable>
@@ -310,7 +310,7 @@ export default function ClassroomListScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 36 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
         >
           {filtered.map(c => <ClassroomCard key={c.id} classroom={c} />)}
         </ScrollView>

@@ -26,11 +26,11 @@ const TABS: TabConfig[] = [
   { name: 'account', label: 'Account', icon: 'person-outline', iconActive: 'person' },
 ];
 
-const ACTIVE = '#818cf8';       // indigo-400
-const INACTIVE = '#64748b';     // slate-500
-const BAR_BG = '#0B0F14';       // brand-dark
-const FAB_FROM = '#6366f1';     // indigo-500
-const FAB_TO = '#7c3aed';       // violet-600
+const ACTIVE = '#4C3FC4';       // school purple
+const INACTIVE = '#9CA3AF';     // gray-400
+const BAR_BG = '#FFFFFF';       // white
+const FAB_FROM = '#F5486A';     // coral/pink
+const FAB_TO = '#E03058';       // deep coral
 
 function TabButton({
   config,
@@ -133,12 +133,12 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
       height: 60 + insets.bottom,
       paddingBottom: insets.bottom,
       borderTopWidth: 1,
-      borderTopColor: '#1e2433',
+      borderTopColor: '#F3F4F6',
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
-      shadowColor: '#000',
+      shadowColor: '#4C3FC4',
       shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.25,
+      shadowOpacity: 0.10,
       shadowRadius: 12,
       elevation: 20,
     }}>

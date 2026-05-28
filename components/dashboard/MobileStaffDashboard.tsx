@@ -19,22 +19,23 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
     setRefreshing(false);
   }, [refetch]);
 
-  if (isLoading || !data) return <DashLoader color="#14b8a6" message="Loading your workspace..." />;
+  if (isLoading || !data) return <DashLoader color="#059669" message="Loading your workspace..." />;
   const d = data;
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       className="flex-1"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#14b8a6" colors={['#14b8a6']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" colors={['#059669']} />}
     >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{
         marginHorizontal: 16, marginTop: 8, borderRadius: 20,
-        backgroundColor: '#0f4c42', padding: 20, overflow: 'hidden',
+        backgroundColor: '#059669', padding: 20, overflow: 'hidden',
+        borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
       }}>
-        <View style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(20,184,166,0.2)' }} />
+        <View style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.12)' }} />
         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>
           {schoolName} · Staff
         </Text>
@@ -72,10 +73,10 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
         {/* ── Stats ────────────────────────────────────────── */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <GradCard label="My Classes" value={d.counts.totalClassrooms} icon="school" colors={['#14b8a6', '#0d9488']} />
-          <GradCard label="My Students" value={d.counts.totalStudents} icon="people" colors={['#6366f1', '#4f46e5']} />
+          <GradCard label="My Students" value={d.counts.totalStudents} icon="people" colors={['#4C3FC4', '#6B5FD6']} />
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <GradCard label="Assessments" value={d.counts.totalAssessments} icon="clipboard" colors={['#7c3aed', '#6d28d9']} sub={`${d.counts.publishedAssessments} published`} />
+          <GradCard label="Assessments" value={d.counts.totalAssessments} icon="clipboard" colors={['#F5486A', '#E03058']} sub={`${d.counts.publishedAssessments} published`} />
           <GradCard label="Reports" value={d.counts.myReports} icon="document-text" colors={['#f59e0b', '#d97706']} sub={d.counts.pendingReports > 0 ? `${d.counts.pendingReports} pending` : 'all reviewed'} />
         </View>
 
@@ -108,7 +109,7 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
             <SectionLabel>My Classrooms</SectionLabel>
             <Card>
               {d.myClassrooms.slice(0, 4).map((c, i) => {
-                const colorPairs = [['#6366f1','#e0e7ff'],['#14b8a6','#d1fae5'],['#7c3aed','#ede9fe'],['#f59e0b','#fef3c7']];
+                const colorPairs = [['#4C3FC4','#F0EEFF'],['#059669','#E8F5EE'],['#F5486A','#FFF0F0'],['#f59e0b','#fef3c7']];
                 const [fg, bg] = colorPairs[i % colorPairs.length];
                 return (
                   <View key={c.id} className={`flex-row items-center gap-3 py-2.5 ${i < d.myClassrooms.length - 1 && i < 3 ? 'border-b border-gray-50' : ''}`}>
@@ -134,8 +135,8 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
             <Card>
               {d.recentAssessments.map((a, i) => (
                 <View key={a.id} className={`flex-row items-center gap-3 py-2.5 ${i < d.recentAssessments.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                  <View className="w-8 h-8 rounded-lg bg-violet-50 items-center justify-center shrink-0">
-                    <Ionicons name="document-outline" size={14} color="#7c3aed" />
+                  <View className="w-8 h-8 rounded-lg bg-[#F0EEFF] items-center justify-center shrink-0">
+                    <Ionicons name="document-outline" size={14} color="#4C3FC4" />
                   </View>
                   <View className="flex-1">
                     <Text className="text-xs font-semibold text-gray-800" numberOfLines={1}>{a.title}</Text>

@@ -11,6 +11,13 @@ import { ACCESS_TOKEN_KEY } from "@/services/axios.service";
 import { authService } from "@/services/auth.service";
 import { UserType } from "@/interface/user.interface";
 import { ToastProvider } from "@/components/ui/Toast";
+import {
+  useFonts,
+  Poppins_400Regular,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+} from "@expo-google-fonts/poppins";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,6 +55,12 @@ function AuthInitializer({ onReady }: { onReady: () => void }) {
 
 export default function RootLayout() {
   const [ready, setReady] = React.useState(false);
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Poppins_800ExtraBold,
+  });
 
   const handleReady = React.useCallback(async () => {
     setReady(true);
@@ -58,8 +71,8 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthInitializer onReady={handleReady} />
-        <StatusBar style="dark" />
-        {ready && (
+        <StatusBar style="light" />
+        {ready && fontsLoaded && (
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />

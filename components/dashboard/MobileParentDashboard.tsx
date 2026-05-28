@@ -25,22 +25,23 @@ export default function MobileParentDashboard({ schoolId, schoolName, firstName 
     setRefreshing(false);
   }, [refetch]);
 
-  if (isLoading || !data) return <DashLoader color="#e11d48" message="Loading your portal..." />;
+  if (isLoading || !data) return <DashLoader color="#F5486A" message="Loading your portal..." />;
   const d = data;
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       className="flex-1"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#e11d48" colors={['#e11d48']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F5486A" colors={['#F5486A']} />}
     >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{
         marginHorizontal: 16, marginTop: 8, borderRadius: 20,
-        backgroundColor: '#4c0519', padding: 20, overflow: 'hidden',
+        backgroundColor: '#F5486A', padding: 20, overflow: 'hidden',
+        borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
       }}>
-        <View style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(244,63,94,0.2)' }} />
+        <View style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.15)' }} />
         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>
           {schoolName} · Parent
         </Text>
@@ -68,7 +69,7 @@ export default function MobileParentDashboard({ schoolId, schoolName, firstName 
 
         {/* ── Enquiry stats ─────────────────────────────────── */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <GradCard label="Total Enquiries" value={d.enquiries.total} icon="help-circle" colors={['#e11d48', '#be123c']} />
+          <GradCard label="Total Enquiries" value={d.enquiries.total} icon="help-circle" colors={['#F5486A', '#E03058']} />
           <GradCard label="Awaiting Reply" value={d.enquiries.open} icon="time" colors={['#d97706', '#b45309']} />
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -83,8 +84,8 @@ export default function MobileParentDashboard({ schoolId, schoolName, firstName 
             <Card>
               {d.linkedStudents.map((s, i) => (
                 <View key={s.userId} className={`flex-row items-center gap-3 py-2.5 ${i < d.linkedStudents.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#e0e7ff', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#4f46e5', fontWeight: '900', fontSize: 16 }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0EEFF', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#4C3FC4', fontWeight: '900', fontSize: 16 }}>
                       {s.firstName?.[0]}{s.lastName?.[0]}
                     </Text>
                   </View>
@@ -92,8 +93,8 @@ export default function MobileParentDashboard({ schoolId, schoolName, firstName 
                     <Text className="text-sm font-bold text-gray-800">{s.firstName} {s.lastName}</Text>
                     <Text className="text-xs text-gray-400">Student</Text>
                   </View>
-                  <View style={{ backgroundColor: '#ede9fe', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ color: '#7c3aed', fontSize: 10, fontWeight: '700' }}>Linked</Text>
+                  <View style={{ backgroundColor: '#F0EEFF', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ color: '#4C3FC4', fontSize: 10, fontWeight: '700' }}>Linked</Text>
                   </View>
                 </View>
               ))}
@@ -106,8 +107,8 @@ export default function MobileParentDashboard({ schoolId, schoolName, firstName 
         <Card>
           {d.recentEnquiries.length === 0 ? (
             <View className="items-center py-8 gap-3">
-              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: '#fce7f3', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="chatbubble-ellipses-outline" size={22} color="#e11d48" />
+              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color="#F5486A" />
               </View>
               <Text className="text-xs text-gray-400">No enquiries submitted yet</Text>
             </View>
@@ -115,8 +116,8 @@ export default function MobileParentDashboard({ schoolId, schoolName, firstName 
             const { bg, fg, icon } = statusStyle(e.status);
             return (
               <View key={e.id} className={`flex-row items-center gap-3 py-2.5 ${i < d.recentEnquiries.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#fce7f3', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="chatbubble-outline" size={14} color="#e11d48" />
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="chatbubble-outline" size={14} color="#F5486A" />
                 </View>
                 <View className="flex-1">
                   <Text className="text-xs font-semibold text-gray-800" numberOfLines={1}>{e.subject}</Text>

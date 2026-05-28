@@ -87,7 +87,7 @@ export default function FeaturesTab() {
 
   const features: FeatureCard[] = [
     {
-      icon: 'wallet-outline', iconColor: '#6366f1', iconBg: '#eef2ff',
+      icon: 'wallet-outline', iconColor: '#4C3FC4', iconBg: '#F0EEFF',
       title: 'My Finances',
       subtitle: isStudent ? 'Fee balance & payments' : 'Salary & advances',
       route: '/finances',
@@ -98,7 +98,7 @@ export default function FeaturesTab() {
       route: '/attendance',
     },
     {
-      icon: 'library-outline', iconColor: '#7c3aed', iconBg: '#f5f3ff',
+      icon: 'library-outline', iconColor: '#4C3FC4', iconBg: '#F0EEFF',
       title: 'Library', subtitle: 'School resources',
       route: '/library',
     },
@@ -114,14 +114,14 @@ export default function FeaturesTab() {
         route: '/results',
       },
       {
-        icon: 'clipboard-outline' as const, iconColor: '#6366f1', iconBg: '#eef2ff',
+        icon: 'clipboard-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
         title: 'My Assessments', subtitle: 'Tests & quizzes assigned',
         route: '/my-assessments',
       },
     ] : []),
     ...((isStaff || isAdmin) ? [
       {
-        icon: 'clipboard-outline' as const, iconColor: '#6366f1', iconBg: '#eef2ff',
+        icon: 'clipboard-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
         title: 'Assessments', subtitle: 'Manage tests & quizzes',
         route: '/assessments',
       },
@@ -143,7 +143,7 @@ export default function FeaturesTab() {
       route: '/my-enrollments',
     },
     ...(isAdmin ? [{
-      icon: 'chatbubbles-outline' as const, iconColor: '#4f46e5', iconBg: '#eef2ff',
+      icon: 'chatbubbles-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
       title: 'Enquiries', subtitle: 'View & respond to parent enquiries',
       route: '/school-enquiries',
     }] : []),
@@ -157,8 +157,8 @@ export default function FeaturesTab() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
 
-      {/* ── Dark header ──────────────────────────────────────────── */}
-      <View style={{ backgroundColor: '#0B0F14', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 20 }}>
+      {/* ── Header ──────────────────────────────────────────── */}
+      <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
             <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
@@ -191,7 +191,7 @@ export default function FeaturesTab() {
             <View style={{
               borderRadius: 22,
               overflow: 'hidden',
-              shadowColor: '#4f46e5',
+              shadowColor: '#4C3FC4',
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.22,
               shadowRadius: 16,
@@ -199,7 +199,7 @@ export default function FeaturesTab() {
             }}>
               {/* Gradient background */}
               <View style={{
-                backgroundColor: '#4f46e5',
+                backgroundColor: '#4C3FC4',
                 paddingHorizontal: 20,
                 paddingVertical: 20,
               }}>
@@ -212,7 +212,7 @@ export default function FeaturesTab() {
                 <View style={{
                   position: 'absolute', bottom: -30, left: 80,
                   width: 90, height: 90, borderRadius: 45,
-                  backgroundColor: 'rgba(139,92,246,0.3)',
+                  backgroundColor: 'rgba(245,72,106,0.25)',
                 }} />
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>

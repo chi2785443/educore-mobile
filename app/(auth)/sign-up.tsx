@@ -75,45 +75,50 @@ export default function SignUpScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="flex-1 px-6 py-8 gap-8">
-            {/* Logo */}
-            <Image
-              source={require('@/assets/images/educore_logo.svg')}
-              style={{ width: 130, height: 37 }}
-              contentFit="contain"
-            />
+          {/* Purple wave hero */}
+          <View style={{
+            backgroundColor: '#4C3FC4',
+            borderBottomLeftRadius: 36,
+            borderBottomRightRadius: 36,
+            paddingTop: 48,
+            paddingBottom: 36,
+            paddingHorizontal: 28,
+            gap: 16,
+            overflow: 'hidden',
+          }}>
+            <View style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+            <View style={{ position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(245,72,106,0.09)' }} />
 
-            {/* Progress bar */}
-            <View className="gap-3">
-              <View className="flex-row gap-1.5">
-                {([0, 1, 2, 3] as SignUpStep[]).map((s) => (
-                  <View
-                    key={s}
-                    className={`h-1 flex-1 rounded-full ${
-                      s <= step ? 'bg-indigo-600' : 'bg-gray-200'
-                    }`}
-                  />
-                ))}
-              </View>
-              <Text className="text-xs text-gray-400">Step {step + 1} of 4</Text>
+            {/* Progress dots */}
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {([0, 1, 2, 3] as SignUpStep[]).map((s) => (
+                <View
+                  key={s}
+                  style={{
+                    height: 4, flex: 1, borderRadius: 2,
+                    backgroundColor: s <= step ? '#ffffff' : 'rgba(255,255,255,0.30)',
+                  }}
+                />
+              ))}
             </View>
+            <Text style={{ color: 'rgba(255,255,255,0.60)', fontSize: 12 }}>Step {step + 1} of 4</Text>
 
-            {/* Header */}
-            <View className="gap-1">
-              <Text className="text-2xl font-bold text-brand-dark">{STEP_TITLES[step]}</Text>
-              <Text className="text-sm text-gray-500">{STEP_SUBTITLES[step]}</Text>
+            <View style={{ gap: 4 }}>
+              <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900' }}>{STEP_TITLES[step]}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }}>{STEP_SUBTITLES[step]}</Text>
             </View>
+          </View>
 
-            {/* Step content */}
+          {/* White form section */}
+          <View style={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 40, gap: 24 }}>
             {renderStep()}
 
-            {/* Sign in link — only on step 0 */}
             {step === 0 && (
               <View className="flex-row justify-center items-center gap-1 pb-4">
                 <Text className="text-sm text-gray-500">Already have an account?</Text>
                 <Link href="/(auth)/sign-in" asChild>
                   <Pressable>
-                    <Text className="text-sm text-indigo-600 font-semibold">Sign In</Text>
+                    <Text className="text-sm text-[#4C3FC4] font-semibold">Sign In</Text>
                   </Pressable>
                 </Link>
               </View>

@@ -29,10 +29,10 @@ const ACTIONS = [
     label: 'Browse Job Openings',
     subtitle: 'Find staff positions at schools near you',
     tag: 'Staff',
-    tagBg: '#1e1b4b',
-    tagColor: '#a5b4fc',
-    iconBg: '#4f46e5',
-    glowColor: 'rgba(79,70,229,0.15)',
+    tagBg: '#F0EEFF',
+    tagColor: '#4C3FC4',
+    iconBg: '#4C3FC4',
+    glowColor: 'rgba(76,63,196,0.15)',
     route: '/(tabs)/my-jobs',
   },
   {
@@ -40,21 +40,21 @@ const ACTIONS = [
     label: 'Send an Enquiry',
     subtitle: 'Ask questions and get replies from schools',
     tag: 'Parents',
-    tagBg: '#3b0a1e',
-    tagColor: '#fda4af',
-    iconBg: '#e11d48',
-    glowColor: 'rgba(225,29,72,0.12)',
+    tagBg: '#FFF0F0',
+    tagColor: '#F5486A',
+    iconBg: '#F5486A',
+    glowColor: 'rgba(245,72,106,0.12)',
     route: '/(tabs)/my-enquiries',
   },
 ] as const;
 
 const FEATURES = [
-  { icon: 'calendar-outline' as const,    label: 'Attendance',  color: '#6366f1', bg: '#eef2ff' },
+  { icon: 'calendar-outline' as const,    label: 'Attendance',  color: '#4C3FC4', bg: '#F0EEFF' },
   { icon: 'clipboard-outline' as const,   label: 'Assessments', color: '#0891b2', bg: '#e0f2fe' },
   { icon: 'chatbubbles-outline' as const, label: 'Messages',    color: '#059669', bg: '#d1fae5' },
   { icon: 'library-outline' as const,     label: 'Library',     color: '#d97706', bg: '#fef3c7' },
   { icon: 'bar-chart-outline' as const,   label: 'Results',     color: '#db2777', bg: '#fce7f3' },
-  { icon: 'cash-outline' as const,        label: 'Finance',     color: '#7c3aed', bg: '#ede9fe' },
+  { icon: 'cash-outline' as const,        label: 'Finance',     color: '#F5486A', bg: '#FFF0F0' },
 ];
 
 const STEPS = [
@@ -84,41 +84,41 @@ function NoSchoolState({ firstName }: { firstName: string }) {
       style={{ flex: 1, backgroundColor: '#f1f5f9' }}
       contentContainerStyle={{ paddingBottom: 40 }}
     >
-      {/* ── Dark hero ─────────────────────────────────────────────── */}
-      <View style={{ backgroundColor: '#080d18', overflow: 'hidden' }}>
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <View style={{ backgroundColor: '#4C3FC4', overflow: 'hidden', borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         {/* Background orbs */}
         <View style={{
           position: 'absolute', top: -50, right: -30,
           width: 220, height: 220, borderRadius: 110,
-          backgroundColor: 'rgba(99,102,241,0.07)',
+          backgroundColor: 'rgba(255,255,255,0.08)',
         }} />
         <View style={{
           position: 'absolute', bottom: -20, left: -50,
           width: 180, height: 180, borderRadius: 90,
-          backgroundColor: 'rgba(139,92,246,0.06)',
+          backgroundColor: 'rgba(245,72,106,0.10)',
         }} />
         <View style={{
           position: 'absolute', top: 60, left: '40%',
           width: 120, height: 120, borderRadius: 60,
-          backgroundColor: 'rgba(16,185,129,0.04)',
+          backgroundColor: 'rgba(255,255,255,0.05)',
         }} />
 
         <View style={{ alignItems: 'center', paddingTop: 44, paddingHorizontal: 28, paddingBottom: 36, gap: 0 }}>
           {/* Nested glow rings + icon */}
           <View style={{
             width: 108, height: 108, borderRadius: 38,
-            backgroundColor: 'rgba(99,102,241,0.1)',
-            borderWidth: 1, borderColor: 'rgba(99,102,241,0.2)',
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
             alignItems: 'center', justifyContent: 'center',
             marginBottom: 22,
           }}>
             <View style={{
               width: 78, height: 78, borderRadius: 26,
-              backgroundColor: 'rgba(99,102,241,0.18)',
-              borderWidth: 1.5, borderColor: 'rgba(99,102,241,0.45)',
+              backgroundColor: 'rgba(255,255,255,0.20)',
+              borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.40)',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Ionicons name="school" size={36} color="#818cf8" />
+              <Ionicons name="school" size={36} color="#ffffff" />
             </View>
           </View>
 
@@ -140,9 +140,9 @@ function NoSchoolState({ firstName }: { firstName: string }) {
                 <View style={{ alignItems: 'center', gap: 7, minWidth: 64 }}>
                   <View style={{
                     width: 36, height: 36, borderRadius: 18,
-                    backgroundColor: step.active ? '#6366f1' : 'rgba(99,102,241,0.15)',
+                    backgroundColor: step.active ? '#F5486A' : 'rgba(255,255,255,0.15)',
                     borderWidth: 1.5,
-                    borderColor: step.active ? '#818cf8' : 'rgba(99,102,241,0.28)',
+                    borderColor: step.active ? '#ff7a93' : 'rgba(255,255,255,0.28)',
                     alignItems: 'center', justifyContent: 'center',
                   }}>
                     {step.active ? (
@@ -153,7 +153,7 @@ function NoSchoolState({ firstName }: { firstName: string }) {
                   </View>
                   <Text style={{
                     fontSize: 11, fontWeight: '700',
-                    color: step.active ? '#a5b4fc' : 'rgba(255,255,255,0.28)',
+                    color: step.active ? '#ffffff' : 'rgba(255,255,255,0.45)',
                   }}>
                     {step.label}
                   </Text>
@@ -161,7 +161,7 @@ function NoSchoolState({ firstName }: { firstName: string }) {
                 {i < STEPS.length - 1 && (
                   <View style={{
                     height: 1.5, width: 36, marginTop: 17, marginHorizontal: 4,
-                    backgroundColor: 'rgba(99,102,241,0.22)',
+                    backgroundColor: 'rgba(255,255,255,0.25)',
                   }} />
                 )}
               </React.Fragment>
@@ -169,8 +169,7 @@ function NoSchoolState({ firstName }: { firstName: string }) {
           </View>
         </View>
 
-        {/* Curved bottom */}
-        <View style={{ height: 28, backgroundColor: '#f1f5f9', borderTopLeftRadius: 28, borderTopRightRadius: 28 }} />
+        {/* Curved bottom — now handled by borderBottomRadius on the hero View itself */}
       </View>
 
       {/* ── Action cards ─────────────────────────────────────────── */}
@@ -286,10 +285,10 @@ function NoSchoolState({ firstName }: { firstName: string }) {
         }}>
           <View style={{
             width: 32, height: 32, borderRadius: 10,
-            backgroundColor: '#eef2ff',
+            backgroundColor: '#F0EEFF',
             alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <Ionicons name="information-circle" size={18} color="#6366f1" />
+            <Ionicons name="information-circle" size={18} color="#4C3FC4" />
           </View>
           <Text style={{ color: '#475569', fontSize: 12, lineHeight: 18, flex: 1 }}>
             Once accepted by a school, your full dashboard unlocks automatically.

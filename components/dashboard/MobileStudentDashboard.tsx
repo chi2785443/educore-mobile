@@ -33,23 +33,24 @@ export default function MobileStudentDashboard({ schoolId, schoolName, firstName
     setRefreshing(false);
   }, [refetch]);
 
-  if (isLoading || !data) return <DashLoader color="#7c3aed" message="Loading your dashboard..." />;
+  if (isLoading || !data) return <DashLoader color="#4C3FC4" message="Loading your dashboard..." />;
   const d = data;
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       className="flex-1"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
     >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{
         marginHorizontal: 16, marginTop: 8, borderRadius: 20,
-        backgroundColor: '#1e1b4b', padding: 20, overflow: 'hidden',
+        backgroundColor: '#4C3FC4', padding: 20, overflow: 'hidden',
+        borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
       }}>
-        <View style={{ position: 'absolute', top: -24, right: -24, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(129,140,248,0.2)' }} />
-        <View style={{ position: 'absolute', bottom: -10, left: 30, width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(167,139,250,0.15)' }} />
+        <View style={{ position: 'absolute', top: -24, right: -24, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.10)' }} />
+        <View style={{ position: 'absolute', bottom: -10, left: 30, width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(245,72,106,0.12)' }} />
 
         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>
           {schoolName} · Student
@@ -83,8 +84,8 @@ export default function MobileStudentDashboard({ schoolId, schoolName, firstName
 
         {/* ── Stats ────────────────────────────────────────── */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <GradCard label="My Classes" value={d.counts.totalClassrooms} icon="school" colors={['#6366f1', '#4f46e5']} />
-          <GradCard label="Avg Score" value={`${d.counts.avgScore.toFixed(1)}%`} icon="trending-up" colors={['#7c3aed', '#6d28d9']} sub={`${d.counts.totalScored} scored`} />
+          <GradCard label="My Classes" value={d.counts.totalClassrooms} icon="school" colors={['#4C3FC4', '#6B5FD6']} />
+          <GradCard label="Avg Score" value={`${d.counts.avgScore.toFixed(1)}%`} icon="trending-up" colors={['#F5486A', '#E03058']} sub={`${d.counts.totalScored} scored`} />
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <GradCard label="Passed" value={d.counts.passedCount} icon="checkmark-circle" colors={['#10b981', '#059669']} sub={`of ${d.counts.totalScored}`} />

@@ -21,7 +21,7 @@ export default function MobileAdminDashboard({ schoolId, schoolName, firstName }
     setRefreshing(false);
   }, [refetch]);
 
-  if (isLoading || !data) return <DashLoader color="#6366f1" message="Loading school overview..." />;
+  if (isLoading || !data) return <DashLoader color="#4C3FC4" message="Loading school overview..." />;
   const d = data;
   const hasPending = Object.values(d.pendingActions).some(v => v > 0);
 
@@ -29,17 +29,18 @@ export default function MobileAdminDashboard({ schoolId, schoolName, firstName }
     <ScrollView
       showsVerticalScrollIndicator={false}
       className="flex-1"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
     >
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <View style={{
         marginHorizontal: 16, marginTop: 8, borderRadius: 20, overflow: 'hidden',
-        backgroundColor: '#1a0533', padding: 20,
+        backgroundColor: '#4C3FC4', padding: 20,
+        borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
       }}>
         {/* Decorative circles */}
-        <View style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(99,102,241,0.15)' }} />
-        <View style={{ position: 'absolute', bottom: -20, left: 40, width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(167,139,250,0.1)' }} />
+        <View style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.10)' }} />
+        <View style={{ position: 'absolute', bottom: -20, left: 40, width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(245,72,106,0.12)' }} />
 
         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>
           {schoolName}
@@ -56,7 +57,7 @@ export default function MobileAdminDashboard({ schoolId, schoolName, firstName }
           {[
             { label: 'Income', value: currency(d.finance.totalIncome), color: '#34d399' },
             { label: 'Expenses', value: currency(d.finance.totalExpenses), color: '#f87171' },
-            { label: 'Balance', value: currency(Math.abs(d.finance.netBalance)), color: '#818cf8' },
+            { label: 'Balance', value: currency(Math.abs(d.finance.netBalance)), color: '#ffffff' },
           ].map(f => (
             <View key={f.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 10 }}>
               <Text style={{ color: f.color, fontSize: 13, fontWeight: '900' }}>{f.value}</Text>
@@ -70,8 +71,8 @@ export default function MobileAdminDashboard({ schoolId, schoolName, firstName }
 
         {/* ── 4 Stat cards ─────────────────────────────────── */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <GradCard label="Students" value={d.counts.totalStudents} icon="people" colors={['#6366f1', '#4f46e5']} />
-          <GradCard label="Staff" value={d.counts.totalStaff} icon="briefcase" colors={['#7c3aed', '#6d28d9']} />
+          <GradCard label="Students" value={d.counts.totalStudents} icon="people" colors={['#4C3FC4', '#6B5FD6']} />
+          <GradCard label="Staff" value={d.counts.totalStaff} icon="briefcase" colors={['#F5486A', '#E03058']} />
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <GradCard label="Classrooms" value={d.counts.totalClassrooms} icon="school" colors={['#f59e0b', '#d97706']} />

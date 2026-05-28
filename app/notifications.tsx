@@ -14,16 +14,16 @@ import {
 import { Notification } from '@/interface/notification.interface';
 
 const TYPE_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  ASSESSMENT:     { icon: 'clipboard-outline',      color: '#6366f1', bg: '#eef2ff' },
+  ASSESSMENT:     { icon: 'clipboard-outline',      color: '#4C3FC4', bg: '#F0EEFF' },
   GRADE:          { icon: 'trophy-outline',          color: '#059669', bg: '#d1fae5' },
   ANNOUNCEMENT:   { icon: 'megaphone-outline',       color: '#d97706', bg: '#fef3c7' },
   MESSAGE:        { icon: 'chatbubble-outline',      color: '#0891b2', bg: '#e0f2fe' },
-  ATTENDANCE:     { icon: 'calendar-outline',        color: '#7c3aed', bg: '#ede9fe' },
+  ATTENDANCE:     { icon: 'calendar-outline',        color: '#4C3FC4', bg: '#F0EEFF' },
   PAYMENT:        { icon: 'cash-outline',            color: '#16a34a', bg: '#dcfce7' },
   ENROLLMENT:     { icon: 'school-outline',          color: '#0284c7', bg: '#e0f2fe' },
   ENQUIRY:        { icon: 'help-circle-outline',     color: '#db2777', bg: '#fce7f3' },
   JOB_APPLICATION:{ icon: 'briefcase-outline',       color: '#ea580c', bg: '#ffedd5' },
-  RESULT:         { icon: 'bar-chart-outline',       color: '#4f46e5', bg: '#e0e7ff' },
+  RESULT:         { icon: 'bar-chart-outline',       color: '#4C3FC4', bg: '#F0EEFF' },
   DOCUMENT:       { icon: 'document-text-outline',   color: '#64748b', bg: '#f1f5f9' },
   SYSTEM:         { icon: 'notifications-outline',   color: '#475569', bg: '#f8fafc' },
 };
@@ -31,7 +31,7 @@ const TYPE_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: s
 const PRIORITY_COLOR: Record<string, string> = {
   URGENT: '#ef4444',
   HIGH:   '#f97316',
-  NORMAL: '#6366f1',
+  NORMAL: '#4C3FC4',
   LOW:    '#94a3b8',
 };
 
@@ -90,7 +90,7 @@ function NotifRow({ notif, onRead, onDelete }: {
               {notif.title}
             </Text>
             {!notif.isRead && (
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6366f1', flexShrink: 0 }} />
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4C3FC4', flexShrink: 0 }} />
             )}
           </View>
           <Text style={{ fontSize: 13, color: '#64748b', lineHeight: 18 }} numberOfLines={2}>
@@ -166,7 +166,7 @@ export default function NotificationsScreen() {
               paddingHorizontal: 10, paddingVertical: 5,
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6366f1' }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#4C3FC4' }}>
               Mark all read
             </Text>
           </Pressable>
@@ -189,7 +189,7 @@ export default function NotificationsScreen() {
             style={{
               paddingHorizontal: 14, paddingVertical: 6,
               borderRadius: 20,
-              backgroundColor: unreadOnly === opt.value ? '#6366f1' : '#f1f5f9',
+              backgroundColor: unreadOnly === opt.value ? '#4C3FC4' : '#f1f5f9',
             }}
           >
             <Text style={{
@@ -206,7 +206,7 @@ export default function NotificationsScreen() {
       {/* List */}
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color="#6366f1" />
+          <ActivityIndicator color="#4C3FC4" />
         </View>
       ) : notifications.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>

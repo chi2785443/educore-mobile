@@ -18,17 +18,32 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="flex-1 px-6 py-8 gap-8">
-            <Pressable onPress={() => router.back()} className="flex-row items-center gap-2 self-start">
-              <Ionicons name="arrow-back" size={20} color="#140626" />
-              <Text className="text-sm font-medium text-brand-dark">Back</Text>
+          {/* Purple wave hero */}
+          <View style={{
+            backgroundColor: '#4C3FC4',
+            borderBottomLeftRadius: 36,
+            borderBottomRightRadius: 36,
+            paddingTop: 48,
+            paddingBottom: 44,
+            paddingHorizontal: 28,
+            gap: 14,
+            overflow: 'hidden',
+          }}>
+            <View style={{ position: 'absolute', top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+
+            <Pressable onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
+              <Ionicons name="arrow-back" size={20} color="#ffffff" />
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>Back</Text>
             </Pressable>
 
-            <View className="gap-1">
-              <Text className="text-2xl font-bold text-brand-dark">Forgot password?</Text>
-              <Text className="text-sm text-gray-500">We'll send a reset link to your email</Text>
+            <View style={{ gap: 6, marginTop: 8 }}>
+              <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.5 }}>Forgot password?</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }}>We'll send a reset link to your email</Text>
             </View>
+          </View>
 
+          {/* White form section */}
+          <View style={{ paddingHorizontal: 24, paddingTop: 36, paddingBottom: 40 }}>
             <ForgotPasswordForm />
           </View>
         </ScrollView>

@@ -31,8 +31,8 @@ function convDisplayName(conv: Conversation): string {
 }
 
 const AVATAR_PALETTE = [
-  '#6366f1', '#0ea5e9', '#14b8a6', '#7c3aed',
-  '#f59e0b', '#e11d48', '#10b981', '#f97316',
+  '#4C3FC4', '#0ea5e9', '#14b8a6', '#F5486A',
+  '#f59e0b', '#059669', '#10b981', '#f97316',
 ];
 function avatarColor(name: string): string {
   let h = 0;
@@ -205,13 +205,13 @@ export default function ChatTab() {
     router.push(`/chat/${conv.id}`);
   };
 
-  if (isLoading) return <LoadingScreen color="#6366f1" message="Loading messages" />;
+  if (isLoading) return <LoadingScreen color="#4C3FC4" message="Loading messages" />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top']}>
 
       {/* Header */}
-      <View style={{ backgroundColor: '#0B0F14', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+      <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.4 }}>
             Messages

@@ -25,14 +25,14 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 
 /* ── Grade palette ─────────────────────────────────────────────── */
 const GRADE_PALETTE: Record<string, { fg: string; grad: string }> = {
-  JSS1: { fg: '#6366f1', grad: '#6366f1' },
-  JSS2: { fg: '#0ea5e9', grad: '#0ea5e9' },
-  JSS3: { fg: '#14b8a6', grad: '#14b8a6' },
-  SS1:  { fg: '#7c3aed', grad: '#7c3aed' },
-  SS2:  { fg: '#f59e0b', grad: '#f59e0b' },
-  SS3:  { fg: '#e11d48', grad: '#e11d48' },
+  JSS1: { fg: '#F5486A', grad: '#F5486A' },
+  JSS2: { fg: '#4C3FC4', grad: '#4C3FC4' },
+  JSS3: { fg: '#059669', grad: '#059669' },
+  SS1:  { fg: '#d97706', grad: '#d97706' },
+  SS2:  { fg: '#0284c7', grad: '#0284c7' },
+  SS3:  { fg: '#7c3aed', grad: '#7c3aed' },
 };
-const DEFAULT_PAL = { fg: '#6366f1', grad: '#6366f1' };
+const DEFAULT_PAL = { fg: '#4C3FC4', grad: '#4C3FC4' };
 const getPalette = (grade?: string) => (grade && GRADE_PALETTE[grade]) ?? DEFAULT_PAL;
 
 const ORDERED_DAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
@@ -152,7 +152,7 @@ export default function ClassroomDetailScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       {/* ── Header ─────────────────────────────────────────────── */}
-      <View style={{ backgroundColor: '#0B0F14', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14 }}>
+      <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 22, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <Pressable
             onPress={() => router.back()}
@@ -260,7 +260,7 @@ export default function ClassroomDetailScreen() {
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 36 }}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
             >
               {(timetable[selectedDay] ?? []).length === 0 ? (
                 <EmptyState
@@ -280,7 +280,7 @@ export default function ClassroomDetailScreen() {
 
       {/* MEMBERS TAB */}
       {activeTab === 'members' && (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}>
           {(loadingTeachers || loadingStudents) && (
             <View style={{ paddingTop: 40, alignItems: 'center' }}>
               <ActivityIndicator color={pal.fg} />
@@ -294,8 +294,8 @@ export default function ClassroomDetailScreen() {
                 <Text style={{ fontSize: 12, fontWeight: '800', color: '#6b7280', letterSpacing: 0.8, textTransform: 'uppercase', flex: 1 }}>
                   Teachers
                 </Text>
-                <View style={{ backgroundColor: '#ede9fe', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#7c3aed' }}>{teachers.length}</Text>
+                <View style={{ backgroundColor: '#F0EEFF', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#4C3FC4' }}>{teachers.length}</Text>
                 </View>
               </View>
               <View style={{ backgroundColor: '#fff' }}>
@@ -378,7 +378,7 @@ export default function ClassroomDetailScreen() {
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 100 }}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
             >
               {filteredAssessments.map(a => (
                 <AssessmentCard
