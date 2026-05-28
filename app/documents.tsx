@@ -558,7 +558,7 @@ export default function DocumentsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       {/* Header */}
-      <View style={{ backgroundColor: '#1c1005', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 18 }}>
+      <View style={{ backgroundColor: '#1c1005', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />

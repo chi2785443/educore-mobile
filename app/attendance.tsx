@@ -193,7 +193,7 @@ export default function AttendanceScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       {/* Header */}
-      <View style={{ backgroundColor: '#0c2a24', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
+      <View style={{ backgroundColor: '#0c2a24', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Pressable
             onPress={() => router.back()}

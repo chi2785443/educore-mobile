@@ -190,7 +190,7 @@ function AdminDetailView({
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#f1f5f9' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Header */}
-      <View style={{ backgroundColor: '#0a1628', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 22 }}>
+      <View style={{ backgroundColor: '#0a1628', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <Pressable onPress={onBack} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
@@ -449,7 +449,7 @@ function AdminEnrollmentsScreen({ schoolId, schoolName }: { schoolId: string; sc
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f1f5f9' }} edges={['top']}>
       {/* Header */}
-      <View style={{ backgroundColor: '#0a1628', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
+      <View style={{ backgroundColor: '#0a1628', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
@@ -604,7 +604,7 @@ function UserDetailView({ enrollment, onBack }: { enrollment: Enrollment; onBack
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f1f5f9' }}>
-      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
+      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
           <Pressable onPress={onBack} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
@@ -732,7 +732,7 @@ function SchoolPickerView({ onSelect, onBack }: { onSelect: (s: School) => void;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f1f5f9' }}>
-      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <Pressable onPress={onBack} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
@@ -813,7 +813,7 @@ function ApplyFormView({ school, onBack, onDone }: { school: School; onBack: () 
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#f1f5f9' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
+      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Pressable onPress={onBack} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
@@ -936,7 +936,7 @@ function UserEnrollmentsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f1f5f9' }} edges={['top']}>
-      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
+      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: enrollments.length > 0 ? 14 : 0 }}>
           <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />

@@ -758,7 +758,7 @@ export default function MyEnquiriesScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       {/* Header */}
-      <View style={{ backgroundColor: HEADER_COLOR, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
+      <View style={{ backgroundColor: HEADER_COLOR, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: enquiries.length > 0 && !isLoading ? 14 : 0 }}>
           <Pressable
             onPress={() => router.back()}

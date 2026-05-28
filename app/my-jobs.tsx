@@ -982,7 +982,7 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f1f5f9' }} edges={['top']}>
       {/* Header */}
-      <View style={{ backgroundColor: ADMIN_BG, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 }}>
+      <View style={{ backgroundColor: ADMIN_BG, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
