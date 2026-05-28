@@ -193,8 +193,7 @@ function UploadDocModal({ visible, schoolId, onClose }: UploadDocModalProps) {
   };
 
   return (
-    <>
-      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
             <Pressable onPress={handleClose} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
@@ -301,16 +300,15 @@ function UploadDocModal({ visible, schoolId, onClose }: UploadDocModalProps) {
               </View>
             </Pressable>
           </ScrollView>
+
+          <MemberPickerModal
+            visible={showMemberPicker}
+            members={members}
+            onSelect={(m) => { setSelectedMember(m); setShowMemberPicker(false); }}
+            onClose={() => setShowMemberPicker(false)}
+          />
         </SafeAreaView>
       </Modal>
-
-      <MemberPickerModal
-        visible={showMemberPicker}
-        members={members}
-        onSelect={(m) => { setSelectedMember(m); setShowMemberPicker(false); }}
-        onClose={() => setShowMemberPicker(false)}
-      />
-    </>
   );
 }
 
