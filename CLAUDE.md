@@ -64,6 +64,33 @@
 
 ---
 
+## Screen Header (Curved Topbar)
+
+Every app-level screen uses a dark curved header. Required shape:
+
+```tsx
+<SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
+  <View style={{
+    backgroundColor: HEADER_COLOR,
+    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24,
+    borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
+  }}>
+    {/* back button + title + subtitle + optional actions */}
+  </View>
+```
+
+- `borderBottomLeftRadius: 28, borderBottomRightRadius: 28` — always, no exceptions
+- `paddingBottom: 24` — standard; use more only if the header has extra content (stats strip, search bar)
+- Back button: `width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)'`
+- Title: `fontSize: 20, fontWeight: '900', color: '#fff'`
+- Subtitle: `fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 1`
+
+## Phone Input
+
+- Always use `PhoneInput` from `@/components/ui/PhoneInput` — never plain `TextInput` for phone fields
+- Supports `label`, `value`, `onChange`, `error`, `optional` props
+- Country list in `lib/countryCodes.ts` (32 countries, Nigeria default)
+
 ## Loading & UI
 
 - Replace all full-screen `ActivityIndicator` with `components/ui/LoadingScreen.tsx`
