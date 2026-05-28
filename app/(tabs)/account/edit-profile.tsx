@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, Pressable, TextInput,
   ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { toast } from '@/components/ui/Toast';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -253,13 +254,11 @@ export default function EditProfileScreen() {
               </View>
             </View>
 
-            <Field
+            <PhoneInput
               label="Phone Number"
               value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="+234 800 000 0000"
-              keyboardType="phone-pad"
-              autoCapitalize="none"
+              onChange={setPhoneNumber}
+              optional
             />
           </View>
 
