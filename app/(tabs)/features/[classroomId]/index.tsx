@@ -420,7 +420,27 @@ export default function ClassroomDetailScreen() {
                 {teachers.length === 0 ? (
                   <Text style={{ padding: 16, color: '#9ca3af', fontSize: 13 }}>No teachers assigned</Text>
                 ) : (
-                  teachers.map(t => <MemberRow key={t.id} member={t} role="teacher" />)
+                  teachers.map(t => (
+                    <MemberRow
+                      key={t.id}
+                      member={t}
+                      role="teacher"
+                      onPress={() => router.push({
+                        pathname: `/features/${classroomId}/member/${t.id}` as never,
+                        params: {
+                          memberId: t.id,
+                          classroomId,
+                          firstName: t.firstName,
+                          lastName: t.lastName,
+                          email: t.email ?? '',
+                          jobTitle: t.jobTitle ?? '',
+                          role: 'teacher',
+                          profilePicture: t.profilePicture ?? '',
+                          classroomName: classroom?.name ?? '',
+                        },
+                      })}
+                    />
+                  ))
                 )}
               </View>
             </View>
@@ -441,7 +461,27 @@ export default function ClassroomDetailScreen() {
                 {students.length === 0 ? (
                   <Text style={{ padding: 16, color: '#9ca3af', fontSize: 13 }}>No students enrolled</Text>
                 ) : (
-                  students.map(s => <MemberRow key={s.id} member={s} role="student" />)
+                  students.map(s => (
+                    <MemberRow
+                      key={s.id}
+                      member={s}
+                      role="student"
+                      onPress={() => router.push({
+                        pathname: `/features/${classroomId}/member/${s.id}` as never,
+                        params: {
+                          memberId: s.id,
+                          classroomId,
+                          firstName: s.firstName,
+                          lastName: s.lastName,
+                          email: s.email ?? '',
+                          jobTitle: '',
+                          role: 'student',
+                          profilePicture: s.profilePicture ?? '',
+                          classroomName: classroom?.name ?? '',
+                        },
+                      })}
+                    />
+                  ))
                 )}
               </View>
             </View>
