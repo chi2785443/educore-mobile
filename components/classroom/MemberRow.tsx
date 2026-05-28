@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { ClassroomMember } from '@/interface/classroom.interface';
 
@@ -49,19 +50,27 @@ export default function MemberRow({ member, role, onPress }: Props) {
         }}
       >
         {/* Avatar */}
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            backgroundColor: avatarColor,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>{initials}</Text>
-        </View>
+        {member?.profilePicture ? (
+          <Image
+            source={{ uri: member.profilePicture }}
+            style={{ width: 44, height: 44, borderRadius: 14, flexShrink: 0 }}
+            contentFit="cover"
+          />
+        ) : (
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              backgroundColor: avatarColor,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15 }}>{initials}</Text>
+          </View>
+        )}
 
         {/* Info */}
         <View style={{ flex: 1 }}>
