@@ -13,6 +13,9 @@ export interface School {
   description?: string;
   isActive: boolean;
   createdAt: string;
+  currentSession?: string | null;
+  currentTerm?: string | null;
+  currency?: string;
 }
 
 export interface SchoolSettings {

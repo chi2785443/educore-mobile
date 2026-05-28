@@ -10,8 +10,8 @@ import {
   CreateAssessmentFormValues,
 } from '@/schemas/assessment.schema';
 import { useCreateAssessment, useSubjects, useGradeConfigs } from '@/hooks/useAssessment';
+import { useSchoolById } from '@/hooks/useSchool';
 import { AssessmentType, QuestionType } from '@/interface/assessment.interface';
-import { useAuthStore } from '@/store/authStore';
 
 interface Classroom { id: string; name: string; grade?: string; section?: string }
 
@@ -376,20 +376,9 @@ function TimePickerModal({ visible, value, label, onSelect, onClose }: {
 
 /* ── Main sheet ─────────────────────────────────────────────────── */
 export default function CreateAssessmentSheet({ visible, onClose, classrooms, schoolId }: Props) {
-  const user = useAuthStore(s => s.user);
-  const selectedSchoolId = useAuthStore(s => s.selectedSchoolId);
-
-  // Read term/session from the school object already in auth store
-  const schoolInfo = useMemo(() => {
-    const memberships = user?.schools ?? [];
-    return (
-      memberships.find(m => m.schoolId === selectedSchoolId)?.school ??
-      memberships[0]?.school ?? null
-    );
-  }, [user, selectedSchoolId]);
-
   const { data: subjects = [] } = useSubjects(visible ? schoolId : undefined);
   const { data: gradeConfigs = [] } = useGradeConfigs(visible ? schoolId : undefined);
+  const { data: schoolDetail } = useSchoolById(visible ? schoolId : undefined);
   const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
   const [showClassroomPicker, setShowClassroomPicker] = useState(false);
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
@@ -407,9 +396,9 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
     return ALL_TYPES;
   }, [gradeConfigs]);
 
-  // Term and academic year from the school object in auth store
-  const currentTerm = schoolInfo?.currentTerm ?? '';
-  const currentSession = schoolInfo?.currentSession ?? '';
+  // Term and academic year — fetched fresh from GET /schools/:id
+  const currentTerm = schoolDetail?.currentTerm ?? '';
+  const currentSession = schoolDetail?.currentSession ?? '';
 
   const createMutation = useCreateAssessment(selectedClassroom?.id ?? '');
 
