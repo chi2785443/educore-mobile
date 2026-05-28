@@ -138,7 +138,8 @@ export default function FeaturesTab() {
     }] : []),
     ...(!isStudent && !isParent ? [{
       icon: 'briefcase-outline' as const, iconColor: '#0284c7', iconBg: '#e0f2fe',
-      title: 'My Jobs', subtitle: 'Browse & track applications',
+      title: isAdmin ? 'Manage Jobs' : 'My Jobs',
+      subtitle: isAdmin ? 'Post jobs & review candidates' : 'Browse & track applications',
       route: '/my-jobs',
     }] : []),
     {
