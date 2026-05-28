@@ -16,3 +16,12 @@ export function useCreateSchool(onSuccess?: () => void) {
     onSuccess: () => onSuccess?.(),
   });
 }
+
+export function useSchoolMembers(schoolId: string | undefined) {
+  return useQuery({
+    queryKey: ['school-members', schoolId],
+    queryFn: () => schoolService.getMembers(schoolId!),
+    enabled: !!schoolId,
+    staleTime: 3 * 60_000,
+  });
+}

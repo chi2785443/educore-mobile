@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { memberDocumentService } from '@/services/member-document.service';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { memberDocumentService, AdminUploadDocumentParams, RequestUploadLinkParams } from '@/services/member-document.service';
 
 export const useMyDocuments = (schoolId: string | undefined) =>
   useQuery({
@@ -16,3 +16,40 @@ export const usePublicDocuments = (schoolId: string | undefined) =>
     enabled: !!schoolId,
     staleTime: 60_000,
   });
+
+export const useAllMemberDocuments = (schoolId: string | undefined) =>
+  useQuery({
+    queryKey: ['all-member-documents', schoolId],
+    queryFn: () => memberDocumentService.getAllDocuments(schoolId!),
+    enabled: !!schoolId,
+    staleTime: 60_000,
+  });
+
+export function useAdminUploadMemberDocument(schoolId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: AdminUploadDocumentParams) => memberDocumentService.adminUpload(params),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-member-documents', schoolId] });
+      qc.invalidateQueries({ queryKey: ['my-documents', schoolId] });
+    },
+  });
+}
+
+export function useDeleteMemberDocument(schoolId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (documentId: string) => memberDocumentService.deleteDocument(schoolId, documentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-member-documents', schoolId] });
+      qc.invalidateQueries({ queryKey: ['my-documents', schoolId] });
+      qc.invalidateQueries({ queryKey: ['public-documents', schoolId] });
+    },
+  });
+}
+
+export function useRequestUploadLink() {
+  return useMutation({
+    mutationFn: (params: RequestUploadLinkParams) => memberDocumentService.requestUploadLink(params),
+  });
+}

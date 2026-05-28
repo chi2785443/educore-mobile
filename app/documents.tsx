@@ -1,17 +1,25 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, ScrollView, Pressable, ActivityIndicator, Linking, RefreshControl,
+  View, Text, ScrollView, Pressable, ActivityIndicator, Linking,
+  RefreshControl, Modal, TextInput, Alert,
 } from 'react-native';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
+import * as DocumentPicker from 'expo-document-picker';
 import { useAuthStore } from '@/store/authStore';
-import { useMyDocuments, usePublicDocuments } from '@/hooks/useMemberDocuments';
+import {
+  useMyDocuments, usePublicDocuments, useAllMemberDocuments,
+  useAdminUploadMemberDocument, useDeleteMemberDocument, useRequestUploadLink,
+} from '@/hooks/useMemberDocuments';
+import { useSchoolMembers } from '@/hooks/useSchool';
 import { memberDocumentService } from '@/services/member-document.service';
 import { MemberDocument } from '@/interface/document.interface';
 import { LibraryFileType } from '@/interface/library.interface';
+import { UserRole } from '@/interface/user.interface';
+import { SchoolMember } from '@/services/school.service';
 
 /* ── File config ────────────────────────────────────────────────── */
 const FILE_CONFIG: Record<LibraryFileType, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; bg: string; label: string }> = {
@@ -36,8 +44,269 @@ function formatSize(bytes: number): string {
   return `${bytes} B`;
 }
 
+/* ── Admin upload modal ─────────────────────────────────────────── */
+interface UploadDocModalProps {
+  visible: boolean;
+  schoolId: string;
+  onClose: () => void;
+}
+
+function UploadDocModal({ visible, schoolId, onClose }: UploadDocModalProps) {
+  const [memberSearch, setMemberSearch] = useState('');
+  const [selectedMember, setSelectedMember] = useState<SchoolMember | null>(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [visibility, setVisibility] = useState<'public' | 'private'>('private');
+  const [file, setFile] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
+
+  const { data: members = [] } = useSchoolMembers(schoolId);
+  const { mutate: upload, isPending } = useAdminUploadMemberDocument(schoolId);
+
+  const filteredMembers = useMemo(() => {
+    if (!memberSearch.trim()) return members.slice(0, 20);
+    const s = memberSearch.toLowerCase();
+    return members.filter(m =>
+      `${m.user.firstName} ${m.user.lastName}`.toLowerCase().includes(s) ||
+      m.user.email.toLowerCase().includes(s)
+    ).slice(0, 20);
+  }, [members, memberSearch]);
+
+  const reset = () => {
+    setMemberSearch(''); setSelectedMember(null); setTitle('');
+    setDescription(''); setVisibility('private'); setFile(null);
+  };
+
+  const handleClose = () => { reset(); onClose(); };
+
+  const pickFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+    if (!result.canceled && result.assets[0]) {
+      const a = result.assets[0];
+      setFile({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' });
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!selectedMember) { toast.error('Select a member'); return; }
+    if (!title.trim()) { toast.error('Title is required'); return; }
+    if (!file) { toast.error('Please select a file'); return; }
+    upload({
+      schoolId, userId: selectedMember.userId, title: title.trim(),
+      description: description.trim() || undefined, visibility,
+      fileUri: file.uri, fileName: file.name, fileMimeType: file.mimeType,
+    }, {
+      onSuccess: () => { toast.success('Document uploaded'); reset(); onClose(); },
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Upload failed'),
+    });
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+          <Pressable onPress={handleClose} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="close" size={18} color="#374151" />
+          </Pressable>
+          <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>Upload for Member</Text>
+          <View style={{ width: 34 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} keyboardShouldPersistTaps="handled">
+          {/* Member search */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Member *</Text>
+            {selectedMember ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#f0fdf4', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#86efac' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }}>{selectedMember.user.firstName} {selectedMember.user.lastName}</Text>
+                  <Text style={{ fontSize: 12, color: '#6b7280' }}>{selectedMember.user.email}</Text>
+                </View>
+                <Pressable onPress={() => { setSelectedMember(null); setMemberSearch(''); }} hitSlop={8}>
+                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <TextInput
+                  value={memberSearch} onChangeText={setMemberSearch}
+                  placeholder="Search by name or email..."
+                  placeholderTextColor="#9ca3af"
+                  style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa' }}
+                />
+                {filteredMembers.length > 0 && (
+                  <View style={{ marginTop: 6, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden', maxHeight: 200 }}>
+                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                      {filteredMembers.map(m => (
+                        <Pressable key={m.userId} onPress={() => { setSelectedMember(m); setMemberSearch(''); }}
+                          style={({ pressed }) => ({ backgroundColor: pressed ? '#f9fafb' : '#fff', paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' })}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: '#0f172a' }}>{m.user.firstName} {m.user.lastName}</Text>
+                          <Text style={{ fontSize: 11, color: '#9ca3af' }}>{m.user.email} · {m.role}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+
+          {/* Title */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Document title *</Text>
+            <TextInput
+              value={title} onChangeText={setTitle}
+              placeholder="e.g. Staff Contract 2025"
+              placeholderTextColor="#9ca3af"
+              style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa' }}
+            />
+          </View>
+
+          {/* Description */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Description</Text>
+            <TextInput
+              value={description} onChangeText={setDescription} multiline numberOfLines={3}
+              placeholder="Optional notes..."
+              placeholderTextColor="#9ca3af"
+              style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa', minHeight: 72, textAlignVertical: 'top' }}
+            />
+          </View>
+
+          {/* Visibility */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Visibility</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {(['private', 'public'] as const).map(v => {
+                const active = visibility === v;
+                return (
+                  <Pressable key={v} onPress={() => setVisibility(v)}
+                    style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: active ? '#d97706' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#d97706' : '#e5e7eb' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{v === 'private' ? 'Private' : 'Public'}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* File picker */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>File *</Text>
+            <Pressable onPress={pickFile} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+              <View style={{ borderWidth: 2, borderColor: file ? '#d97706' : '#e5e7eb', borderStyle: 'dashed', borderRadius: 14, padding: 16, alignItems: 'center', gap: 6, backgroundColor: file ? '#fffbeb' : '#fafafa' }}>
+                <Ionicons name={file ? 'document-attach' : 'cloud-upload-outline'} size={28} color={file ? '#d97706' : '#9ca3af'} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: file ? '#d97706' : '#6b7280' }}>
+                  {file ? file.name : 'Tap to select file'}
+                </Text>
+                {file && <Text style={{ fontSize: 11, color: '#9ca3af' }}>Tap to change</Text>}
+              </View>
+            </Pressable>
+          </View>
+
+          <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ opacity: pressed || isPending ? 0.75 : 1 })}>
+            <View style={{ backgroundColor: '#d97706', borderRadius: 14, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+              {isPending && <ActivityIndicator size="small" color="#fff" />}
+              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{isPending ? 'Uploading…' : 'Upload Document'}</Text>
+            </View>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+/* ── Request upload link modal ──────────────────────────────────── */
+interface RequestLinkModalProps {
+  visible: boolean;
+  schoolId: string;
+  onClose: () => void;
+}
+
+function RequestLinkModal({ visible, schoolId, onClose }: RequestLinkModalProps) {
+  const [email, setEmail] = useState('');
+  const [docTitle, setDocTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const { mutate: request, isPending } = useRequestUploadLink();
+
+  const reset = () => { setEmail(''); setDocTitle(''); setMessage(''); };
+  const handleClose = () => { reset(); onClose(); };
+
+  const handleSubmit = () => {
+    if (!email.trim()) { toast.error('Recipient email is required'); return; }
+    if (!docTitle.trim()) { toast.error('Document title is required'); return; }
+    request({
+      schoolId, recipientEmail: email.trim(),
+      documentTitle: docTitle.trim(),
+      message: message.trim() || undefined,
+    }, {
+      onSuccess: () => { toast.success('Upload link sent'); reset(); onClose(); },
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to send'),
+    });
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+          <Pressable onPress={handleClose} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="close" size={18} color="#374151" />
+          </Pressable>
+          <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: '#0f172a', textAlign: 'center' }}>Request Document</Text>
+          <View style={{ width: 34 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} keyboardShouldPersistTaps="handled">
+          <View style={{ backgroundColor: '#eff6ff', borderRadius: 12, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+            <Ionicons name="information-circle-outline" size={18} color="#2563eb" style={{ marginTop: 1 }} />
+            <Text style={{ flex: 1, fontSize: 13, color: '#1d4ed8', lineHeight: 19 }}>
+              An upload link will be emailed to the member. They can use it to upload the requested document directly.
+            </Text>
+          </View>
+
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Recipient email *</Text>
+            <TextInput
+              value={email} onChangeText={setEmail}
+              placeholder="member@school.com"
+              placeholderTextColor="#9ca3af"
+              keyboardType="email-address" autoCapitalize="none"
+              style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa' }}
+            />
+          </View>
+
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Document title *</Text>
+            <TextInput
+              value={docTitle} onChangeText={setDocTitle}
+              placeholder="e.g. WAEC Certificate"
+              placeholderTextColor="#9ca3af"
+              style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa' }}
+            />
+          </View>
+
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 }}>Message to member</Text>
+            <TextInput
+              value={message} onChangeText={setMessage} multiline numberOfLines={3}
+              placeholder="Please upload your WAEC certificate..."
+              placeholderTextColor="#9ca3af"
+              style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#fafafa', minHeight: 80, textAlignVertical: 'top' }}
+            />
+          </View>
+
+          <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ opacity: pressed || isPending ? 0.75 : 1 })}>
+            <View style={{ backgroundColor: '#0284c7', borderRadius: 14, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+              {isPending && <ActivityIndicator size="small" color="#fff" />}
+              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>{isPending ? 'Sending…' : 'Send Upload Link'}</Text>
+            </View>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 /* ── Document row ───────────────────────────────────────────────── */
-function DocRow({ doc }: { doc: MemberDocument }) {
+function DocRow({ doc, isAdmin, onDelete }: { doc: MemberDocument; isAdmin: boolean; onDelete: (id: string) => void }) {
   const cfg = FILE_CONFIG[doc.fileType] ?? FILE_CONFIG.other;
   const sourceSt = doc.source ? SOURCE_LABELS[doc.source] : null;
   const [opening, setOpening] = useState(false);
@@ -52,6 +321,13 @@ function DocRow({ doc }: { doc: MemberDocument }) {
     } finally {
       setOpening(false);
     }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert('Delete document', `Remove "${doc.title}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => onDelete(doc.id) },
+    ]);
   };
 
   return (
@@ -70,6 +346,11 @@ function DocRow({ doc }: { doc: MemberDocument }) {
         {/* Info */}
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{doc.title}</Text>
+          {doc.user && (
+            <Text style={{ fontSize: 11, color: '#7c3aed', marginTop: 1 }} numberOfLines={1}>
+              {doc.user.firstName} {doc.user.lastName}
+            </Text>
+          )}
           <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
             <Text style={{ fontSize: 11, color: '#9ca3af' }}>{cfg.label} · {formatSize(doc.fileSize)}</Text>
             {sourceSt && (
@@ -88,16 +369,26 @@ function DocRow({ doc }: { doc: MemberDocument }) {
           </Text>
         </View>
 
-        {/* Open indicator */}
-        {opening
-          ? <ActivityIndicator size="small" color="#d97706" />
-          : <Ionicons name="open-outline" size={17} color="#cbd5e1" />}
+        {/* Actions */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {isAdmin && (
+            <Pressable onPress={confirmDelete} hitSlop={8}
+              style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#fef2f2', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="trash-outline" size={15} color="#dc2626" />
+            </Pressable>
+          )}
+          {opening
+            ? <ActivityIndicator size="small" color="#d97706" />
+            : <Ionicons name="open-outline" size={17} color="#cbd5e1" />}
+        </View>
       </View>
     </Pressable>
   );
 }
 
 /* ── Main screen ────────────────────────────────────────────────── */
+type TabKey = 'mine' | 'public' | 'all';
+
 export default function DocumentsScreen() {
   const router = useRouter();
   const user = useAuthStore(s => s.user);
@@ -106,27 +397,50 @@ export default function DocumentsScreen() {
     ?? (user?.schools ?? [])[0];
   const schoolId = primary?.schoolId ?? '';
 
-  const [tab, setTab] = useState<'mine' | 'public'>('mine');
+  const role = primary?.role ?? '';
+  const isAdmin = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin;
+
+  const [tab, setTab] = useState<TabKey>('mine');
+  const [showUpload, setShowUpload] = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
 
   const { data: myDocs = [], isLoading: loadingMine, refetch: refetchMine } = useMyDocuments(schoolId);
   const { data: publicDocs = [], isLoading: loadingPublic, refetch: refetchPublic } = usePublicDocuments(
     tab === 'public' ? schoolId : undefined,
   );
+  const { data: allDocs = [], isLoading: loadingAll, refetch: refetchAll } = useAllMemberDocuments(
+    isAdmin && tab === 'all' ? schoolId : undefined,
+  );
+  const { mutate: deleteDoc } = useDeleteMemberDocument(schoolId);
+
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchMine(), refetchPublic()]);
+    await Promise.all([refetchMine(), refetchPublic(), refetchAll()]);
     setRefreshing(false);
-  }, [refetchMine, refetchPublic]);
+  }, [refetchMine, refetchPublic, refetchAll]);
 
-  const docs = tab === 'mine' ? myDocs : publicDocs;
-  const isLoading = tab === 'mine' ? loadingMine : loadingPublic;
+  const docs = tab === 'mine' ? myDocs : tab === 'public' ? publicDocs : allDocs;
+  const isLoading = tab === 'mine' ? loadingMine : tab === 'public' ? loadingPublic : loadingAll;
+
+  const handleDelete = useCallback((id: string) => {
+    deleteDoc(id, {
+      onSuccess: () => toast.success('Document deleted'),
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to delete'),
+    });
+  }, [deleteDoc]);
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'mine', label: 'My Documents' },
+    { key: 'public', label: 'School Public' },
+    ...(isAdmin ? [{ key: 'all' as TabKey, label: 'All Members' }] : []),
+  ];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       {/* Header */}
       <View style={{ backgroundColor: '#1c1005', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 18 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
           </Pressable>
@@ -136,24 +450,42 @@ export default function DocumentsScreen() {
               {docs.length} document{docs.length !== 1 ? 's' : ''}
             </Text>
           </View>
-          <Ionicons name="document-text-outline" size={22} color="#fbbf24" />
+
+          {/* Admin action buttons */}
+          {isAdmin && (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable onPress={() => setShowRequest(true)} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="mail-outline" size={18} color="#93c5fd" />
+                </View>
+              </Pressable>
+              <Pressable onPress={() => setShowUpload(true)} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#d97706', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 }}>
+                  <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Upload</Text>
+                </View>
+              </Pressable>
+            </View>
+          )}
+
+          {!isAdmin && <Ionicons name="document-text-outline" size={22} color="#fbbf24" />}
         </View>
       </View>
 
       {/* Tab pills */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 10, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-        {(['mine', 'public'] as const).map(t => (
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+        {tabs.map(t => (
           <Pressable
-            key={t}
-            onPress={() => setTab(t)}
+            key={t.key}
+            onPress={() => setTab(t.key)}
             style={{
               flex: 1, paddingVertical: 9, borderRadius: 12, alignItems: 'center',
-              backgroundColor: tab === t ? '#d97706' : '#f3f4f6',
-              borderWidth: 1, borderColor: tab === t ? '#d97706' : '#e5e7eb',
+              backgroundColor: tab === t.key ? '#d97706' : '#f3f4f6',
+              borderWidth: 1, borderColor: tab === t.key ? '#d97706' : '#e5e7eb',
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '700', color: tab === t ? '#fff' : '#6b7280' }}>
-              {t === 'mine' ? 'My Documents' : 'School Public'}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: tab === t.key ? '#fff' : '#6b7280' }}>
+              {t.label}
             </Text>
           </Pressable>
         ))}
@@ -167,22 +499,26 @@ export default function DocumentsScreen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
           <Ionicons name="document-outline" size={48} color="#d1d5db" />
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#374151', textAlign: 'center' }}>
-            {tab === 'mine' ? 'No documents yet' : 'No public documents'}
+            {tab === 'mine' ? 'No documents yet' : tab === 'public' ? 'No public documents' : 'No member documents'}
           </Text>
           <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 }}>
             {tab === 'mine'
               ? 'Documents uploaded by your school admin will appear here.'
-              : 'School-wide public documents will appear here.'}
+              : tab === 'public'
+              ? 'School-wide public documents will appear here.'
+              : 'Upload a document for a member using the Upload button.'}
           </Text>
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#d97706" colors={['#d97706']} />}>
-          {/* Group by date if needed — simple flat list for now */}
           <View style={{ backgroundColor: '#fff', marginTop: 12, marginHorizontal: 16, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2 }}>
-            {docs.map(doc => <DocRow key={doc.id} doc={doc} />)}
+            {docs.map(doc => <DocRow key={doc.id} doc={doc} isAdmin={isAdmin} onDelete={handleDelete} />)}
           </View>
         </ScrollView>
       )}
+
+      <UploadDocModal visible={showUpload} schoolId={schoolId} onClose={() => setShowUpload(false)} />
+      <RequestLinkModal visible={showRequest} schoolId={schoolId} onClose={() => setShowRequest(false)} />
     </SafeAreaView>
   );
 }
