@@ -67,8 +67,8 @@ function EmptyState({ icon, title, subtitle }: {
   );
 }
 
-/* ── Timetable grid ────────────────────────────────────────────── */
-function TimetableGrid({
+/* ── Timetable view ────────────────────────────────────────────── */
+function TimetableView({
   timetable,
   pal,
   refreshing,
@@ -80,24 +80,12 @@ function TimetableGrid({
   onRefresh: () => void;
 }) {
   const today = getTodayDayOfWeek();
-
-  // Collect all unique time slots sorted by start time
-  const slots = useMemo(() => {
-    const seen = new Set<string>();
-    const list: { start: string; end: string; key: string }[] = [];
-    ORDERED_DAYS.forEach(day => {
-      (timetable[day] ?? []).forEach(e => {
-        const key = `${e.startTime}|${e.endTime}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          list.push({ start: e.startTime, end: e.endTime, key });
-        }
-      });
-    });
-    return list.sort((a, b) => a.start.localeCompare(b.start));
-  }, [timetable]);
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek>(today);
 
   const hasAny = ORDERED_DAYS.some(d => (timetable[d]?.length ?? 0) > 0);
+  const dayPeriods = (timetable[selectedDay] ?? []).slice().sort((a, b) =>
+    a.startTime.localeCompare(b.startTime),
+  );
 
   if (!hasAny) {
     return (
@@ -113,131 +101,152 @@ function TimetableGrid({
     );
   }
 
-  // Time column width and day column width
-  const TIME_W = 62;
-  const DAY_W = 56;
-
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 36 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={pal.fg} colors={[pal.fg]} />}
-    >
-      {/* Header row */}
-      <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-        <View style={{ width: TIME_W }} />
+    <View style={{ flex: 1 }}>
+      {/* Day selector */}
+      <View style={{
+        backgroundColor: '#fff',
+        borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
+        flexDirection: 'row',
+        paddingHorizontal: 12, paddingVertical: 10,
+        gap: 6,
+      }}>
         {ORDERED_DAYS.map(day => {
+          const isActive = selectedDay === day;
           const isToday = day === today;
+          const count = timetable[day]?.length ?? 0;
           return (
-            <View
+            <Pressable
               key={day}
-              style={{
-                width: DAY_W, alignItems: 'center', paddingVertical: 6,
-                borderRadius: 10,
-                backgroundColor: isToday ? pal.fg : 'transparent',
-                marginHorizontal: 1,
-              }}
+              onPress={() => setSelectedDay(day)}
+              style={{ flex: 1, alignItems: 'center', gap: 4 }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '800', color: isToday ? '#fff' : '#9ca3af', letterSpacing: 0.3 }}>
-                {DAY_LABELS[day]}
-              </Text>
-              {isToday && (
-                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)', marginTop: 2 }} />
-              )}
-            </View>
+              <View style={{
+                width: '100%', paddingVertical: 8, borderRadius: 12,
+                alignItems: 'center', gap: 2,
+                backgroundColor: isActive ? pal.fg : isToday ? pal.fg + '15' : '#f8fafc',
+                borderWidth: 1.5,
+                borderColor: isActive ? pal.fg : isToday ? pal.fg + '40' : '#f1f5f9',
+              }}>
+                <Text style={{
+                  fontSize: 12, fontWeight: '800', letterSpacing: 0.2,
+                  color: isActive ? '#fff' : isToday ? pal.fg : '#6b7280',
+                }}>
+                  {DAY_LABELS[day]}
+                </Text>
+                {count > 0 ? (
+                  <View style={{
+                    minWidth: 16, height: 16, borderRadius: 8,
+                    backgroundColor: isActive ? 'rgba(255,255,255,0.3)' : pal.fg + '20',
+                    alignItems: 'center', justifyContent: 'center',
+                    paddingHorizontal: 4,
+                  }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: isActive ? '#fff' : pal.fg }}>
+                      {count}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: isActive ? 'rgba(255,255,255,0.4)' : '#d1d5db' }} />
+                )}
+              </View>
+            </Pressable>
           );
         })}
       </View>
 
-      {/* Time slot rows */}
-      {slots.map((slot, rowIdx) => (
-        <View
-          key={slot.key}
-          style={{
-            flexDirection: 'row',
-            marginBottom: 6,
-            backgroundColor: rowIdx % 2 === 0 ? '#fff' : '#f8fafc',
-            borderRadius: 12,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: '#f1f5f9',
-          }}
-        >
-          {/* Time label */}
-          <View style={{ width: TIME_W, paddingVertical: 10, paddingHorizontal: 8, justifyContent: 'center', borderRightWidth: 1, borderRightColor: '#f1f5f9' }}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: '#4C3FC4', lineHeight: 14 }}>
-              {slot.start}
+      {/* Period list for selected day */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 36 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={pal.fg} colors={[pal.fg]} />}
+      >
+        {dayPeriods.length === 0 ? (
+          <View style={{ alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 48, paddingHorizontal: 24 }}>
+            <View style={{ width: 52, height: 52, borderRadius: 18, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="cafe-outline" size={24} color="#d1d5db" />
+            </View>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#6b7280', textAlign: 'center' }}>
+              No classes on {DAY_LABELS[selectedDay]}
             </Text>
-            <Text style={{ fontSize: 9, color: '#9ca3af', lineHeight: 12, marginTop: 1 }}>
-              {slot.end}
-            </Text>
+            <Text style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>Free day!</Text>
           </View>
-
-          {/* Day cells */}
-          {ORDERED_DAYS.map(day => {
-            const entry = (timetable[day] ?? []).find(
-              e => e.startTime === slot.start && e.endTime === slot.end,
-            );
-            const isToday = day === today;
-            const color = entry?.subject?.color ?? null;
-            const subjectName = entry?.subject?.name ?? null;
-            const abbrev = subjectName
-              ? subjectName.length <= 5
-                ? subjectName
-                : subjectName.slice(0, 4).trim() + '.'
+        ) : (
+          dayPeriods.map((entry, idx) => {
+            const color = entry.subject?.color ?? pal.fg;
+            const subjectName = entry.subject?.name ?? 'Unknown Subject';
+            const teacherName = entry.teacher
+              ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
               : null;
-
             return (
               <View
-                key={day}
+                key={entry.id}
                 style={{
-                  width: DAY_W,
-                  marginHorizontal: 1,
-                  paddingVertical: 8,
-                  paddingHorizontal: 4,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: entry
-                    ? color ? color + '22' : pal.fg + '15'
-                    : isToday ? pal.fg + '08' : 'transparent',
-                  borderRadius: 8,
+                  flexDirection: 'row',
+                  backgroundColor: '#fff',
+                  borderRadius: 18,
+                  marginBottom: 10,
+                  overflow: 'hidden',
+                  shadowColor: color,
+                  shadowOpacity: 0.10,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowRadius: 10,
+                  elevation: 3,
+                  borderWidth: 1,
+                  borderColor: '#f1f5f9',
                 }}
               >
-                {entry ? (
-                  <>
-                    <Text
-                      style={{
-                        fontSize: 11, fontWeight: '800', textAlign: 'center', lineHeight: 14,
-                        color: color ?? pal.fg,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {abbrev}
-                    </Text>
-                    {entry.periodNumber !== undefined && (
-                      <Text style={{ fontSize: 9, color: color ? color + 'aa' : pal.fg + 'aa', marginTop: 2, fontWeight: '600' }}>
-                        P{entry.periodNumber}
+                {/* Colored left bar */}
+                <View style={{ width: 5, backgroundColor: color }} />
+
+                {/* Period number badge */}
+                <View style={{
+                  width: 44, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: color + '12',
+                  borderRightWidth: 1, borderRightColor: '#f1f5f9',
+                }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: color + 'aa' }}>PER</Text>
+                  <Text style={{ fontSize: 22, fontWeight: '900', color, lineHeight: 26 }}>
+                    {entry.periodNumber ?? idx + 1}
+                  </Text>
+                </View>
+
+                {/* Content */}
+                <View style={{ flex: 1, paddingVertical: 14, paddingHorizontal: 14, gap: 6 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: '#0f172a', letterSpacing: -0.2 }} numberOfLines={1}>
+                    {subjectName}
+                  </Text>
+
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="time-outline" size={13} color="#9ca3af" />
+                      <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '600' }}>
+                        {entry.startTime} – {entry.endTime}
                       </Text>
+                    </View>
+                    {teacherName && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="person-outline" size={13} color="#9ca3af" />
+                        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '600' }} numberOfLines={1}>
+                          {teacherName}
+                        </Text>
+                      </View>
                     )}
-                  </>
-                ) : (
-                  <View style={{ width: 14, height: 1.5, backgroundColor: '#e5e7eb', borderRadius: 1 }} />
-                )}
+                    {entry.roomNumber && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="location-outline" size={13} color="#9ca3af" />
+                        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '600' }}>
+                          {entry.roomNumber}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
               </View>
             );
-          })}
-        </View>
-      ))}
-
-      {/* Legend */}
-      {slots.length > 0 && (
-        <View style={{ marginTop: 8, padding: 10, backgroundColor: '#f8fafc', borderRadius: 10, borderWidth: 1, borderColor: '#f1f5f9' }}>
-          <Text style={{ fontSize: 10, color: '#9ca3af', textAlign: 'center' }}>
-            Tap a subject in the grid to see full details below
-          </Text>
-        </View>
-      )}
-    </ScrollView>
+          })
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -382,7 +391,7 @@ export default function ClassroomDetailScreen() {
               <ActivityIndicator color={pal.fg} />
             </View>
           ) : (
-            <TimetableGrid timetable={timetable} pal={pal} refreshing={refreshing} onRefresh={onRefresh} />
+            <TimetableView timetable={timetable} pal={pal} refreshing={refreshing} onRefresh={onRefresh} />
           )}
         </View>
       )}
