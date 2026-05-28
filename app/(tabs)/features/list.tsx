@@ -47,20 +47,20 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
   return (
     <Pressable
       onPress={() => router.push(`/features/${classroom.id}`)}
-      style={({ pressed }) => ({
-        backgroundColor: pressed ? '#f8fafc' : '#fff',
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginBottom: 12 })}
+    >
+      <View style={{
+        backgroundColor: '#fff',
         borderRadius: 20,
         borderWidth: 1,
         borderColor: '#f1f5f9',
-        marginBottom: 12,
         overflow: 'hidden',
         shadowColor: '#000',
         shadowOpacity: 0.05,
         shadowOffset: { width: 0, height: 3 },
         shadowRadius: 8,
         elevation: 3,
-      })}
-    >
+      }}>
       <View style={{
         height: 56, backgroundColor: pal.grad,
         flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10,
@@ -133,6 +133,7 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
             <Ionicons name="arrow-forward" size={12} color={pal.fg} />
           </View>
         </View>
+      </View>
       </View>
     </Pressable>
   );
@@ -237,7 +238,7 @@ export default function ClassroomListScreen() {
       {grades.length > 1 && (
         <ScrollView
           horizontal showsHorizontalScrollIndicator={false}
-          style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}
+          style={{ flexShrink: 0, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}
           contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' }}
         >
           <Pressable
@@ -270,6 +271,7 @@ export default function ClassroomListScreen() {
         </ScrollView>
       )}
 
+      <View style={{ flex: 1 }}>
       {!primary ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
           <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: '#ede9fe', alignItems: 'center', justifyContent: 'center' }}>
@@ -311,6 +313,7 @@ export default function ClassroomListScreen() {
           {filtered.map(c => <ClassroomCard key={c.id} classroom={c} />)}
         </ScrollView>
       )}
+      </View>
     </SafeAreaView>
   );
 }
