@@ -6,15 +6,8 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import { useSalaryStructure, useMyStudentFees } from '@/hooks/useFinance';
+import { useCurrency } from '@/hooks/useCurrency';
 import { SalaryComponent } from '@/interface/finance.interface';
-
-/* ── Currency formatter ─────────────────────────────────────────── */
-function fmt(n: number | undefined | null): string {
-  const v = n ?? 0;
-  if (v >= 1_000_000) return `₦${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `₦${(v / 1_000).toFixed(0)}K`;
-  return `₦${v.toLocaleString()}`;
-}
 
 const COMPONENT_COLORS: Record<string, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; sign: '+' | '-' }> = {
   basic_salary: { icon: 'cash-outline', color: '#6366f1', sign: '+' },
@@ -25,7 +18,7 @@ const COMPONENT_COLORS: Record<string, { icon: React.ComponentProps<typeof Ionic
   deduction:    { icon: 'remove-circle-outline', color: '#dc2626', sign: '-' },
 };
 
-function ComponentRow({ comp }: { comp: SalaryComponent }) {
+function ComponentRow({ comp, fmt }: { comp: SalaryComponent; fmt: (n: number | undefined | null) => string }) {
   const cfg = COMPONENT_COLORS[comp.type] ?? { icon: 'ellipse-outline' as const, color: '#6b7280', sign: '+' as const };
   const isDeduction = comp.type === 'deduction';
   const amount = comp.isPercentage
@@ -47,6 +40,8 @@ function ComponentRow({ comp }: { comp: SalaryComponent }) {
 
 export default function FinancesScreen() {
   const router = useRouter();
+  const { formatCompact: currency } = useCurrency();
+  const fmt = (n: number | undefined | null) => currency(n ?? 0);
   const user = useAuthStore(s => s.user);
   const selectedSchoolId = useAuthStore(s => s.selectedSchoolId);
   const memberships = user?.schools ?? [];
@@ -191,7 +186,7 @@ export default function FinancesScreen() {
                     <Text style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }}>Pay Components</Text>
                   </View>
                   {salary.components.filter(c => c.isActive !== false).map((c, i) => (
-                    <ComponentRow key={c.id ?? i} comp={c} />
+                    <ComponentRow key={c.id ?? i} comp={c} fmt={fmt} />
                   ))}
                 </View>
               )}

@@ -11,6 +11,7 @@ export interface SchoolInfo {
   name: string;
   code: string;
   logo?: string;
+  currency?: string;
 }
 
 export interface UserSchoolMembership {

@@ -3,8 +3,9 @@ import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useAdminDashboard } from '@/hooks/useDashboardRole';
+import { useCurrency } from '@/hooks/useCurrency';
 import {
-  DashLoader, fmt, GradCard, Card, CardHeader,
+  DashLoader, GradCard, Card, CardHeader,
   AnnouncementRow, EventRow, PendingBadge, SectionLabel,
 } from './DashboardPrimitives';
 
@@ -12,6 +13,7 @@ interface Props { schoolId: string; schoolName: string; firstName: string }
 
 export default function MobileAdminDashboard({ schoolId, schoolName, firstName }: Props) {
   const { data, isLoading, refetch } = useAdminDashboard(schoolId);
+  const { formatCompact: currency } = useCurrency();
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -52,9 +54,9 @@ export default function MobileAdminDashboard({ schoolId, schoolName, firstName }
         {/* Finance strip */}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
           {[
-            { label: 'Income', value: fmt(d.finance.totalIncome), color: '#34d399' },
-            { label: 'Expenses', value: fmt(d.finance.totalExpenses), color: '#f87171' },
-            { label: 'Balance', value: fmt(Math.abs(d.finance.netBalance)), color: '#818cf8' },
+            { label: 'Income', value: currency(d.finance.totalIncome), color: '#34d399' },
+            { label: 'Expenses', value: currency(d.finance.totalExpenses), color: '#f87171' },
+            { label: 'Balance', value: currency(Math.abs(d.finance.netBalance)), color: '#818cf8' },
           ].map(f => (
             <View key={f.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 10 }}>
               <Text style={{ color: f.color, fontSize: 13, fontWeight: '900' }}>{f.value}</Text>
