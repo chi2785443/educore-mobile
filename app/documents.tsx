@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
@@ -404,7 +405,7 @@ function RequestLinkModal({ visible, schoolId, onClose }: RequestLinkModalProps)
 }
 
 /* ── Document row ───────────────────────────────────────────────── */
-function DocRow({ doc, isAdmin, onDelete }: { doc: MemberDocument; isAdmin: boolean; onDelete: (id: string) => void }) {
+function DocRow({ doc, isAdmin, onDelete, hideMember = false }: { doc: MemberDocument; isAdmin: boolean; onDelete: (id: string) => void; hideMember?: boolean }) {
   const cfg = FILE_CONFIG[doc.fileType] ?? FILE_CONFIG.other;
   const sourceSt = doc.source ? SOURCE_LABELS[doc.source] : null;
   const [opening, setOpening] = useState(false);
@@ -444,8 +445,8 @@ function DocRow({ doc, isAdmin, onDelete }: { doc: MemberDocument; isAdmin: bool
         {/* Info */}
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{doc.title}</Text>
-          {doc.user && (
-            <Text style={{ fontSize: 11, color: '#7c3aed', marginTop: 1 }} numberOfLines={1}>
+          {!hideMember && doc.user && (
+            <Text style={{ fontSize: 11, color: '#4C3FC4', marginTop: 1 }} numberOfLines={1}>
               {doc.user.firstName} {doc.user.lastName}
             </Text>
           )}
@@ -520,6 +521,26 @@ export default function DocumentsScreen() {
 
   const docs = tab === 'mine' ? myDocs : tab === 'public' ? publicDocs : allDocs;
   const isLoading = tab === 'mine' ? loadingMine : tab === 'public' ? loadingPublic : loadingAll;
+
+  // Group allDocs by member for the "All Members" tab
+  const memberGroups = useMemo(() => {
+    if (tab !== 'all') return [];
+    const map = new Map<string, { userId: string; name: string; email: string; profilePicture?: string | null; docs: typeof allDocs }>();
+    allDocs.forEach(doc => {
+      const key = doc.userId;
+      if (!map.has(key)) {
+        map.set(key, {
+          userId: key,
+          name: doc.user ? `${doc.user.firstName} ${doc.user.lastName}` : 'Unknown',
+          email: doc.user?.email ?? '',
+          profilePicture: doc.user?.profilePicture,
+          docs: [],
+        });
+      }
+      map.get(key)!.docs.push(doc);
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tab, allDocs]);
 
   const handleDelete = useCallback((id: string) => {
     deleteDoc(id, {
@@ -607,7 +628,59 @@ export default function DocumentsScreen() {
               : 'Upload a document for a member using the Upload button.'}
           </Text>
         </View>
+      ) : tab === 'all' ? (
+        /* ── Grouped by member ── */
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 40 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#d97706" colors={['#d97706']} />}
+        >
+          {memberGroups.map(group => {
+            const initials = group.name.split(' ').map(w => w[0] ?? '').join('').toUpperCase().slice(0, 2) || '?';
+            return (
+              <View key={group.userId} style={{ marginBottom: 18 }}>
+                {/* Member header */}
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 10,
+                  paddingVertical: 10, paddingHorizontal: 14,
+                  backgroundColor: '#4C3FC4',
+                  borderRadius: 14,
+                  marginBottom: 2,
+                }}>
+                  {group.profilePicture ? (
+                    <Image
+                      source={{ uri: group.profilePicture }}
+                      style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0 }}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.20)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13 }}>{initials}</Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>{group.name}</Text>
+                    {group.email ? (
+                      <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.60)', marginTop: 1 }} numberOfLines={1}>{group.email}</Text>
+                    ) : null}
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.20)', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#fff' }}>
+                      {group.docs.length} doc{group.docs.length !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Doc rows for this member */}
+                <View style={{ backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2 }}>
+                  {group.docs.map(doc => <DocRow key={doc.id} doc={doc} isAdmin={isAdmin} onDelete={handleDelete} hideMember />)}
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
       ) : (
+        /* ── Flat list for mine / public ── */
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#d97706" colors={['#d97706']} />}>
           <View style={{ backgroundColor: '#fff', marginTop: 12, marginHorizontal: 16, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2 }}>
             {docs.map(doc => <DocRow key={doc.id} doc={doc} isAdmin={isAdmin} onDelete={handleDelete} />)}
