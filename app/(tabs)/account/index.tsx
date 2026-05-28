@@ -422,13 +422,13 @@ export default function AccountTab() {
             {!(isStudent || isParent) && (
               <SettingsRow
                 icon="briefcase-outline" iconBg="#e0f2fe" iconColor="#0284c7"
-                label="My Job Applications" value="Jobs I've applied for"
+                label="Jobs" value="Jobs I've applied for"
                 onPress={() => router.push('/my-jobs' as never)}
               />
             )}
             <SettingsRow
               icon="document-text-outline" iconBg="#d1fae5" iconColor="#059669"
-              label="My Enrollments" value="School enrollment applications"
+              label="Enrollment" value="School enrollment applications"
               onPress={() => router.push('/my-enrollments' as never)}
             />
             {isParent && (
