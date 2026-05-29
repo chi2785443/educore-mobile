@@ -54,4 +54,9 @@ export const reportService = {
     );
     return ex<StudentReport>(res.data);
   },
+
+  getStudentReports: async (studentId: string): Promise<StudentReport[]> => {
+    const res = await apiClient.get(`/reports/student/${studentId}`);
+    return exList<StudentReport>(res.data);
+  },
 };

@@ -53,3 +53,12 @@ export function useRequestUploadLink() {
     mutationFn: (params: RequestUploadLinkParams) => memberDocumentService.requestUploadLink(params),
   });
 }
+
+export function useChildMemberDocuments(schoolId: string | undefined, userId: string | undefined) {
+  return useQuery({
+    queryKey: ['child-documents', schoolId, userId],
+    queryFn: () => memberDocumentService.getChildDocuments(schoolId!, userId!),
+    enabled: !!schoolId && !!userId,
+    staleTime: 60_000,
+  });
+}

@@ -1,6 +1,17 @@
 import { apiClient } from './axios.service';
 import { WeeklyTimetable, TimetableEntry, DayOfWeek } from '@/interface/timetable.interface';
 
+export interface CreateTimetablePayload {
+  classroomId: string;
+  subjectId: string;
+  teacherId?: string;
+  dayOfWeek: DayOfWeek;
+  startTime: string;
+  endTime: string;
+  periodNumber?: number;
+  roomNumber?: string;
+}
+
 export const timetableService = {
   getClassroomTimetable: async (classroomId: string): Promise<WeeklyTimetable> => {
     const res = await apiClient.get(`/timetables/classroom/${classroomId}`);
@@ -16,6 +27,15 @@ export const timetableService = {
       return weekly;
     }
     return raw as WeeklyTimetable;
+  },
+
+  createEntry: async (payload: CreateTimetablePayload): Promise<TimetableEntry> => {
+    const res = await apiClient.post('/timetables', payload);
+    return (res.data?.data ?? res.data) as TimetableEntry;
+  },
+
+  deleteEntry: async (id: string): Promise<void> => {
+    await apiClient.delete(`/timetables/${id}`);
   },
 
   getTeacherTimetable: async (

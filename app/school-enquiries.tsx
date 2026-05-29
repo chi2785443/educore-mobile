@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/Toast';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import { useSchoolEnquiries, useReplyEnquiry, useCloseEnquiry } from '@/hooks/useEnquiry';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import { Enquiry, EnquiryStatus, EnquiryCategory } from '@/interface/enquiry.interface';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -502,31 +503,12 @@ export default function SchoolEnquiriesScreen() {
         )}
       </View>
 
-      {/* Status filter tabs */}
-      <View style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' }}>
-          {STATUS_FILTERS.map(f => {
-            const active = activeFilter === f.value;
-            return (
-              <Pressable
-                key={f.value}
-                onPress={() => setActiveFilter(f.value)}
-                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-              >
-                <View style={{
-                  paddingHorizontal: 14, paddingVertical: 7,
-                  borderRadius: 20,
-                  backgroundColor: active ? ACCENT : '#f1f5f9',
-                  borderWidth: 1.5,
-                  borderColor: active ? ACCENT : '#e5e7eb',
-                }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{f.label}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+      <ClassroomDetailTabs
+        tabs={STATUS_FILTERS.map(f => ({ key: f.value, label: f.label }))}
+        activeTab={activeFilter}
+        onTabChange={setActiveFilter}
+        accentColor={ACCENT}
+      />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

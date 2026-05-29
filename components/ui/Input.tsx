@@ -28,20 +28,20 @@ export function Input({
   return (
     <View className="gap-1.5">
       {label && (
-        <Text className="text-sm font-medium text-gray-700">{label}</Text>
+        <Text className="text-[15px] font-semibold text-gray-700">{label}</Text>
       )}
       <View
-        className={`flex-row items-center rounded-xl border bg-white px-3 ${
+        className={`flex-row items-center rounded-2xl border bg-white px-4 ${
           error ? 'border-red-400' : focused ? 'border-[#4C3FC4]' : 'border-gray-200'
         }`}
       >
         {leftIcon && (
-          <Ionicons name={leftIcon} size={18} color={focused ? '#4C3FC4' : '#9ca3af'} style={{ marginRight: 8 }} />
+          <Ionicons name={leftIcon} size={20} color={focused ? '#4C3FC4' : '#9ca3af'} style={{ marginRight: 10 }} />
         )}
         <TextInput
           {...props}
           secureTextEntry={isPassword && !showPassword}
-          className="flex-1 py-3 text-base text-gray-900"
+          className="flex-1 py-4 text-[15px] text-gray-900"
           placeholderTextColor="#9ca3af"
           autoCapitalize={props.autoCapitalize ?? 'none'}
           onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
@@ -51,13 +51,13 @@ export function Input({
           <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={18}
+              size={20}
               color="#9ca3af"
             />
           </Pressable>
         ) : rightIcon ? (
           <Pressable onPress={onRightIconPress} hitSlop={8}>
-            <Ionicons name={rightIcon} size={18} color="#9ca3af" />
+            <Ionicons name={rightIcon} size={20} color="#9ca3af" />
           </Pressable>
         ) : null}
       </View>

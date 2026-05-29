@@ -1,5 +1,5 @@
 import { apiClient } from './axios.service';
-import { ClassroomDetail, ClassroomMember } from '@/interface/classroom.interface';
+import { ClassroomDetail, ClassroomMember, CreateClassroomPayload } from '@/interface/classroom.interface';
 
 const ex = <T>(d: unknown): T => {
   if (d && typeof d === 'object' && 'data' in d) return (d as { data: T }).data;
@@ -67,5 +67,26 @@ export const classroomService = {
   getClassroomTeachers: async (classroomId: string): Promise<ClassroomMember[]> => {
     const res = await apiClient.get(`/classrooms/${classroomId}/teachers`);
     return exList(res.data).map(normaliseMember).filter((m): m is ClassroomMember => m !== null);
+  },
+
+  createClassroom: async (payload: CreateClassroomPayload): Promise<ClassroomDetail> => {
+    const res = await apiClient.post('/classrooms', payload);
+    return (res.data?.data ?? res.data) as ClassroomDetail;
+  },
+
+  addTeacher: async (classroomId: string, userId: string): Promise<void> => {
+    await apiClient.post(`/classrooms/${classroomId}/teachers`, { userId });
+  },
+
+  removeTeacher: async (classroomId: string, teacherId: string): Promise<void> => {
+    await apiClient.delete(`/classrooms/${classroomId}/teachers/${teacherId}`);
+  },
+
+  addStudent: async (classroomId: string, userId: string): Promise<void> => {
+    await apiClient.post(`/classrooms/${classroomId}/students`, { userId });
+  },
+
+  removeStudent: async (classroomId: string, studentId: string): Promise<void> => {
+    await apiClient.delete(`/classrooms/${classroomId}/students/${studentId}`);
   },
 };

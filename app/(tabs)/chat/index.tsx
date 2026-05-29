@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useAuthStore } from '@/store/authStore';
@@ -22,11 +23,12 @@ function timeLabel(dateStr?: string | null) {
 }
 
 function convDisplayName(conv: Conversation): string {
+  if (conv.type === 'school') return 'Everyone';
+  if (conv.type === 'team') return 'Admin';
   if (conv.name) return conv.name;
   if (conv.type === 'direct') return 'Direct Message';
   if (conv.type === 'group') return 'Group Chat';
   if (conv.type === 'class') return 'Class Chat';
-  if (conv.type === 'school') return 'School Chat';
   return 'Conversation';
 }
 
@@ -52,13 +54,19 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 /* ── Conversation row ──────────────────────────────────────────── */
-function ConvItem({ conv, onPress }: { conv: Conversation; onPress: () => void }) {
+function ConvItem({ conv, currentUserId, onPress }: { conv: Conversation; currentUserId?: string; onPress: () => void }) {
   const name = convDisplayName(conv);
   const initials = getInitials(name);
   const bg = avatarColor(name);
   const hasUnread = (conv.unreadCount ?? 0) > 0;
   const preview = conv.lastMessage ?? 'No messages yet';
   const time = timeLabel(conv.lastMessageAt);
+
+  // For direct chats, show the other participant's profile picture if available
+  const otherParticipant = conv.type === 'direct' && conv.participants
+    ? conv.participants.find(p => p.userId !== currentUserId)
+    : undefined;
+  const profilePicture = otherParticipant?.profilePicture ?? null;
 
   return (
     <Pressable onPress={onPress}>
@@ -71,20 +79,28 @@ function ConvItem({ conv, onPress }: { conv: Conversation; onPress: () => void }
           gap: 12,
           backgroundColor: pressed ? '#f2f2f2' : '#fff',
         }}>
-          {/* Circular avatar with initials */}
-          <View style={{
-            width: 52,
-            height: 52,
-            borderRadius: 26,
-            backgroundColor: bg,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
-              {initials}
-            </Text>
-          </View>
+          {/* Avatar: profile picture if available, else initials */}
+          {profilePicture ? (
+            <Image
+              source={{ uri: profilePicture }}
+              style={{ width: 52, height: 52, borderRadius: 26, flexShrink: 0 }}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={{
+              width: 52,
+              height: 52,
+              borderRadius: 26,
+              backgroundColor: bg,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
+                {initials}
+              </Text>
+            </View>
+          )}
 
           {/* Name + preview */}
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -293,7 +309,7 @@ export default function ChatTab() {
               {/* Rows with hairline separator */}
               {convs.map((conv, i) => (
                 <View key={conv.id}>
-                  <ConvItem conv={conv} onPress={() => router.push(`/chat/${conv.id}`)} />
+                  <ConvItem conv={conv} currentUserId={user?.id} onPress={() => router.push(`/chat/${conv.id}`)} />
                   {i < convs.length - 1 && (
                     <View style={{ height: 0.5, backgroundColor: '#e5e7eb', marginLeft: 80 }} />
                   )}

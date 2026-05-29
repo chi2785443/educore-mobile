@@ -1,10 +1,18 @@
 export type ConversationType = 'direct' | 'group' | 'class' | 'school' | 'team';
 
+export interface ConversationParticipant {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  profilePicture?: string | null;
+}
+
 export interface Conversation {
   id: string;
   name: string | null;          // null for direct messages (use fallback in UI)
   type: ConversationType;
   participantIds: string[];
+  participants?: ConversationParticipant[];
   classroomId?: string | null;
   schoolId?: string | null;
   createdBy?: string;

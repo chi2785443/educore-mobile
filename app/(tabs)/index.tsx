@@ -370,14 +370,14 @@ export default function DashboardTab() {
                 contentFit="cover"
               />
             ) : (
-              <View style={{
-                width: 34, height: 34, borderRadius: 11,
-                backgroundColor: '#4C3FC4',
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>
-                  {`${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || '?'}
-                </Text>
+              <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: '#4C3FC4', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }}>
+                {(user?.firstName || user?.lastName) ? (
+                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>
+                    {`${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()}
+                  </Text>
+                ) : (
+                  <Ionicons name="person" size={18} color="rgba(255,255,255,0.9)" />
+                )}
               </View>
             )}
           </Pressable>

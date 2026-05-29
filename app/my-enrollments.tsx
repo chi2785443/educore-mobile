@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, Pressable, TextInput,
   ActivityIndicator, KeyboardAvoidingView, Platform, Linking, Switch,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,7 @@ import {
   useSchoolEnrollments, useUpdateEnrollmentStatus,
 } from '@/hooks/useEnrollment';
 import { useBrowseSchools } from '@/hooks/useSchool';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import { Enrollment, EnrollmentStatus } from '@/interface/enrollment.interface';
 import { School } from '@/interface/school.interface';
 import { apiClient } from '@/services/axios.service';
@@ -478,21 +480,12 @@ function AdminEnrollmentsScreen({ schoolId, schoolName }: { schoolId: string; sc
         </View>
       </View>
 
-      {/* Filter tabs */}
-      <View style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' }}>
-          {STATUS_FILTERS.map(f => {
-            const active = activeFilter === f.value;
-            return (
-              <Pressable key={f.value} onPress={() => setActiveFilter(f.value)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-                <View style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: active ? f.color : '#f8fafc', borderWidth: 1.5, borderColor: active ? f.color : '#e2e8f0' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#64748b' }}>{f.label}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+      <ClassroomDetailTabs
+        tabs={STATUS_FILTERS.map(f => ({ key: f.value, label: f.label }))}
+        activeTab={activeFilter}
+        onTabChange={setActiveFilter}
+        accentColor="#6366f1"
+      />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -732,39 +725,64 @@ function SchoolPickerView({ onSelect, onBack }: { onSelect: (s: School) => void;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f1f5f9' }}>
-      <View style={{ backgroundColor: '#0c2030', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+      <View style={{ backgroundColor: '#0a1628', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
           <Pressable onPress={onBack} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
           </Pressable>
-          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', flex: 1 }}>Choose a School</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900' }}>Choose a School</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 1 }}>Select a school to apply for enrollment</Text>
+          </View>
+          <Ionicons name="school-outline" size={22} color="#a5b4fc" />
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 }}>
-          <Ionicons name="search-outline" size={15} color="rgba(255,255,255,0.4)" />
-          <TextInput value={search} onChangeText={setSearch} placeholder="Search schools…" placeholderTextColor="rgba(255,255,255,0.3)" style={{ flex: 1, fontSize: 13, color: '#fff' }} />
-          {search.length > 0 && <Pressable onPress={() => setSearch('')}><Ionicons name="close-circle" size={15} color="rgba(255,255,255,0.4)" /></Pressable>}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 11 }}>
+          <Ionicons name="search-outline" size={16} color="rgba(255,255,255,0.4)" />
+          <TextInput value={search} onChangeText={setSearch} placeholder="Search by school name…" placeholderTextColor="rgba(255,255,255,0.3)" style={{ flex: 1, fontSize: 14, color: '#fff' }} />
+          {search.length > 0 && <Pressable onPress={() => setSearch('')} hitSlop={8}><Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.4)" /></Pressable>}
         </View>
       </View>
+
       {isLoading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#14b8a6" size="large" /></View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#6366f1" size="large" /></View>
       ) : schools.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 10 }}>
-          <Ionicons name="school-outline" size={48} color="#d1d5db" />
-          <Text style={{ fontSize: 15, fontWeight: '800', color: '#374151', textAlign: 'center' }}>{search ? 'No schools found' : 'No schools available'}</Text>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 14 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="school-outline" size={34} color="#6366f1" />
+          </View>
+          <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a', textAlign: 'center' }}>
+            {search ? 'No schools found' : 'No schools available'}
+          </Text>
+          <Text style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', lineHeight: 20 }}>
+            {search ? `No schools match "${search}". Try a different name.` : 'There are no schools accepting enrollments right now. Check back later.'}
+          </Text>
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
           {schools.map(school => (
             <Pressable key={school.id} onPress={() => onSelect(school)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#e5e7eb', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#e0e7ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Ionicons name="school-outline" size={20} color="#6366f1" />
+              <View style={{ backgroundColor: '#fff', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', gap: 14,
+                shadowColor: '#0f172a', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 15, overflow: 'hidden', flexShrink: 0 }}>
+                  {school.logo ? (
+                    <Image source={{ uri: school.logo }} style={{ width: 48, height: 48 }} contentFit="cover" />
+                  ) : (
+                    <View style={{ width: 48, height: 48, borderRadius: 15, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 20, fontWeight: '900', color: '#6366f1' }}>{school.name[0]?.toUpperCase() ?? 'S'}</Text>
+                    </View>
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#111827' }} numberOfLines={1}>{school.name}</Text>
-                  {(school.city || school.state) && <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }} numberOfLines={1}>{[school.city, school.state].filter(Boolean).join(', ')}</Text>}
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>{school.name}</Text>
+                  {(school.city || school.state) && (
+                    <Text style={{ fontSize: 12, color: '#64748b', marginTop: 3 }} numberOfLines={1}>
+                      <Ionicons name="location-outline" size={11} color="#94a3b8" /> {[school.city, school.state].filter(Boolean).join(', ')}
+                    </Text>
+                  )}
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="chevron-forward" size={16} color="#6366f1" />
+                </View>
               </View>
             </Pressable>
           ))}

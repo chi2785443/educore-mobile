@@ -211,10 +211,11 @@ export default function ChatRoomScreen() {
   /* Header data */
   const convType = conversation?.type ?? 'direct';
   const cfg = TYPE_CONFIG[convType] ?? TYPE_CONFIG.direct;
-  const convName = conversation?.name
+  const convName = convType === 'school' ? 'Everyone'
+    : convType === 'team' ? 'Admin'
+    : conversation?.name
     ?? (convType === 'direct' ? 'Direct Message'
       : convType === 'class' ? 'Class Chat'
-      : convType === 'school' ? 'School Chat'
       : convType === 'group' ? 'Group Chat'
       : '…');
   const participantCount = conversation?.participantIds?.length;

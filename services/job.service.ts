@@ -3,7 +3,70 @@ import {
   Job, MyApplication, MyInterview, ApplyJobPayload,
   JobPosting, JobApplication, JobInterview,
   CreateJobPosting, UpdateApplicationStatus, ScheduleInterviewPayload,
+  SchoolJobRole, ApplicationStatus,
 } from '@/interface/job.interface';
+
+// Normalize raw backend application shape → JobApplication interface.
+// Handles the legacy shape where `applicant` and `jobPosting` are plain IDs.
+function normalizeApplication(raw: unknown): JobApplication {
+  const r = raw as Record<string, unknown>;
+  const details = r.applicantDetails as Record<string, unknown> | null | undefined;
+  const rawApplicant = r.applicant as Record<string, unknown> | string | null | undefined;
+  const rawPosting = r.jobPosting as Record<string, unknown> | string | null | undefined;
+
+  const applicant: JobApplication['applicant'] =
+    rawApplicant && typeof rawApplicant === 'object' && rawApplicant.firstName
+      ? {
+          id: rawApplicant.id as string,
+          firstName: (rawApplicant.firstName ?? '') as string,
+          lastName: (rawApplicant.lastName ?? '') as string,
+          email: (rawApplicant.email ?? '') as string,
+          phoneNumber: rawApplicant.phoneNumber as string | undefined,
+          profilePicture: rawApplicant.profilePicture as string | null | undefined,
+        }
+      : details
+        ? {
+            id: details.id as string,
+            firstName: (details.firstName ?? '') as string,
+            lastName: (details.lastName ?? '') as string,
+            email: (details.email ?? '') as string,
+          }
+        : undefined;
+
+  const jobPosting: JobApplication['jobPosting'] =
+    rawPosting && typeof rawPosting === 'object'
+      ? {
+          id: rawPosting.id as string,
+          title: ((rawPosting.title ?? r.jobTitle) ?? '') as string,
+          employmentType: rawPosting.employmentType as string | undefined,
+          role: rawPosting.role as SchoolJobRole | undefined,
+        }
+      : typeof rawPosting === 'string'
+        ? { id: rawPosting, title: (r.jobTitle ?? '') as string }
+        : undefined;
+
+  return {
+    id: r.id as string,
+    status: r.status as ApplicationStatus,
+    coverLetter: r.coverLetter as string | undefined,
+    yearsOfExperience: (r.yearsOfExperience as number) ?? 0,
+    portfolioUrl: r.portfolioUrl as string | undefined,
+    education: r.education as string | undefined,
+    certifications: r.certifications as string | undefined,
+    expectedSalary: r.expectedSalary as number | undefined,
+    notes: r.notes as string | undefined,
+    rejectionReason: r.rejectionReason as string | undefined,
+    rejectionFeedback: r.rejectionFeedback as string | undefined,
+    rating: r.rating as number | undefined,
+    submittedAt: (r.submittedAt ?? r.createdAt) as string,
+    updatedAt: r.updatedAt as string,
+    resume: r.resume && typeof r.resume === 'string'
+      ? { url: r.resume as string, publicId: '', name: undefined }
+      : r.resume as JobApplication['resume'],
+    applicant,
+    jobPosting,
+  };
+}
 
 export const jobService = {
   // ─── Staff / public ────────────────────────────────────────────────────────
@@ -84,7 +147,8 @@ export const jobService = {
     if (jobPostingId) params.jobPostingId = jobPostingId;
     const response = await apiClient.get(`/jobs/schools/${schoolId}/applications`, { params });
     const raw = response.data;
-    return Array.isArray(raw) ? raw : (raw?.data ?? []);
+    const arr: unknown[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
+    return arr.map(normalizeApplication);
   },
 
   updateApplication: async (schoolId: string, id: string, data: UpdateApplicationStatus): Promise<JobApplication> => {

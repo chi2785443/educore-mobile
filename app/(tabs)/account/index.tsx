@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, ScrollView, Pressable, Switch, Modal,
+  View, Text, ScrollView, Pressable, Switch, Modal, TextInput, ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
-import { useLogout } from '@/hooks/useAuth';
+import { useLogout, useSendOtp, useVerifyOtp } from '@/hooks/useAuth';
 import { UserRole, UserSchoolMembership } from '@/interface/user.interface';
 
 /* ── Role config ────────────────────────────────────────────────── */
@@ -170,16 +170,17 @@ function SchoolPickerModal({
                       borderWidth: isSelected ? 1.5 : 1,
                       borderColor: isSelected ? cfg.color + '60' : '#f1f5f9',
                     }}>
-                      {/* School initial */}
-                      <View style={{
-                        width: 50, height: 50, borderRadius: 16,
-                        backgroundColor: cfg.bg,
-                        alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0,
-                      }}>
-                        <Text style={{ fontWeight: '900', fontSize: 22, color: cfg.color }}>
-                          {m.school?.name?.[0]?.toUpperCase() ?? '?'}
-                        </Text>
+                      {/* School logo */}
+                      <View style={{ width: 50, height: 50, borderRadius: 16, overflow: 'hidden', flexShrink: 0 }}>
+                        {m.school?.logo ? (
+                          <Image source={{ uri: m.school.logo }} style={{ width: 50, height: 50 }} contentFit="cover" />
+                        ) : (
+                          <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontWeight: '900', fontSize: 22, color: cfg.color }}>
+                              {m.school?.name?.[0]?.toUpperCase() ?? '?'}
+                            </Text>
+                          </View>
+                        )}
                       </View>
 
                       {/* Info */}
@@ -219,6 +220,133 @@ function SchoolPickerModal({
   );
 }
 
+/* ── Email verification modal ───────────────────────────────────── */
+function EmailVerifyModal({ visible, email, onClose, onVerified }: {
+  visible: boolean; email: string; onClose: () => void; onVerified: () => void;
+}) {
+  const [step, setStep] = useState<'send' | 'enter'>('send');
+  const [otp, setOtp] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const inputRef = useRef<TextInput>(null);
+
+  const sendMutation = useSendOtp();
+  const verifyMutation = useVerifyOtp(() => { onVerified(); onClose(); });
+
+  useEffect(() => {
+    if (!visible) { setStep('send'); setOtp(''); setCountdown(0); }
+  }, [visible]);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+
+  const handleSend = () => {
+    sendMutation.mutate(email, {
+      onSuccess: () => { setStep('enter'); setCountdown(60); setTimeout(() => inputRef.current?.focus(), 300); },
+    });
+  };
+
+  const handleVerify = () => {
+    if (otp.length !== 6) return;
+    verifyMutation.mutate({ email, otp });
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={onClose}>
+        <Pressable onPress={e => e.stopPropagation?.()}>
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, paddingBottom: 44 }}>
+            {/* Handle */}
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: '#e2e8f0', alignSelf: 'center', marginBottom: 24 }} />
+
+            {/* Icon */}
+            <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 }}>
+              <Ionicons name="mail-outline" size={28} color="#d97706" />
+            </View>
+
+            <Text style={{ fontSize: 20, fontWeight: '900', color: '#0f172a', textAlign: 'center', marginBottom: 6 }}>
+              {step === 'send' ? 'Verify Your Email' : 'Enter OTP'}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 20, marginBottom: 28 }}>
+              {step === 'send'
+                ? `We'll send a 6-digit code to\n${email}`
+                : `Enter the 6-digit code sent to\n${email}`}
+            </Text>
+
+            {step === 'enter' && (
+              <>
+                <TextInput
+                  ref={inputRef}
+                  value={otp}
+                  onChangeText={t => setOtp(t.replace(/\D/g, '').slice(0, 6))}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  placeholder="000000"
+                  placeholderTextColor="#cbd5e1"
+                  style={{
+                    borderWidth: 2,
+                    borderColor: otp.length === 6 ? '#4C3FC4' : '#e2e8f0',
+                    borderRadius: 16,
+                    paddingVertical: 16,
+                    paddingHorizontal: 20,
+                    fontSize: 28,
+                    fontWeight: '800',
+                    color: '#0f172a',
+                    textAlign: 'center',
+                    letterSpacing: 8,
+                    marginBottom: 12,
+                  }}
+                />
+                <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginBottom: 24 }}>
+                  {verifyMutation.error ? (
+                    <Text style={{ color: '#dc2626' }}>{(verifyMutation.error as Error).message}</Text>
+                  ) : countdown > 0 ? `Resend in ${countdown}s` : ''}
+                </Text>
+              </>
+            )}
+
+            {/* Primary button */}
+            <Pressable
+              onPress={step === 'send' ? handleSend : handleVerify}
+              disabled={sendMutation.isPending || verifyMutation.isPending || (step === 'enter' && otp.length !== 6)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+            >
+              <View style={{
+                backgroundColor: (step === 'enter' && otp.length !== 6) ? '#e2e8f0' : '#4C3FC4',
+                borderRadius: 16, paddingVertical: 16,
+                alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'row', gap: 8,
+              }}>
+                {(sendMutation.isPending || verifyMutation.isPending) && <ActivityIndicator color="#fff" size="small" />}
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>
+                  {step === 'send'
+                    ? sendMutation.isPending ? 'Sending…' : 'Send Code'
+                    : verifyMutation.isPending ? 'Verifying…' : 'Verify'}
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* Resend / back */}
+            {step === 'enter' && (
+              <Pressable
+                onPress={countdown === 0 ? handleSend : undefined}
+                disabled={countdown > 0 || sendMutation.isPending}
+                style={{ marginTop: 14, alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 13, color: countdown > 0 ? '#94a3b8' : '#4C3FC4', fontWeight: '600' }}>
+                  {sendMutation.isPending ? 'Sending…' : "Didn't get a code? Resend"}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 /* ── Main screen ────────────────────────────────────────────────── */
 export default function AccountTab() {
   const router = useRouter();
@@ -228,6 +356,7 @@ export default function AccountTab() {
   const setSelectedSchool = useAuthStore(s => s.setSelectedSchool);
   const logout = useLogout();
   const [schoolPickerOpen, setSchoolPickerOpen] = useState(false);
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
 
   const memberships: UserSchoolMembership[] = user?.schools ?? [];
   const primaryMembership = memberships.find(m => m.schoolId === selectedSchoolId)
@@ -277,7 +406,11 @@ export default function AccountTab() {
                   elevation: 12,
                   borderWidth: 3, borderColor: 'rgba(255,255,255,0.18)',
                 }}>
-                  <Text style={{ color: '#fff', fontSize: 30, fontWeight: '900' }}>{initials}</Text>
+                  {initials ? (
+                    <Text style={{ color: '#fff', fontSize: 30, fontWeight: '900' }}>{initials}</Text>
+                  ) : (
+                    <Ionicons name="person" size={38} color="rgba(255,255,255,0.9)" />
+                  )}
                 </View>
               )}
               <View style={{
@@ -478,11 +611,13 @@ export default function AccountTab() {
             <SettingsRow icon="mail-outline" iconBg="#F0EEFF" iconColor="#4C3FC4" label="Email" value={user?.email ?? '—'} />
             <SettingsRow icon="call-outline" iconBg="#d1fae5" iconColor="#059669" label="Phone" value={user?.phoneNumber ?? 'Not set'} />
             <SettingsRow
-              icon="checkmark-circle-outline"
+              icon={user?.emailVerified ? 'checkmark-circle-outline' : 'alert-circle-outline'}
               iconBg={user?.emailVerified ? '#d1fae5' : '#fef3c7'}
               iconColor={user?.emailVerified ? '#059669' : '#d97706'}
-              label="Email Verified" value={user?.emailVerified ? 'Verified' : 'Not verified'}
-              showArrow={false}
+              label="Email Verified"
+              value={user?.emailVerified ? 'Verified' : 'Tap to verify'}
+              showArrow={!user?.emailVerified}
+              onPress={user?.emailVerified ? undefined : () => setVerifyModalOpen(true)}
             />
           </SettingsGroup>
 
@@ -498,6 +633,29 @@ export default function AccountTab() {
             <SettingsRow icon="help-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="Help & Support" onPress={() => {}} />
             <SettingsRow icon="information-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="About EduCore" value="v1.0.0" onPress={() => {}} />
           </SettingsGroup>
+
+          {/* ── Dev: reset onboarding ────────────────────────────── */}
+          <View style={{ marginTop: 8 }}>
+            <View style={{ backgroundColor: '#fff', borderTopWidth: 0.5, borderTopColor: '#e5e7eb', borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb' }}>
+              <Pressable onPress={() => {
+                useAuthStore.setState({ hasOnboarded: false });
+                router.replace('/');
+              }}>
+                {({ pressed }) => (
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 14,
+                    paddingVertical: 14, paddingHorizontal: 20,
+                    backgroundColor: pressed ? '#fffbeb' : '#fff',
+                  }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Ionicons name="refresh-outline" size={17} color="#d97706" />
+                    </View>
+                    <Text style={{ fontSize: 15, fontWeight: '400', color: '#d97706' }}>Reset Onboarding</Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
+          </View>
 
           {/* ── Sign out ─────────────────────────────────────────── */}
           <View style={{ marginTop: 8, marginBottom: 8 }}>
@@ -520,6 +678,17 @@ export default function AccountTab() {
           </View>
         </View>
       </ScrollView>
+
+      <EmailVerifyModal
+        visible={verifyModalOpen}
+        email={user?.email ?? ''}
+        onClose={() => setVerifyModalOpen(false)}
+        onVerified={() => {
+          // Update local user state so the row switches to "Verified" immediately
+          const current = useAuthStore.getState().user;
+          if (current) useAuthStore.setState({ user: { ...current, emailVerified: true } });
+        }}
+      />
     </SafeAreaView>
   );
 }

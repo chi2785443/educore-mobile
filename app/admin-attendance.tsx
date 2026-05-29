@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { useAdminTodayAttendance } from '@/hooks/useAttendance';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import { StaffTodayStatus } from '@/interface/attendance.interface';
 
 const AVATAR_COLORS = ['#4C3FC4', '#0ea5e9', '#14b8a6', '#F5486A', '#f59e0b', '#059669'];
@@ -87,7 +88,8 @@ export default function AdminAttendanceScreen() {
   const primary = (user?.schools ?? []).find(m => m.schoolId === selectedSchoolId) ?? (user?.schools ?? [])[0];
   const schoolId = primary?.schoolId ?? '';
 
-  const [filterPresent, setFilterPresent] = useState<boolean | null>(null);
+  type AttendanceFilter = 'all' | 'present' | 'absent';
+  const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>('all');
   const { data, isLoading, refetch, error } = useAdminTodayAttendance(schoolId);
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -100,9 +102,9 @@ export default function AdminAttendanceScreen() {
 
   const staff = data?.staff ?? [];
   const summary = data?.summary;
-  const filtered = filterPresent === null
+  const filtered = attendanceFilter === 'all'
     ? staff
-    : staff.filter(s => s.clockedIn === filterPresent);
+    : staff.filter(s => s.clockedIn === (attendanceFilter === 'present'));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
@@ -144,31 +146,16 @@ export default function AdminAttendanceScreen() {
         )}
       </View>
 
-      {/* Filter pills */}
-      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-        {[
-          { label: 'All', value: null },
-          { label: 'Present', value: true },
-          { label: 'Absent', value: false },
-        ].map(opt => {
-          const isActive = filterPresent === opt.value;
-          return (
-            <Pressable
-              key={String(opt.value)}
-              onPress={() => setFilterPresent(opt.value)}
-              style={{
-                paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20,
-                backgroundColor: isActive ? '#059669' : '#f3f4f6',
-                borderWidth: 1, borderColor: isActive ? '#059669' : '#e5e7eb',
-              }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '700', color: isActive ? '#fff' : '#6b7280' }}>
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ClassroomDetailTabs
+        tabs={[
+          { key: 'all',     label: 'All' },
+          { key: 'present', label: 'Present' },
+          { key: 'absent',  label: 'Absent' },
+        ] as { key: AttendanceFilter; label: string }[]}
+        activeTab={attendanceFilter}
+        onTabChange={setAttendanceFilter}
+        accentColor="#059669"
+      />
 
       {/* Website referral notice */}
       <View style={{
@@ -210,7 +197,7 @@ export default function AdminAttendanceScreen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
           <Ionicons name="people-outline" size={48} color="#d1d5db" />
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#374151', textAlign: 'center' }}>
-            {filterPresent === true ? 'No one has clocked in yet' : filterPresent === false ? 'All staff have clocked in' : 'No staff records found'}
+            {attendanceFilter === 'present' ? 'No one has clocked in yet' : attendanceFilter === 'absent' ? 'All staff have clocked in' : 'No staff records found'}
           </Text>
         </View>
       ) : (

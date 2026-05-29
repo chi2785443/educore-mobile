@@ -73,4 +73,9 @@ export const memberDocumentService = {
       message: params.message,
     });
   },
+
+  getChildDocuments: async (schoolId: string, userId: string): Promise<MemberDocument[]> => {
+    const res = await apiClient.get(`/member-documents/schools/${schoolId}/child/${userId}`);
+    return exList<MemberDocument>(res.data);
+  },
 };

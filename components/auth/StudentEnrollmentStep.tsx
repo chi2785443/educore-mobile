@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, FlatList, Alert } from 'react-native';
+import { View, Text, Pressable, FlatList } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as DocumentPicker from 'expo-document-picker';
@@ -104,7 +105,7 @@ export function StudentEnrollmentStep({ onBack }: Props) {
 
   const onSubmit = (data: StudentEnrollmentFormData) => {
     if (!doc1 || !doc2) {
-      Alert.alert('Missing documents', 'Please attach both required documents.');
+      toast.error('Please attach both required documents.');
       return;
     }
     createEnrollment(
@@ -123,7 +124,7 @@ export function StudentEnrollmentStep({ onBack }: Props) {
         document2Name: doc2.name,
         document2MimeType: doc2.mimeType,
       },
-      { onError: (err) => Alert.alert('Error', err.message) }
+      { onError: (err) => toast.error(err.message) }
     );
   };
 

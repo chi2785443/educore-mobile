@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { otpSchema, OtpFormData } from '@/schemas/auth.schema';
@@ -33,7 +34,7 @@ export function OtpStep({ onSuccess, onBack }: Props) {
 
   const onSubmit = (data: OtpFormData) => {
     verifyOtp({ email, otp: data.otp }, {
-      onError: (err) => Alert.alert('Verification Failed', err.message),
+      onError: (err) => toast.error(err.message),
     });
   };
 

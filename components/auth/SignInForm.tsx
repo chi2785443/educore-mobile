@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
@@ -22,7 +23,7 @@ export function SignInForm() {
 
   const onSubmit = (data: SignInFormData) => {
     login(data, {
-      onError: (err) => Alert.alert('Sign In Failed', err.message),
+      onError: (err) => toast.error(err.message),
     });
   };
 

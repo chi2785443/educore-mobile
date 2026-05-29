@@ -93,6 +93,10 @@ export default function RootLayout() {
             <Stack.Screen name="my-assessments" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="assessments" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="question-bank" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-children" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-children-reports" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-children-results" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="my-children-documents" options={{ animation: 'slide_from_right' }} />
           </Stack>
         )}
       </ToastProvider>

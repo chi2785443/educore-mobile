@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, FlatList, Alert } from 'react-native';
+import { View, Text, Pressable, FlatList } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
@@ -80,7 +81,7 @@ export function ParentEnquiryStep({ onBack }: Props) {
         message: data.message,
         specificQuestions: (data.specificQuestions ?? []).filter(Boolean),
       },
-      { onError: (err) => Alert.alert('Error', err.message) }
+      { onError: (err) => toast.error(err.message) }
     );
   };
 

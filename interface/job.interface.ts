@@ -121,8 +121,8 @@ export interface JobApplication {
   rating?: number;
   submittedAt: string;
   updatedAt: string;
-  jobPosting?: { id: string; title: string; employmentType?: string };
-  applicant?: { id: string; firstName: string; lastName: string; email: string; phoneNumber?: string };
+  jobPosting?: { id: string; title: string; employmentType?: string; role?: SchoolJobRole };
+  applicant?: { id: string; firstName: string; lastName: string; email: string; phoneNumber?: string; profilePicture?: string | null };
   resume?: { url: string; publicId: string; name?: string };
   interviews?: JobInterview[];
 }

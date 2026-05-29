@@ -63,4 +63,16 @@ export const assessmentService = {
     const res = await apiClient.get(`/assessment-questions/${assessmentId}`);
     return extractList<AssessmentQuestion>(res.data);
   },
+
+  addAssessmentQuestions: async (payload: {
+    assessmentId: string;
+    questions: { questionId: string; questionOrder: number; marks: number }[];
+  }): Promise<AssessmentQuestion[]> => {
+    const res = await apiClient.post('/assessment-questions', payload);
+    return extractList<AssessmentQuestion>(res.data);
+  },
+
+  removeAssessmentQuestion: async (assessmentId: string, questionId: string): Promise<void> => {
+    await apiClient.delete(`/assessment-questions/${assessmentId}/questions/${questionId}`);
+  },
 };

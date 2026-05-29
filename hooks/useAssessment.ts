@@ -120,6 +120,30 @@ export const usePublishAssessment = (assessmentId: string, classroomId: string) 
   });
 };
 
+export const useAddAssessmentQuestions = (assessmentId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (questions: { questionId: string; questionOrder: number; marks: number }[]) =>
+      assessmentService.addAssessmentQuestions({ assessmentId, questions }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['assessment-questions', assessmentId] });
+      qc.invalidateQueries({ queryKey: ['assessment', assessmentId] });
+    },
+  });
+};
+
+export const useRemoveAssessmentQuestion = (assessmentId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (questionId: string) =>
+      assessmentService.removeAssessmentQuestion(assessmentId, questionId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['assessment-questions', assessmentId] });
+      qc.invalidateQueries({ queryKey: ['assessment', assessmentId] });
+    },
+  });
+};
+
 export const useDeleteAssessment = (classroomId: string) => {
   const qc = useQueryClient();
   return useMutation({

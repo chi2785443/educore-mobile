@@ -4,6 +4,7 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform,
   useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { toast } from '@/components/ui/Toast';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
@@ -366,16 +367,24 @@ export default function PeoplePickerSheet({
                               )}
 
                               {/* Avatar */}
-                              <View style={{
-                                width: 46, height: 46, borderRadius: 23,
-                                backgroundColor: color,
-                                alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0,
-                              }}>
-                                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
-                                  {initials}
-                                </Text>
-                              </View>
+                              {member.profilePicture ? (
+                                <Image
+                                  source={{ uri: member.profilePicture }}
+                                  style={{ width: 46, height: 46, borderRadius: 23, flexShrink: 0 }}
+                                  contentFit="cover"
+                                />
+                              ) : (
+                                <View style={{
+                                  width: 46, height: 46, borderRadius: 23,
+                                  backgroundColor: color,
+                                  alignItems: 'center', justifyContent: 'center',
+                                  flexShrink: 0,
+                                }}>
+                                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+                                    {initials}
+                                  </Text>
+                                </View>
+                              )}
 
                               {/* Name + role badge + job title */}
                               <View style={{ flex: 1, minWidth: 0 }}>

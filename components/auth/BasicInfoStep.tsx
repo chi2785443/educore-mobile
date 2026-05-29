@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signUpSchema, SignUpFormData } from '@/schemas/auth.schema';
@@ -42,7 +43,7 @@ export function BasicInfoStep({ onSuccess }: Props) {
       },
       {
         onSuccess: () => onSuccess(),
-        onError: (err) => Alert.alert('Registration Failed', err.message),
+        onError: (err) => toast.error(err.message),
       }
     );
   };

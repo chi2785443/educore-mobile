@@ -23,10 +23,13 @@ export const studentScoreService = {
 
   getMyScoreForAssessment: async (assessmentId: string): Promise<StudentScore | null> => {
     try {
-      const res = await apiClient.get(
-        `/student-scores/my-scores/assessment/${assessmentId}`,
-      );
-      return (res.data?.data ?? res.data ?? null) as StudentScore | null;
+      // Mirror web: use the bulk my-scores endpoint (returns all scores including
+      // unreleased ones) then filter client-side by assessmentId.
+      // The per-assessment endpoint may return 404 for unreleased scores.
+      const res = await apiClient.get('/student-scores/my-scores');
+      const d = res.data?.data ?? res.data;
+      const scores: StudentScore[] = Array.isArray(d) ? d : [];
+      return scores.find(s => s.assessmentId === assessmentId) ?? null;
     } catch {
       return null;
     }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
@@ -26,7 +27,7 @@ export function ForgotPasswordForm() {
   const onSubmit = (data: ForgotPasswordFormData) => {
     forgotPassword(data, {
       onSuccess: () => setSent(true),
-      onError: (err) => Alert.alert('Error', err.message),
+      onError: (err) => toast.error(err.message),
     });
   };
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { schoolService } from '@/services/school.service';
+import { schoolService, ParentChild } from '@/services/school.service';
 import { School, CreateSchool, SchoolSettings } from '@/interface/school.interface';
 
 export function useBrowseSchools(params?: { search?: string; city?: string }) {
@@ -41,5 +41,14 @@ export function useSchoolSettings(schoolId: string | undefined) {
     queryFn: () => schoolService.getSettings(schoolId!),
     enabled: !!schoolId,
     staleTime: 10 * 60_000,
+  });
+}
+
+export function useParentChildren(schoolId: string | undefined, parentId: string | undefined) {
+  return useQuery<ParentChild[]>({
+    queryKey: ['parent-children', schoolId, parentId],
+    queryFn: () => schoolService.getParentChildren(schoolId!, parentId!),
+    enabled: !!schoolId && !!parentId,
+    staleTime: 5 * 60_000,
   });
 }

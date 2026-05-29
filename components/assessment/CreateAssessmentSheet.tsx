@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
-  Modal, View, Text, ScrollView, Pressable, TextInput, Alert, ActivityIndicator,
+  Modal, View, Text, ScrollView, Pressable, TextInput, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
@@ -9,6 +9,7 @@ import {
   createAssessmentSchema,
   CreateAssessmentFormValues,
 } from '@/schemas/assessment.schema';
+import { toast } from '@/components/ui/Toast';
 import { useCreateAssessment, useSubjects, useGradeConfigs } from '@/hooks/useAssessment';
 import { useSchoolById } from '@/hooks/useSchool';
 import { AssessmentType, QuestionType } from '@/interface/assessment.interface';
@@ -20,6 +21,14 @@ interface Props {
   onClose: () => void;
   classrooms: Classroom[];
   schoolId: string;
+}
+
+function mapTermToEnum(term: string): string {
+  const t = term.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  if (t === 'firstterm' || t === 'term1' || t === '1stterm' || t === 'semester1' || t === 'first') return 'FIRST_TERM';
+  if (t === 'secondterm' || t === 'term2' || t === '2ndterm' || t === 'semester2' || t === 'second') return 'SECOND_TERM';
+  if (t === 'thirdterm' || t === 'term3' || t === '3rdterm' || t === 'semester3' || t === 'third') return 'THIRD_TERM';
+  return term;
 }
 
 const ALL_TYPES: { value: AssessmentType; label: string; color: string }[] = [
@@ -416,7 +425,7 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
       questionType: 'objective',
       totalMarks: 100,
       passingMarks: 50,
-      term: currentTerm,
+      term: mapTermToEnum(currentTerm),
       academicYear: currentSession,
     },
   });
@@ -430,7 +439,7 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
 
   // Auto-fill term + academicYear from school config whenever settings load
   useEffect(() => {
-    if (currentTerm) setValue('term', currentTerm);
+    if (currentTerm) setValue('term', mapTermToEnum(currentTerm));
     if (currentSession) setValue('academicYear', currentSession);
   }, [currentTerm, currentSession, setValue]);
 
@@ -441,7 +450,7 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
         questionType: 'objective',
         totalMarks: 100,
         passingMarks: 50,
-        term: currentTerm,
+        term: mapTermToEnum(currentTerm),
         academicYear: currentSession,
       });
       setSelectedClassroom(null);
@@ -456,9 +465,9 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
         schoolId,
       });
       onClose();
-      Alert.alert('Created', 'Assessment created as draft. Add questions and publish from the assessment screen.');
+      toast.success('Assessment created as draft. Add questions and publish from the assessment screen.');
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create assessment');
+      toast.error(err instanceof Error ? err.message : 'Failed to create assessment');
     }
   };
 

@@ -9,6 +9,24 @@ export interface SchoolMember {
   user: { id: string; firstName: string; lastName: string; email: string; profilePicture?: string | null };
 }
 
+export interface ParentChild {
+  id: string;
+  studentId: string;
+  relationship?: string;
+  isPrimaryContact?: boolean;
+  canPickup?: boolean;
+  emergencyPhone?: string;
+  gradeLevel?: string;
+  classSection?: string;
+  student?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    profilePicture?: string | null;
+  };
+}
+
 export const schoolService = {
   browse: async (params?: { search?: string; city?: string }): Promise<School[]> => {
     const response = await apiClient.get<School[]>('/schools/browse', { params });
@@ -38,5 +56,11 @@ export const schoolService = {
     } catch {
       return null;
     }
+  },
+
+  getParentChildren: async (schoolId: string, parentId: string): Promise<ParentChild[]> => {
+    const res = await apiClient.get(`/schools/${schoolId}/parents/${parentId}/children`);
+    const d = res.data?.data ?? res.data;
+    return Array.isArray(d) ? d : [];
   },
 };

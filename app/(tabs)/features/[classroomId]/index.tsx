@@ -1,20 +1,24 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, ScrollView, Pressable, ActivityIndicator, Alert, RefreshControl,
+  Modal, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { toast } from '@/components/ui/Toast';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import { DayOfWeek } from '@/interface/timetable.interface';
 import { Assessment, AssessmentStatus, AssessmentType } from '@/interface/assessment.interface';
 import {
-  useClassroomDetail,
-  useClassroomStudents,
-  useClassroomTeachers,
+  useClassroomDetail, useClassroomStudents, useClassroomTeachers,
+  useAddTeacher, useRemoveTeacher, useAddStudent, useRemoveStudent,
 } from '@/hooks/useClassroom';
-import { useClassroomTimetable } from '@/hooks/useTimetable';
+import { useClassroomTimetable, useCreateTimetableEntry, useDeleteTimetableEntry } from '@/hooks/useTimetable';
+import { useSubjects } from '@/hooks/useAssessment';
+import { useSchoolMembers } from '@/hooks/useSchool';
+import { TimePickerModal } from '@/components/ui/TimePickerModal';
 import { useMyAssessments, useClassroomAssessments } from '@/hooks/useAssessment';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import MemberRow from '@/components/classroom/MemberRow';
@@ -32,7 +36,7 @@ const GRADE_PALETTE: Record<string, { fg: string; grad: string }> = {
   SS3:  { fg: '#7c3aed', grad: '#7c3aed' },
 };
 const DEFAULT_PAL = { fg: '#4C3FC4', grad: '#4C3FC4' };
-const getPalette = (grade?: string) => (grade && GRADE_PALETTE[grade]) ?? DEFAULT_PAL;
+const getPalette = (grade?: string): { fg: string; grad: string } => (grade ? GRADE_PALETTE[grade] : null) ?? DEFAULT_PAL;
 
 const ORDERED_DAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 const DAY_LABELS: Record<DayOfWeek, string> = {
@@ -69,15 +73,15 @@ function EmptyState({ icon, title, subtitle }: {
 
 /* ── Timetable view ────────────────────────────────────────────── */
 function TimetableView({
-  timetable,
-  pal,
-  refreshing,
-  onRefresh,
+  timetable, pal, refreshing, onRefresh, isAdmin, onDeletePeriod, onAddPeriod,
 }: {
   timetable: Partial<Record<DayOfWeek, import('@/interface/timetable.interface').TimetableEntry[]>>;
   pal: { fg: string; grad: string };
   refreshing: boolean;
   onRefresh: () => void;
+  isAdmin: boolean;
+  onDeletePeriod: (id: string) => void;
+  onAddPeriod: () => void;
 }) {
   const today = getTodayDayOfWeek();
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>(today);
@@ -241,11 +245,25 @@ function TimetableView({
                     )}
                   </View>
                 </View>
+                {isAdmin && (
+                  <Pressable onPress={() => onDeletePeriod(entry.id)} style={{ paddingHorizontal: 14, justifyContent: 'center' }}>
+                    <Ionicons name="trash-outline" size={16} color="#dc2626" />
+                  </Pressable>
+                )}
               </View>
             );
           })
         )}
       </ScrollView>
+
+      {isAdmin && (
+        <Pressable onPress={onAddPeriod} style={{ position: 'absolute', bottom: 24, right: 20 }}>
+          <View style={{ backgroundColor: pal.fg, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 6, shadowColor: pal.fg, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 6 }}>
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>Add Period</Text>
+          </View>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -270,6 +288,21 @@ export default function ClassroomDetailScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [showCreate, setShowCreate] = useState(false);
 
+  // Admin: member picker
+  const [memberPickerRole, setMemberPickerRole] = useState<'teacher' | 'student' | null>(null);
+  const [memberSearch, setMemberSearch] = useState('');
+
+  // Admin: add period
+  const [showAddPeriod, setShowAddPeriod] = useState(false);
+  const [periodDay, setPeriodDay] = useState<DayOfWeek>('MONDAY');
+  const [periodSubjectId, setPeriodSubjectId] = useState('');
+  const [periodTeacherId, setPeriodTeacherId] = useState('');
+  const [periodStart, setPeriodStart] = useState('');
+  const [periodEnd, setPeriodEnd] = useState('');
+  const [periodNumber, setPeriodNumber] = useState('');
+  const [periodRoom, setPeriodRoom] = useState('');
+  const [timePickerFor, setTimePickerFor] = useState<'start' | 'end' | null>(null);
+
   /* Data */
   const { data: classroom, isLoading: loadingClassroom, refetch: refetchClassroom } = useClassroomDetail(classroomId);
   const { data: timetable = {}, isLoading: loadingTimetable, refetch: refetchTimetable } = useClassroomTimetable(classroomId);
@@ -287,6 +320,22 @@ export default function ClassroomDetailScreen() {
     (isAdmin || isStudent) && activeTab === 'assessments' ? classroomId : undefined,
     schoolId,
   );
+  // Admin mutations
+  const addTeacherMutation = useAddTeacher(classroomId ?? '');
+  const removeTeacherMutation = useRemoveTeacher(classroomId ?? '');
+  const addStudentMutation = useAddStudent(classroomId ?? '');
+  const removeStudentMutation = useRemoveStudent(classroomId ?? '');
+  const createPeriodMutation = useCreateTimetableEntry(classroomId ?? '');
+  const deletePeriodMutation = useDeleteTimetableEntry(classroomId ?? '');
+
+  // Admin data for pickers
+  const { data: schoolMembersRaw = [] } = useSchoolMembers(isAdmin ? schoolId : undefined);
+  const { data: subjects = [] } = useSubjects(isAdmin ? schoolId : undefined);
+
+  const schoolMembers = Array.isArray(schoolMembersRaw) ? schoolMembersRaw : [];
+  const staffMembers = schoolMembers.filter(m => m.role === UserRole.STAFF);
+  const studentMembers = schoolMembers.filter(m => m.role === UserRole.STUDENT);
+
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -391,7 +440,18 @@ export default function ClassroomDetailScreen() {
               <ActivityIndicator color={pal.fg} />
             </View>
           ) : (
-            <TimetableView timetable={timetable} pal={pal} refreshing={refreshing} onRefresh={onRefresh} />
+            <TimetableView
+              timetable={timetable} pal={pal} refreshing={refreshing} onRefresh={onRefresh}
+              isAdmin={isAdmin}
+              onDeletePeriod={id => Alert.alert('Delete Period', 'Remove this period from the timetable?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: async () => {
+                  try { await deletePeriodMutation.mutateAsync(id); toast.success('Period removed'); }
+                  catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+                }},
+              ])}
+              onAddPeriod={() => { setPeriodDay(getTodayDayOfWeek()); setPeriodSubjectId(''); setPeriodTeacherId(''); setPeriodStart(''); setPeriodEnd(''); setPeriodNumber(''); setPeriodRoom(classroom?.roomNumber ?? ''); setShowAddPeriod(true); }}
+            />
           )}
         </View>
       )}
@@ -409,37 +469,30 @@ export default function ClassroomDetailScreen() {
           {isAdmin && !loadingTeachers && (
             <View>
               <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-                <Text style={{ fontSize: 12, fontWeight: '800', color: '#6b7280', letterSpacing: 0.8, textTransform: 'uppercase', flex: 1 }}>
-                  Teachers
-                </Text>
-                <View style={{ backgroundColor: '#F0EEFF', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: '#6b7280', letterSpacing: 0.8, textTransform: 'uppercase', flex: 1 }}>Teachers</Text>
+                <View style={{ backgroundColor: '#F0EEFF', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginRight: 10 }}>
                   <Text style={{ fontSize: 11, fontWeight: '700', color: '#4C3FC4' }}>{teachers.length}</Text>
                 </View>
+                <Pressable onPress={() => { setMemberPickerRole('teacher'); setMemberSearch(''); }}>
+                  <View style={{ backgroundColor: '#4C3FC4', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="add" size={14} color="#fff" />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Add</Text>
+                  </View>
+                </Pressable>
               </View>
               <View style={{ backgroundColor: '#fff' }}>
                 {teachers.length === 0 ? (
                   <Text style={{ padding: 16, color: '#9ca3af', fontSize: 13 }}>No teachers assigned</Text>
                 ) : (
                   teachers.map(t => (
-                    <MemberRow
-                      key={t.id}
-                      member={t}
-                      role="teacher"
-                      onPress={() => router.push({
-                        pathname: `/features/${classroomId}/member/${t.id}` as never,
-                        params: {
-                          memberId: t.id,
-                          classroomId,
-                          firstName: t.firstName,
-                          lastName: t.lastName,
-                          email: t.email ?? '',
-                          jobTitle: t.jobTitle ?? '',
-                          role: 'teacher',
-                          profilePicture: t.profilePicture ?? '',
-                          classroomName: classroom?.name ?? '',
-                        },
-                      })}
-                    />
+                    <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <MemberRow member={t} role="teacher" onPress={() => router.push({ pathname: `/features/${classroomId}/member/${t.id}` as never, params: { memberId: t.id, classroomId, firstName: t.firstName, lastName: t.lastName, email: t.email ?? '', jobTitle: t.jobTitle ?? '', role: 'teacher', profilePicture: t.profilePicture ?? '', classroomName: classroom?.name ?? '' } })} />
+                      </View>
+                      <Pressable onPress={() => Alert.alert('Remove Teacher', `Remove ${t.firstName} from this classroom?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: async () => { try { await removeTeacherMutation.mutateAsync(t.id); toast.success('Teacher removed'); } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); } } }])} style={{ paddingHorizontal: 16 }}>
+                        <Ionicons name="trash-outline" size={18} color="#dc2626" />
+                      </Pressable>
+                    </View>
                   ))
                 )}
               </View>
@@ -450,37 +503,34 @@ export default function ClassroomDetailScreen() {
           {!loadingStudents && (
             <View style={{ marginTop: isAdmin ? 8 : 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-                <Text style={{ fontSize: 12, fontWeight: '800', color: '#6b7280', letterSpacing: 0.8, textTransform: 'uppercase', flex: 1 }}>
-                  Students
-                </Text>
-                <View style={{ backgroundColor: '#dbeafe', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: '#6b7280', letterSpacing: 0.8, textTransform: 'uppercase', flex: 1 }}>Students</Text>
+                <View style={{ backgroundColor: '#dbeafe', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginRight: 10 }}>
                   <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563eb' }}>{students.length}</Text>
                 </View>
+                {isAdmin && (
+                  <Pressable onPress={() => { setMemberPickerRole('student'); setMemberSearch(''); }}>
+                    <View style={{ backgroundColor: '#2563eb', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="add" size={14} color="#fff" />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Add</Text>
+                    </View>
+                  </Pressable>
+                )}
               </View>
               <View style={{ backgroundColor: '#fff' }}>
                 {students.length === 0 ? (
                   <Text style={{ padding: 16, color: '#9ca3af', fontSize: 13 }}>No students enrolled</Text>
                 ) : (
                   students.map(s => (
-                    <MemberRow
-                      key={s.id}
-                      member={s}
-                      role="student"
-                      onPress={() => router.push({
-                        pathname: `/features/${classroomId}/member/${s.id}` as never,
-                        params: {
-                          memberId: s.id,
-                          classroomId,
-                          firstName: s.firstName,
-                          lastName: s.lastName,
-                          email: s.email ?? '',
-                          jobTitle: '',
-                          role: 'student',
-                          profilePicture: s.profilePicture ?? '',
-                          classroomName: classroom?.name ?? '',
-                        },
-                      })}
-                    />
+                    <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <MemberRow member={s} role="student" onPress={() => router.push({ pathname: `/features/${classroomId}/member/${s.id}` as never, params: { memberId: s.id, classroomId, firstName: s.firstName, lastName: s.lastName, email: s.email ?? '', jobTitle: '', role: 'student', profilePicture: s.profilePicture ?? '', classroomName: classroom?.name ?? '' } })} />
+                      </View>
+                      {isAdmin && (
+                        <Pressable onPress={() => Alert.alert('Remove Student', `Remove ${s.firstName} from this classroom?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: async () => { try { await removeStudentMutation.mutateAsync(s.id); toast.success('Student removed'); } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); } } }])} style={{ paddingHorizontal: 16 }}>
+                          <Ionicons name="trash-outline" size={18} color="#dc2626" />
+                        </Pressable>
+                      )}
+                    </View>
                   ))
                 )}
               </View>
@@ -584,6 +634,197 @@ export default function ClassroomDetailScreen() {
         classroomId={classroomId ?? ''}
         schoolId={schoolId}
       />
+
+      {/* Member Picker Modal */}
+      {memberPickerRole !== null && (() => {
+        const candidates = memberPickerRole === 'teacher' ? staffMembers : studentMembers;
+        const existing = new Set(memberPickerRole === 'teacher' ? teachers.map(t => t.id) : students.map(s => s.id));
+        const filtered = candidates.filter(m => {
+          const name = `${m.user.firstName} ${m.user.lastName}`.toLowerCase();
+          return !existing.has(m.userId) && (!memberSearch || name.includes(memberSearch.toLowerCase()));
+        });
+        const isPending = addTeacherMutation.isPending || addStudentMutation.isPending;
+        const handleAdd = async (userId: string) => {
+          try {
+            if (memberPickerRole === 'teacher') await addTeacherMutation.mutateAsync(userId);
+            else await addStudentMutation.mutateAsync(userId);
+            toast.success(`${memberPickerRole === 'teacher' ? 'Teacher' : 'Student'} added`);
+          } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+        };
+        return (
+          <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setMemberPickerRole(null)}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', gap: 12 }}>
+                <Pressable onPress={() => setMemberPickerRole(null)}><Ionicons name="close" size={22} color="#374151" /></Pressable>
+                <Text style={{ fontSize: 17, fontWeight: '900', color: '#0f172a', flex: 1 }}>
+                  Add {memberPickerRole === 'teacher' ? 'Teacher' : 'Student'}
+                </Text>
+              </View>
+              <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                <TextInput value={memberSearch} onChangeText={setMemberSearch} placeholder="Search by name…" placeholderTextColor="#9ca3af" style={{ backgroundColor: '#f3f4f6', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#1e293b' }} />
+              </View>
+              {filtered.length === 0 ? (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  <Ionicons name="people-outline" size={36} color="#d1d5db" />
+                  <Text style={{ fontSize: 14, color: '#9ca3af' }}>
+                    {memberSearch ? 'No matches found' : `No ${memberPickerRole === 'teacher' ? 'staff' : 'students'} available to add`}
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+                  {filtered.map(m => (
+                    <Pressable key={m.userId} onPress={() => handleAdd(m.userId)} disabled={isPending} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f8fafc', backgroundColor: '#fff' }}>
+                        <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#F0EEFF', alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 14, fontWeight: '900', color: '#4C3FC4' }}>{m.user.firstName[0]}{m.user.lastName[0]}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }}>{m.user.firstName} {m.user.lastName}</Text>
+                          <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>{m.user.email}</Text>
+                        </View>
+                        <View style={{ backgroundColor: '#4C3FC4', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Add</Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+            </SafeAreaView>
+          </Modal>
+        );
+      })()}
+
+      {/* Add Period Modal */}
+      <Modal visible={showAddPeriod} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddPeriod(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', gap: 12 }}>
+            <Pressable onPress={() => setShowAddPeriod(false)}><Ionicons name="close" size={22} color="#374151" /></Pressable>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: '#0f172a', flex: 1 }}>Add Period</Text>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+            {/* Day */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Day *</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {(['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'] as DayOfWeek[]).map(d => {
+                  const active = periodDay === d;
+                  const label = { MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri' }[d];
+                  return (
+                    <Pressable key={d} onPress={() => setPeriodDay(d)} style={{ flex: 1 }}>
+                      <View style={{ paddingVertical: 8, borderRadius: 10, backgroundColor: active ? pal.fg : '#f3f4f6', borderWidth: 1, borderColor: active ? pal.fg : '#e5e7eb', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{label}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Subject */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Subject *</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {(subjects as { id: string; name: string; color: string }[]).map(s => {
+                    const active = periodSubjectId === s.id;
+                    return (
+                      <Pressable key={s.id} onPress={() => setPeriodSubjectId(s.id)}>
+                        <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? s.color : '#f3f4f6', borderWidth: 1, borderColor: active ? s.color : '#e5e7eb' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{s.name}</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            </View>
+
+            {/* Teacher (optional) */}
+            {teachers.length > 0 && (
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Teacher (optional)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <Pressable onPress={() => setPeriodTeacherId('')}>
+                      <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: !periodTeacherId ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: !periodTeacherId ? '#4C3FC4' : '#e5e7eb' }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: !periodTeacherId ? '#fff' : '#6b7280' }}>None</Text>
+                      </View>
+                    </Pressable>
+                    {teachers.map(t => {
+                      const active = periodTeacherId === t.id;
+                      return (
+                        <Pressable key={t.id} onPress={() => setPeriodTeacherId(t.id)}>
+                          <View style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{t.firstName} {t.lastName}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Time */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Start Time *</Text>
+                <Pressable onPress={() => setTimePickerFor('start')}>
+                  <View style={{ backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="time-outline" size={16} color={periodStart ? '#4C3FC4' : '#9ca3af'} />
+                    <Text style={{ fontSize: 14, color: periodStart ? '#1e293b' : '#9ca3af' }}>{periodStart || 'HH:MM'}</Text>
+                  </View>
+                </Pressable>
+              </View>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>End Time *</Text>
+                <Pressable onPress={() => setTimePickerFor('end')}>
+                  <View style={{ backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="time-outline" size={16} color={periodEnd ? '#4C3FC4' : '#9ca3af'} />
+                    <Text style={{ fontSize: 14, color: periodEnd ? '#1e293b' : '#9ca3af' }}>{periodEnd || 'HH:MM'}</Text>
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Period # and Room */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Period #</Text>
+                <TextInput value={periodNumber} onChangeText={setPeriodNumber} placeholder="e.g. 1" placeholderTextColor="#9ca3af" keyboardType="number-pad" style={{ backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#1e293b' }} />
+              </View>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Room</Text>
+                <TextInput value={periodRoom} onChangeText={setPeriodRoom} placeholder={classroom?.roomNumber ?? 'e.g. B12'} placeholderTextColor="#9ca3af" style={{ backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#1e293b' }} />
+              </View>
+            </View>
+
+            <Pressable
+              disabled={createPeriodMutation.isPending}
+              onPress={async () => {
+                if (!periodSubjectId) { toast.error('Select a subject'); return; }
+                if (!periodStart || !periodEnd) { toast.error('Set start and end times'); return; }
+                try {
+                  await createPeriodMutation.mutateAsync({ classroomId: classroomId ?? '', subjectId: periodSubjectId, teacherId: periodTeacherId || undefined, dayOfWeek: periodDay, startTime: periodStart, endTime: periodEnd, periodNumber: periodNumber ? parseInt(periodNumber, 10) : undefined, roomNumber: periodRoom.trim() || undefined });
+                  toast.success('Period added');
+                  setShowAddPeriod(false);
+                } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed to add period'); }
+              }}
+              style={({ pressed }) => ({ opacity: pressed || createPeriodMutation.isPending ? 0.8 : 1 })}
+            >
+              <View style={{ backgroundColor: pal.fg, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                {createPeriodMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createPeriodMutation.isPending ? 'Adding…' : 'Add Period'}</Text>
+              </View>
+            </Pressable>
+          </ScrollView>
+
+          {/* Time pickers — nested inside this modal */}
+          <TimePickerModal visible={timePickerFor === 'start'} value={periodStart} label="Start Time" onSelect={setPeriodStart} onClose={() => setTimePickerFor(null)} />
+          <TimePickerModal visible={timePickerFor === 'end'} value={periodEnd} label="End Time" onSelect={setPeriodEnd} onClose={() => setTimePickerFor(null)} />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }

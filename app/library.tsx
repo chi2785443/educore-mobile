@@ -16,6 +16,7 @@ import {
 import { libraryService } from '@/services/library.service';
 import { LibraryDocument, LibraryFileType, LibraryVisibility } from '@/interface/library.interface';
 import { UserRole } from '@/interface/user.interface';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 
 /* ── File type config ───────────────────────────────────────────── */
 const FILE_CONFIG: Record<LibraryFileType, { icon: React.ComponentProps<typeof Ionicons>['name']; color: string; bg: string; label: string }> = {
@@ -299,12 +300,12 @@ export default function LibraryScreen() {
   const role = primary?.role ?? '';
   const isAdmin = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin;
 
-  const [activeCategory, setActiveCategory] = useState<string | undefined>();
+  const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showUpload, setShowUpload] = useState(false);
 
   const { data: categories = [], refetch: refetchCats } = useLibraryCategories(schoolId);
-  const { data: documents = [], isLoading, refetch: refetchDocs } = useLibraryDocuments(schoolId, activeCategory);
+  const { data: documents = [], isLoading, refetch: refetchDocs } = useLibraryDocuments(schoolId, activeCategory === 'all' ? undefined : activeCategory);
   const { mutate: deleteDoc } = useDeleteLibraryDocument(schoolId);
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -360,20 +361,12 @@ export default function LibraryScreen() {
         </View>
       </View>
 
-      {/* Category chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', maxHeight: 50 }} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' }}>
-        <Pressable onPress={() => setActiveCategory(undefined)} style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: !activeCategory ? '#7c3aed' : '#f3f4f6', borderWidth: 1, borderColor: !activeCategory ? '#7c3aed' : '#e5e7eb' }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: !activeCategory ? '#fff' : '#6b7280' }}>All</Text>
-        </Pressable>
-        {categories.map(cat => {
-          const active = activeCategory === cat;
-          return (
-            <Pressable key={cat} onPress={() => setActiveCategory(active ? undefined : cat)} style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: active ? '#7c3aed' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#7c3aed' : '#e5e7eb' }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{cat}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <ClassroomDetailTabs
+        tabs={[{ key: 'all', label: 'All' }, ...categories.map(cat => ({ key: cat, label: cat }))]}
+        activeTab={activeCategory}
+        onTabChange={setActiveCategory}
+        accentColor="#7c3aed"
+      />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

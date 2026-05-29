@@ -36,9 +36,14 @@ export interface StudentReport {
   reportType: ReportType;
   status: ReportStatus;
   title?: string;
+  academicYear?: string;
+  term?: string;
   generalRemarks: string;
   behaviorRating?: number;
   rejectionReason?: string;
+  strengths?: string[];
+  areasForImprovement?: string[];
+  subjectEntries?: ReportSubjectEntry[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

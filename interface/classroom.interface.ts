@@ -10,6 +10,15 @@ export interface ClassroomDetail {
   schoolId: string;
 }
 
+export interface CreateClassroomPayload {
+  schoolId: string;
+  name: string;
+  grade?: string;
+  section?: string;
+  capacity?: number;
+  roomNumber?: string;
+}
+
 export interface ClassroomMember {
   id: string;
   firstName: string;

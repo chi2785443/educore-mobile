@@ -14,8 +14,8 @@ import {
   useTodayAttendance, useAttendanceSettings, useClockAttendance,
 } from '@/hooks/useAttendance';
 import { useMyTeacherClassrooms, useClassroomStudents, useClassroomsBySchool } from '@/hooks/useClassroom';
-import { useCreateAssessmentGlobal, useSubjects } from '@/hooks/useAssessment';
-import { AssessmentType, QuestionType } from '@/interface/assessment.interface';
+import { useSchoolById } from '@/hooks/useSchool';
+import CreateAssessmentSheet from '@/components/assessment/CreateAssessmentSheet';
 import { useCreateAnnouncement } from '@/hooks/useAnnouncements';
 import { useCreateCalendarEvent } from '@/hooks/useCalendar';
 import {
@@ -115,6 +115,17 @@ const inputStyle = {
   fontSize: 14, color: '#1e293b',
 };
 
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', padding: 16, gap: 14 }}>
+      <Text style={{ fontSize: 11, fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.6 }}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
 /* ── Attendance Card — two-step flow matching frontend dialog ─────── */
 function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) {
   const { data: today, isLoading: loadingToday } = useTodayAttendance(schoolId);
@@ -142,12 +153,13 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
     }
   })();
 
+  const isAdminRole = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN;
   const shouldTrack =
+    isAdminRole ||
     !settings ||
     (settings.trackAttendance &&
       ((role === UserRole.STAFF && settings.trackStaff) ||
-        (role === UserRole.STUDENT && settings.trackStudents) ||
-        ((role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN) && settings.trackAdmins)));
+        (role === UserRole.STUDENT && settings.trackStudents)));
 
   if (!shouldTrack && settings) return null;
 
@@ -451,9 +463,11 @@ function AnnouncementFormContent({ schoolId, onDone }: { schoolId: string; onDon
           })}
         </View>
       </Field>
-      <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ backgroundColor: pressed || createMutation.isPending ? '#d97706' : '#f59e0b', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 })}>
-        {createMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
-        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createMutation.isPending ? 'Posting…' : 'Post Announcement'}</Text>
+      <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+        <View style={{ backgroundColor: createMutation.isPending ? '#d97706' : '#f59e0b', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+          {createMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
+          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createMutation.isPending ? 'Posting…' : 'Post Announcement'}</Text>
+        </View>
       </Pressable>
     </>
   );
@@ -510,9 +524,11 @@ function EventFormContent({ schoolId, onDone }: { schoolId: string; onDone: () =
       </View>
       <Field label="Location (optional)"><TextInput value={location} onChangeText={setLocation} placeholder="School hall..." placeholderTextColor="#9ca3af" style={inputStyle} /></Field>
       <Field label="Meeting Link (optional)"><TextInput value={meetingLink} onChangeText={setMeetingLink} placeholder="https://..." placeholderTextColor="#9ca3af" style={inputStyle} autoCapitalize="none" /></Field>
-      <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ backgroundColor: pressed || createMutation.isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 })}>
-        {createMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
-        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createMutation.isPending ? 'Creating…' : 'Create Event'}</Text>
+      <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+        <View style={{ backgroundColor: createMutation.isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+          {createMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
+          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createMutation.isPending ? 'Creating…' : 'Create Event'}</Text>
+        </View>
       </Pressable>
     </>
   );
@@ -522,23 +538,66 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
   const [classroomId, setClassroomId] = useState('');
   const [studentId, setStudentId] = useState('');
   const [reportType, setReportType] = useState<ReportType>('weekly');
+  const [weekNumber, setWeekNumber] = useState('');
+  const [monthName, setMonthName] = useState('');
+  const [term, setTerm] = useState<ReportTerm>('FIRST_TERM');
+  const [title, setTitle] = useState('');
   const [remarks, setRemarks] = useState('');
   const [behaviorRating, setBehaviorRating] = useState(3);
-  const [term, setTerm] = useState<ReportTerm>('FIRST_TERM');
+  const [behaviorNotes, setBehaviorNotes] = useState('');
+  const [characterNotes, setCharacterNotes] = useState('');
+  const [strengths, setStrengths] = useState<string[]>(['']);
+  const [improvements, setImprovements] = useState<string[]>(['']);
+  const [subjectEntries, setSubjectEntries] = useState<{ key: number; subjectName: string; performance: string; grade: string }[]>([]);
+  const [showSubjects, setShowSubjects] = useState(false);
 
   const { data: classrooms = [] } = useMyTeacherClassrooms(schoolId);
   const { data: students = [] } = useClassroomStudents(classroomId || undefined);
+  const { data: schoolData } = useSchoolById(schoolId);
   const createMutation = useCreateReport(schoolId);
   const submitMutation = useSubmitReport(schoolId);
   const isPending = createMutation.isPending || submitMutation.isPending;
 
-  const rawClassrooms: { id: string; name: string }[] = Array.isArray(classrooms) ? classrooms : (classrooms as { data: typeof classrooms }).data ?? [];
-  const reset = () => { setClassroomId(''); setStudentId(''); setReportType('weekly'); setRemarks(''); setBehaviorRating(3); };
+  const rawClassrooms: { id: string; name: string }[] = Array.isArray(classrooms)
+    ? classrooms : (classrooms as { data: typeof classrooms }).data ?? [];
+
+  const showWeekNumber = reportType === 'weekly';
+  const showMonth = reportType === 'monthly';
+  const showTerm = reportType === 'term_end' || reportType === 'session_end';
+  const showCharacterNotes = reportType === 'term_end' || reportType === 'session_end';
+
+  const reset = () => {
+    setClassroomId(''); setStudentId(''); setReportType('weekly');
+    setWeekNumber(''); setMonthName(''); setTerm('FIRST_TERM'); setTitle('');
+    setRemarks(''); setBehaviorRating(3); setBehaviorNotes(''); setCharacterNotes('');
+    setStrengths(['']); setImprovements(['']); setSubjectEntries([]); setShowSubjects(false);
+  };
 
   const handleSubmit = async () => {
-    if (!classroomId || !studentId || !remarks.trim()) { toast.error('Select classroom, student and add remarks'); return; }
+    if (!classroomId || !studentId || !remarks.trim()) {
+      toast.error('Select classroom, student and add remarks'); return;
+    }
     try {
-      const report = await createMutation.mutateAsync({ classroomId, payload: { studentId, reportType, generalRemarks: remarks.trim(), behaviorRating, term } });
+      const report = await createMutation.mutateAsync({
+        classroomId,
+        payload: {
+          studentId, reportType,
+          title: title.trim() || undefined,
+          academicYear: schoolData?.currentSession || undefined,
+          term: showTerm ? term : undefined,
+          weekNumber: showWeekNumber && weekNumber ? parseInt(weekNumber, 10) : undefined,
+          monthName: showMonth ? monthName || undefined : undefined,
+          generalRemarks: remarks.trim(),
+          behaviorRating,
+          behaviorNotes: behaviorNotes.trim() || undefined,
+          characterNotes: showCharacterNotes ? characterNotes.trim() || undefined : undefined,
+          strengths: strengths.filter(Boolean),
+          areasForImprovement: improvements.filter(Boolean),
+          subjectEntries: subjectEntries
+            .filter(e => e.subjectName.trim() && e.performance.trim())
+            .map(e => ({ subjectName: e.subjectName.trim(), performance: e.performance.trim(), grade: e.grade.trim() || undefined })),
+        },
+      });
       await submitMutation.mutateAsync(report.id);
       reset(); onDone();
       toast.success('Report submitted for approval');
@@ -547,47 +606,268 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
 
   const REPORT_TYPES: { value: ReportType; label: string }[] = [
     { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' },
-    { value: 'term_end', label: 'Term End' }, { value: 'baseline', label: 'Baseline' },
+    { value: 'term_end', label: 'Term End' }, { value: 'session_end', label: 'Session End' },
+    { value: 'baseline', label: 'Baseline' },
   ];
   const TERMS: { value: ReportTerm; label: string }[] = [
     { value: 'FIRST_TERM', label: '1st Term' }, { value: 'SECOND_TERM', label: '2nd Term' }, { value: 'THIRD_TERM', label: '3rd Term' },
   ];
 
+  const addSubjectEntry = () => setSubjectEntries(prev => [...prev, { key: Date.now(), subjectName: '', performance: '', grade: '' }]);
+  const updateEntry = (key: number, patch: Partial<{ subjectName: string; performance: string; grade: string }>) =>
+    setSubjectEntries(prev => prev.map(e => e.key === key ? { ...e, ...patch } : e));
+  const removeEntry = (key: number) => setSubjectEntries(prev => prev.filter(e => e.key !== key));
+
   return (
     <>
-      <Field label="Classroom" required>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {rawClassrooms.map(c => { const active = classroomId === c.id; return <Pressable key={c.id} onPress={() => { setClassroomId(c.id); setStudentId(''); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}><Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{c.name}</Text></Pressable>; })}
-          </View>
-        </ScrollView>
-      </Field>
-      {classroomId ? (
-        <Field label="Student" required>
-          <ScrollView style={{ maxHeight: 140 }} contentContainerStyle={{ gap: 6 }}>
-            {(students as { id: string; firstName?: string; lastName?: string }[]).map(s => {
-              const fn = s.firstName ?? ''; const ln = s.lastName ?? '';
-              const active = studentId === s.id;
-              return <Pressable key={s.id} onPress={() => setStudentId(s.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: active ? '#eff6ff' : '#f8fafc', borderWidth: 1, borderColor: active ? '#6366f1' : '#f1f5f9' }}><View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: active ? '#6366f1' : '#e5e7eb', alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 11, fontWeight: '800', color: active ? '#fff' : '#6b7280' }}>{fn[0] ?? ''}{ln[0] ?? ''}</Text></View><Text style={{ fontSize: 13, color: active ? '#1e40af' : '#374151' }}>{fn} {ln}</Text>{active && <Ionicons name="checkmark-circle" size={16} color="#6366f1" style={{ marginLeft: 'auto' }} />}</Pressable>;
-            })}
+      {/* ── Report Info ── */}
+      <SectionCard title="Report Info">
+        <Field label="Classroom" required>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {rawClassrooms.map(c => {
+                const active = classroomId === c.id;
+                return (
+                  <Pressable key={c.id} onPress={() => { setClassroomId(c.id); setStudentId(''); }}>
+                    <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{c.name}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </ScrollView>
         </Field>
-      ) : <Text style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Select a classroom to see students</Text>}
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <View style={{ flex: 1 }}><Field label="Report Type">{REPORT_TYPES.map(rt => { const active = reportType === rt.value; return <Pressable key={rt.value} onPress={() => setReportType(rt.value)} style={{ paddingVertical: 7, paddingHorizontal: 10, borderRadius: 10, marginBottom: 6, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}><Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280', textAlign: 'center' }}>{rt.label}</Text></Pressable>; })}</Field></View>
-        <View style={{ flex: 1 }}><Field label="Term">{TERMS.map(t => { const active = term === t.value; return <Pressable key={t.value} onPress={() => setTerm(t.value)} style={{ paddingVertical: 7, paddingHorizontal: 10, borderRadius: 10, marginBottom: 6, backgroundColor: active ? '#0ea5e9' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#0ea5e9' : '#e5e7eb' }}><Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280', textAlign: 'center' }}>{t.label}</Text></Pressable>; })}</Field></View>
-      </View>
-      <Field label="Behavior Rating">
-        <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
-          {[1,2,3,4,5].map(n => <Pressable key={n} onPress={() => setBehaviorRating(n)}><Ionicons name={n <= behaviorRating ? 'star' : 'star-outline'} size={28} color={n <= behaviorRating ? '#f59e0b' : '#d1d5db'} /></Pressable>)}
+
+        {classroomId ? (
+          <Field label="Student" required>
+            <ScrollView style={{ maxHeight: 140 }} contentContainerStyle={{ gap: 6 }}>
+              {(students as { id: string; firstName?: string; lastName?: string }[]).map(s => {
+                const fn = s.firstName ?? ''; const ln = s.lastName ?? '';
+                const active = studentId === s.id;
+                return (
+                  <Pressable key={s.id} onPress={() => setStudentId(s.id)}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: active ? '#eff6ff' : '#f8fafc', borderWidth: 1, borderColor: active ? '#6366f1' : '#f1f5f9' }}>
+                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: active ? '#6366f1' : '#e5e7eb', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: active ? '#fff' : '#6b7280' }}>{fn[0] ?? ''}{ln[0] ?? ''}</Text>
+                      </View>
+                      <Text style={{ fontSize: 13, color: active ? '#1e40af' : '#374151' }}>{fn} {ln}</Text>
+                      {active && <Ionicons name="checkmark-circle" size={16} color="#6366f1" style={{ marginLeft: 'auto' }} />}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Field>
+        ) : (
+          <Text style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Select a classroom to see students</Text>
+        )}
+
+        <Field label="Report Type" required>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {REPORT_TYPES.map(rt => {
+                const active = reportType === rt.value;
+                return (
+                  <Pressable key={rt.value} onPress={() => setReportType(rt.value)}>
+                    <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{rt.label}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+        </Field>
+
+        {showWeekNumber && (
+          <Field label="Week Number">
+            <TextInput value={weekNumber} onChangeText={setWeekNumber} placeholder="e.g. 3" placeholderTextColor="#9ca3af" keyboardType="number-pad" style={inputStyle} />
+          </Field>
+        )}
+
+        {showMonth && (
+          <Field label="Month">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {MONTHS.map(m => {
+                  const active = monthName === m;
+                  return (
+                    <Pressable key={m} onPress={() => setMonthName(m)}>
+                      <View style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: active ? '#0ea5e9' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#0ea5e9' : '#e5e7eb' }}>
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{m}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </Field>
+        )}
+
+        {showTerm && (
+          <Field label="Term">
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {TERMS.map(t => {
+                const active = term === t.value;
+                return (
+                  <Pressable key={t.value} onPress={() => setTerm(t.value)} style={{ flex: 1 }}>
+                    <View style={{ paddingVertical: 8, borderRadius: 10, backgroundColor: active ? '#0ea5e9' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#0ea5e9' : '#e5e7eb', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{t.label}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Field>
+        )}
+
+        {schoolData?.currentSession && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#eff6ff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+            <Ionicons name="information-circle-outline" size={14} color="#3b82f6" />
+            <Text style={{ fontSize: 12, color: '#1d4ed8' }}>
+              Academic year: <Text style={{ fontWeight: '700' }}>{schoolData.currentSession}</Text>
+            </Text>
+          </View>
+        )}
+
+        <Field label="Custom Title">
+          <TextInput value={title} onChangeText={setTitle} placeholder="Auto-generated if left blank" placeholderTextColor="#9ca3af" style={inputStyle} />
+        </Field>
+      </SectionCard>
+
+      {/* ── General Remarks ── */}
+      <SectionCard title="General Remarks">
+        <Field label="Overall Remarks" required>
+          <TextInput value={remarks} onChangeText={setRemarks} placeholder="General overview of the student's progress, attitude, and performance…" placeholderTextColor="#9ca3af" multiline numberOfLines={4} textAlignVertical="top" style={[inputStyle, { minHeight: 90 }]} />
+        </Field>
+
+        <Field label="Behaviour Rating">
+          <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
+            {[1,2,3,4,5].map(n => (
+              <Pressable key={n} onPress={() => setBehaviorRating(n)}>
+                <Ionicons name={n <= behaviorRating ? 'star' : 'star-outline'} size={28} color={n <= behaviorRating ? '#f59e0b' : '#d1d5db'} />
+              </Pressable>
+            ))}
+          </View>
+        </Field>
+
+        <Field label="Behaviour Notes">
+          <TextInput value={behaviorNotes} onChangeText={setBehaviorNotes} placeholder="Additional notes on behaviour…" placeholderTextColor="#9ca3af" multiline numberOfLines={3} textAlignVertical="top" style={[inputStyle, { minHeight: 70 }]} />
+        </Field>
+
+        {showCharacterNotes && (
+          <Field label="Character & Personal Development">
+            <TextInput value={characterNotes} onChangeText={setCharacterNotes} placeholder="Observations on character, values, growth, social skills…" placeholderTextColor="#9ca3af" multiline numberOfLines={3} textAlignVertical="top" style={[inputStyle, { minHeight: 70 }]} />
+          </Field>
+        )}
+      </SectionCard>
+
+      {/* ── Strengths & Areas for Growth ── */}
+      <SectionCard title="Strengths & Areas for Growth">
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669' }}>Strengths</Text>
+          {strengths.map((s, i) => (
+            <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <TextInput
+                value={s}
+                onChangeText={v => setStrengths(prev => prev.map((x, idx) => idx === i ? v : x))}
+                placeholder="e.g. Creative thinking"
+                placeholderTextColor="#9ca3af"
+                style={[inputStyle, { flex: 1 }]}
+              />
+              {strengths.length > 1 && (
+                <Pressable onPress={() => setStrengths(prev => prev.filter((_, idx) => idx !== i))}>
+                  <Ionicons name="close-circle" size={20} color="#dc2626" />
+                </Pressable>
+              )}
+            </View>
+          ))}
+          <Pressable onPress={() => setStrengths(p => [...p, ''])}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
+              <Ionicons name="add-circle-outline" size={16} color="#059669" />
+              <Text style={{ fontSize: 13, color: '#059669', fontWeight: '700' }}>Add strength</Text>
+            </View>
+          </Pressable>
         </View>
-      </Field>
-      <Field label="General Remarks" required>
-        <TextInput value={remarks} onChangeText={setRemarks} placeholder="Overall performance and observations..." placeholderTextColor="#9ca3af" multiline numberOfLines={4} textAlignVertical="top" style={[inputStyle, { minHeight: 90 }]} />
-      </Field>
-      <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ backgroundColor: pressed || isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 })}>
-        {isPending && <ActivityIndicator color="#fff" size="small" />}
-        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{isPending ? 'Submitting…' : 'Submit Report'}</Text>
+
+        <View style={{ height: 1, backgroundColor: '#f1f5f9' }} />
+
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#d97706' }}>Areas for Improvement</Text>
+          {improvements.map((s, i) => (
+            <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <TextInput
+                value={s}
+                onChangeText={v => setImprovements(prev => prev.map((x, idx) => idx === i ? v : x))}
+                placeholder="e.g. Time management"
+                placeholderTextColor="#9ca3af"
+                style={[inputStyle, { flex: 1 }]}
+              />
+              {improvements.length > 1 && (
+                <Pressable onPress={() => setImprovements(prev => prev.filter((_, idx) => idx !== i))}>
+                  <Ionicons name="close-circle" size={20} color="#dc2626" />
+                </Pressable>
+              )}
+            </View>
+          ))}
+          <Pressable onPress={() => setImprovements(p => [...p, ''])}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
+              <Ionicons name="add-circle-outline" size={16} color="#d97706" />
+              <Text style={{ fontSize: 13, color: '#d97706', fontWeight: '700' }}>Add area</Text>
+            </View>
+          </Pressable>
+        </View>
+      </SectionCard>
+
+      {/* ── Subject Performance (collapsible) ── */}
+      <View style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden' }}>
+        <Pressable onPress={() => setShowSubjects(v => !v)}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Subject Performance</Text>
+              <View style={{ backgroundColor: '#f3f4f6', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 11, color: '#9ca3af', fontWeight: '600' }}>Optional</Text>
+              </View>
+            </View>
+            <Ionicons name={showSubjects ? 'chevron-up' : 'chevron-down'} size={16} color="#94a3b8" />
+          </View>
+        </Pressable>
+        {showSubjects && (
+          <View style={{ padding: 16, gap: 10, borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
+            {subjectEntries.length === 0 && (
+              <Text style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>No subjects added yet.</Text>
+            )}
+            {subjectEntries.map(entry => (
+              <View key={entry.key} style={{ backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, gap: 8, borderWidth: 1, borderColor: '#f1f5f9' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>Subject</Text>
+                  <Pressable onPress={() => removeEntry(entry.key)}>
+                    <Ionicons name="close-circle" size={18} color="#dc2626" />
+                  </Pressable>
+                </View>
+                <TextInput value={entry.subjectName} onChangeText={v => updateEntry(entry.key, { subjectName: v })} placeholder="e.g. Mathematics" placeholderTextColor="#9ca3af" style={inputStyle} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>Performance Note</Text>
+                <TextInput value={entry.performance} onChangeText={v => updateEntry(entry.key, { performance: v })} placeholder="e.g. Excellent understanding" placeholderTextColor="#9ca3af" style={inputStyle} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>Grade</Text>
+                <TextInput value={entry.grade} onChangeText={v => updateEntry(entry.key, { grade: v })} placeholder="e.g. A" placeholderTextColor="#9ca3af" style={inputStyle} />
+              </View>
+            ))}
+            <Pressable onPress={addSubjectEntry}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                <Ionicons name="add" size={16} color="#4C3FC4" />
+                <Text style={{ fontSize: 13, color: '#4C3FC4', fontWeight: '700' }}>Add Subject</Text>
+              </View>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+        <View style={{ backgroundColor: isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+          {isPending && <ActivityIndicator color="#fff" size="small" />}
+          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{isPending ? 'Submitting…' : 'Submit Report'}</Text>
+        </View>
       </Pressable>
     </>
   );
@@ -706,197 +986,6 @@ function ApproveReportsContent({ schoolId }: { schoolId: string }) {
   );
 }
 
-function AssessmentFormContent({ schoolId, isAdmin, onDone }: {
-  schoolId: string; isAdmin: boolean; onDone: () => void;
-}) {
-  const [classroomId, setClassroomId] = useState('');
-  const [title, setTitle] = useState('');
-  const [type, setType] = useState<AssessmentType>('quiz');
-  const [questionType, setQuestionType] = useState<QuestionType>('objective');
-  const [subjectId, setSubjectId] = useState('');
-  const [totalMarks, setTotalMarks] = useState('10');
-  const [passingMarks, setPassingMarks] = useState('5');
-  const [duration, setDuration] = useState('30');
-  const [term, setTerm] = useState('');
-  const [academicYear, setAcademicYear] = useState('');
-
-  const { data: staffClassroomsRaw } = useMyTeacherClassrooms(!isAdmin ? schoolId : undefined);
-  const { data: adminClassroomsRaw } = useClassroomsBySchool(isAdmin ? schoolId : undefined);
-  const { data: subjectsRaw } = useSubjects(schoolId);
-  const createMutation = useCreateAssessmentGlobal(schoolId);
-
-  const rawClassrooms: { id: string; name: string }[] = useMemo(() => {
-    const d = isAdmin ? adminClassroomsRaw : staffClassroomsRaw;
-    if (Array.isArray(d)) return d;
-    if (d && typeof d === 'object' && 'data' in d) return (d as { data: { id: string; name: string }[] }).data ?? [];
-    return [];
-  }, [isAdmin, adminClassroomsRaw, staffClassroomsRaw]);
-
-  const subjects: { id: string; name: string; color?: string }[] = useMemo(() => {
-    if (Array.isArray(subjectsRaw)) return subjectsRaw as { id: string; name: string; color?: string }[];
-    if (subjectsRaw && typeof subjectsRaw === 'object' && 'data' in subjectsRaw)
-      return (subjectsRaw as { data: { id: string; name: string; color?: string }[] }).data ?? [];
-    return [];
-  }, [subjectsRaw]);
-
-  const reset = () => {
-    setClassroomId(''); setTitle(''); setType('quiz'); setQuestionType('objective');
-    setSubjectId(''); setTotalMarks('10'); setPassingMarks('5'); setDuration('30');
-    setTerm(''); setAcademicYear('');
-  };
-
-  const handleCreate = async () => {
-    if (!classroomId) { toast.error('Please select a classroom'); return; }
-    if (!title.trim()) { toast.error('Title is required'); return; }
-    if (!subjectId) { toast.error('Please select a subject'); return; }
-    if (!term.trim()) { toast.error('Term is required'); return; }
-    if (!academicYear.trim()) { toast.error('Academic year is required'); return; }
-    const total = parseInt(totalMarks, 10);
-    const passing = parseInt(passingMarks, 10);
-    const dur = parseInt(duration, 10);
-    if (isNaN(total) || total < 1) { toast.error('Enter a valid total marks value'); return; }
-    if (isNaN(passing) || passing < 0 || passing > total) { toast.error('Passing marks must be ≤ total marks'); return; }
-    try {
-      await createMutation.mutateAsync({
-        classroomId,
-        schoolId,
-        title: title.trim(),
-        type,
-        questionType,
-        subjectId,
-        totalMarks: total,
-        passingMarks: passing,
-        duration: isNaN(dur) ? undefined : dur,
-        term: term.trim(),
-        academicYear: academicYear.trim(),
-      });
-      reset(); onDone();
-      toast.success('Assessment created as draft');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create assessment');
-    }
-  };
-
-  const TYPES: { value: AssessmentType; label: string; color: string }[] = [
-    { value: 'quiz', label: 'Quiz', color: '#0ea5e9' },
-    { value: 'test', label: 'Test', color: '#4C3FC4' },
-    { value: 'exam', label: 'Exam', color: '#e11d48' },
-    { value: 'assignment', label: 'Assignment', color: '#10b981' },
-  ];
-
-  const QTYPES: { value: QuestionType; label: string }[] = [
-    { value: 'objective', label: 'Objective' },
-    { value: 'theory', label: 'Theory' },
-    { value: 'mixed', label: 'Mixed' },
-  ];
-
-  return (
-    <>
-      <Field label="Classroom" required>
-        {rawClassrooms.length === 0 ? (
-          <Text style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>No classrooms available</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            {rawClassrooms.map(c => {
-              const active = classroomId === c.id;
-              return (
-                <Pressable key={c.id} onPress={() => setClassroomId(c.id)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{c.name}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-      </Field>
-
-      <Field label="Title" required>
-        <TextInput value={title} onChangeText={setTitle} placeholder="e.g. Mid-term Mathematics Test" placeholderTextColor="#9ca3af" style={inputStyle} />
-      </Field>
-
-      <Field label="Assessment Type" required>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {TYPES.map(t => {
-            const active = type === t.value;
-            return (
-              <Pressable key={t.value} onPress={() => setType(t.value)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: active ? t.color : '#f3f4f6', borderWidth: 1, borderColor: active ? t.color : '#e5e7eb' }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{t.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </Field>
-
-      <Field label="Question Type" required>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {QTYPES.map(q => {
-            const active = questionType === q.value;
-            return (
-              <Pressable key={q.value} onPress={() => setQuestionType(q.value)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{q.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </Field>
-
-      <Field label="Subject" required>
-        {subjects.length === 0 ? (
-          <Text style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>No subjects found for this school</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            {subjects.map(s => {
-              const active = subjectId === s.id;
-              const accent = s.color ?? '#4C3FC4';
-              return (
-                <Pressable key={s.id} onPress={() => setSubjectId(s.id)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? accent : '#f3f4f6', borderWidth: 1, borderColor: active ? accent : '#e5e7eb' }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{s.name}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-      </Field>
-
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Field label="Total Marks" required>
-            <TextInput value={totalMarks} onChangeText={setTotalMarks} keyboardType="number-pad" placeholder="10" placeholderTextColor="#9ca3af" style={inputStyle} />
-          </Field>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Field label="Passing Marks" required>
-            <TextInput value={passingMarks} onChangeText={setPassingMarks} keyboardType="number-pad" placeholder="5" placeholderTextColor="#9ca3af" style={inputStyle} />
-          </Field>
-        </View>
-      </View>
-
-      <Field label="Duration (minutes)">
-        <TextInput value={duration} onChangeText={setDuration} keyboardType="number-pad" placeholder="30" placeholderTextColor="#9ca3af" style={inputStyle} />
-      </Field>
-
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Field label="Term" required>
-            <TextInput value={term} onChangeText={setTerm} placeholder="e.g. First" placeholderTextColor="#9ca3af" style={inputStyle} />
-          </Field>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Field label="Academic Year" required>
-            <TextInput value={academicYear} onChangeText={setAcademicYear} placeholder="2025/2026" placeholderTextColor="#9ca3af" style={inputStyle} autoCapitalize="none" />
-          </Field>
-        </View>
-      </View>
-
-      <Pressable onPress={handleCreate} disabled={createMutation.isPending} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-        <View style={{ backgroundColor: createMutation.isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-          {createMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
-          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{createMutation.isPending ? 'Creating…' : 'Create Assessment'}</Text>
-        </View>
-      </Pressable>
-    </>
-  );
-}
-
 /* ── Action grid card — outer View owns width ───────────────────── */
 function ActionCard({ icon, label, desc, color, bg, onPress }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -935,11 +1024,12 @@ function ActionCard({ icon, label, desc, color, bg, onPress }: {
 }
 
 /* ── Main Action Sheet ──────────────────────────────────────────── */
-type ModalType = 'announcement' | 'event' | 'report' | 'approve' | 'assessment' | null;
+type ModalType = 'announcement' | 'event' | 'report' | 'approve' | null;
 
-function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStudent, isParent }: {
+function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStudent, isParent, onOpenAssessment }: {
   visible: boolean; onClose: () => void; schoolId: string; role: string;
   isAdmin: boolean; isStaff: boolean; isStudent: boolean; isParent: boolean;
+  onOpenAssessment: () => void;
 }) {
   const slideY = useRef(new Animated.Value(SCREEN_H)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -1009,25 +1099,19 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
                   <ActionCard icon="megaphone-outline" label="Post Announcement" desc="Broadcast school-wide" color="#d97706" bg="#fffbeb" onPress={() => setActiveModal('announcement')} />
                   <ActionCard icon="calendar-outline" label="Create Event" desc="Add a calendar event" color="#4C3FC4" bg="#F0EEFF" onPress={() => setActiveModal('event')} />
                   <ActionCard icon="checkmark-done-outline" label="Approve Reports" desc="Review submitted reports" color="#16a34a" bg="#f0fdf4" onPress={() => setActiveModal('approve')} />
-                  <ActionCard icon="people-outline" label="View Classrooms" desc="All classes & enrollment" color="#0284c7" bg="#eff6ff" onPress={() => nav('/features')} />
-                  <ActionCard icon="trophy-outline" label="Results Overview" desc="Term results & grades" color="#e11d48" bg="#fff1f2" onPress={() => nav('/account/results')} />
-                  <ActionCard icon="wallet-outline" label="School Finance" desc="Budget & transactions" color="#059669" bg="#f0fdf4" onPress={() => nav('/account/finances')} />
+                  <ActionCard icon="trophy-outline" label="Results Overview" desc="Term results & grades" color="#e11d48" bg="#fff1f2" onPress={() => nav('/admin-results')} />
                 </View>
               )}
               {isStaff && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                  <ActionCard icon="create-outline" label="New Assessment" desc="Create a test or quiz" color="#4C3FC4" bg="#F0EEFF" onPress={() => setActiveModal('assessment')} />
+                  <ActionCard icon="create-outline" label="New Assessment" desc="Create a test or quiz" color="#4C3FC4" bg="#F0EEFF" onPress={onOpenAssessment} />
                   <ActionCard icon="document-text-outline" label="Write Report" desc="Submit progress report" color="#F5486A" bg="#FFF0F0" onPress={() => setActiveModal('report')} />
-                  <ActionCard icon="calendar-outline" label="Create Event" desc="Add a school event" color="#d97706" bg="#fffbeb" onPress={() => setActiveModal('event')} />
-                  <ActionCard icon="library-outline" label="Library" desc="Browse resources" color="#4C3FC4" bg="#F0EEFF" onPress={() => nav('/account/library')} />
                 </View>
               )}
               {isStudent && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                   <ActionCard icon="clipboard-outline" label="My Assessments" desc="View pending tests" color="#6366f1" bg="#eef2ff" onPress={() => nav('/account/my-assessments')} />
                   <ActionCard icon="trophy-outline" label="My Results" desc="Term report cards" color="#0ea5e9" bg="#f0f9ff" onPress={() => nav('/account/results')} />
-                  <ActionCard icon="library-outline" label="Library" desc="Browse resources" color="#4C3FC4" bg="#F0EEFF" onPress={() => nav('/account/library')} />
-                  <ActionCard icon="document-text-outline" label="My Documents" desc="View uploaded files" color="#d97706" bg="#fffbeb" onPress={() => nav('/account/documents')} />
                 </View>
               )}
               {isParent && (
@@ -1063,11 +1147,6 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
             <ApproveReportsContent schoolId={schoolId} />
           </FormSection>
         )}
-        {activeModal === 'assessment' && (
-          <FormSection onBack={backToGrid} title="New Assessment">
-            <AssessmentFormContent schoolId={schoolId} isAdmin={isAdmin} onDone={backToGrid} />
-          </FormSection>
-        )}
       </Animated.View>
     </Modal>
   );
@@ -1076,6 +1155,7 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
 /* ── Tab entry point ────────────────────────────────────────────── */
 export default function ActionTab() {
   const [open, setOpen] = React.useState(true);
+  const [assessmentOpen, setAssessmentOpen] = React.useState(false);
   const user = useAuthStore(s => s.user);
   const selectedSchoolId = useAuthStore(s => s.selectedSchoolId);
   const memberships = user?.schools ?? [];
@@ -1088,11 +1168,27 @@ export default function ActionTab() {
   const isStudent = role === UserRole.STUDENT;
   const isParent  = role === UserRole.PARENT;
 
+  // Fetch classrooms for CreateAssessmentSheet
+  const { data: adminClassroomsRaw } = useClassroomsBySchool(isAdmin ? schoolId : undefined);
+  const { data: staffClassroomsRaw } = useMyTeacherClassrooms(isStaff ? schoolId : undefined);
+  const classrooms = useMemo(() => {
+    const d = isAdmin ? adminClassroomsRaw : staffClassroomsRaw;
+    if (Array.isArray(d)) return d as { id: string; name: string; grade?: string; section?: string }[];
+    if (d && typeof d === 'object' && 'data' in d)
+      return ((d as { data: { id: string; name: string }[] }).data ?? []) as { id: string; name: string; grade?: string; section?: string }[];
+    return [];
+  }, [isAdmin, adminClassroomsRaw, staffClassroomsRaw]);
+
   useFocusEffect(React.useCallback(() => { setOpen(true); }, []));
 
   const handleClose = () => {
     setOpen(false);
     router.replace('/(tabs)/');
+  };
+
+  const handleOpenAssessment = () => {
+    setOpen(false);
+    setAssessmentOpen(true);
   };
 
   return (
@@ -1106,6 +1202,13 @@ export default function ActionTab() {
         isStaff={isStaff}
         isStudent={isStudent}
         isParent={isParent}
+        onOpenAssessment={handleOpenAssessment}
+      />
+      <CreateAssessmentSheet
+        visible={assessmentOpen}
+        onClose={() => { setAssessmentOpen(false); router.replace('/(tabs)/'); }}
+        classrooms={classrooms}
+        schoolId={schoolId}
       />
     </View>
   );

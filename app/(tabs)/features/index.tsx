@@ -81,11 +81,35 @@ export default function FeaturesTab() {
     ? 'Manage all school classrooms'
     : isStaff
       ? 'Classes you teach'
-      : isStudent
-        ? 'Your enrolled classes'
-        : 'View school classrooms';
+      : 'Your enrolled classes';
 
-  const features: FeatureCard[] = [
+  const features: FeatureCard[] = isParent ? [
+    {
+      icon: 'people-outline' as const, iconColor: '#e11d48', iconBg: '#fff1f2',
+      title: 'My Children', subtitle: 'Students linked to your account',
+      route: '/my-children',
+    },
+    {
+      icon: 'document-text-outline' as const, iconColor: '#7c3aed', iconBg: '#f5f3ff',
+      title: "Children's Reports", subtitle: 'Approved school reports',
+      route: '/my-children-reports',
+    },
+    {
+      icon: 'trophy-outline' as const, iconColor: '#0ea5e9', iconBg: '#f0f9ff',
+      title: "Children's Results", subtitle: 'Published term results',
+      route: '/my-children-results',
+    },
+    {
+      icon: 'folder-outline' as const, iconColor: '#059669', iconBg: '#f0fdf4',
+      title: "Children's Documents", subtitle: 'School documents & files',
+      route: '/my-children-documents',
+    },
+    {
+      icon: 'chatbubble-outline' as const, iconColor: '#d97706', iconBg: '#fef3c7',
+      title: 'Enquiries', subtitle: 'Questions sent to schools',
+      route: '/my-enquiries',
+    },
+  ] : [
     {
       icon: 'wallet-outline', iconColor: '#4C3FC4', iconBg: '#F0EEFF',
       title: 'My Finances',
@@ -114,9 +138,26 @@ export default function FeaturesTab() {
         route: '/results',
       },
       {
+        icon: 'bar-chart-outline' as const, iconColor: '#7c3aed', iconBg: '#f5f3ff',
+        title: 'My Scores', subtitle: 'Assessment scores by subject',
+        route: '/student-scores',
+      },
+      {
         icon: 'clipboard-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
         title: 'My Assessments', subtitle: 'Tests & quizzes assigned',
         route: '/my-assessments',
+      },
+    ] : []),
+    ...(isStaff ? [
+      {
+        icon: 'trophy-outline' as const, iconColor: '#0ea5e9', iconBg: '#f0f9ff',
+        title: 'Results', subtitle: 'Class results & report cards',
+        route: '/staff-results',
+      },
+      {
+        icon: 'bar-chart-outline' as const, iconColor: '#6366f1', iconBg: '#eef2ff',
+        title: 'Scores', subtitle: 'Assessment scores by class',
+        route: '/staff-scores',
       },
     ] : []),
     ...((isStaff || isAdmin) ? [
@@ -131,7 +172,7 @@ export default function FeaturesTab() {
         route: '/question-bank',
       },
     ] : []),
-    ...(!isStudent && !isParent ? [{
+    ...(!isStudent ? [{
       icon: 'briefcase-outline' as const, iconColor: '#0284c7', iconBg: '#e0f2fe',
       title: isAdmin ? 'Manage Jobs' : 'My Jobs',
       subtitle: isAdmin ? 'Post jobs & review candidates' : 'Browse & track applications',
@@ -149,17 +190,12 @@ export default function FeaturesTab() {
         subtitle: "Today's clock-in overview",
         route: '/admin-attendance',
       },
+      {
+        icon: 'chatbubbles-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
+        title: 'Enquiries', subtitle: 'View & respond to parent enquiries',
+        route: '/school-enquiries',
+      },
     ] : []),
-    ...(isAdmin ? [{
-      icon: 'chatbubbles-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
-      title: 'Enquiries', subtitle: 'View & respond to parent enquiries',
-      route: '/school-enquiries',
-    }] : []),
-    ...(isParent ? [{
-      icon: 'chatbubble-outline' as const, iconColor: '#d97706', iconBg: '#fef3c7',
-      title: 'Enquiries', subtitle: 'Questions sent to schools',
-      route: '/my-enquiries',
-    }] : []),
   ];
 
   return (
@@ -190,73 +226,67 @@ export default function FeaturesTab() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* ── My Classes hero card ──────────────────────────────── */}
-        <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4 }}>
-          <Pressable
-            onPress={() => router.push('/features/list' as never)}
-            style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
-          >
-            <View style={{
-              borderRadius: 22,
-              overflow: 'hidden',
-              shadowColor: '#4C3FC4',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.22,
-              shadowRadius: 16,
-              elevation: 8,
-            }}>
-              {/* Gradient background */}
+        {/* ── Hero card ──────────────────────────────── */}
+        {!isParent && (
+          <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4 }}>
+            <Pressable
+              onPress={() => router.push('/features/list' as never)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
+            >
               <View style={{
-                backgroundColor: '#4C3FC4',
-                paddingHorizontal: 20,
-                paddingVertical: 20,
+                borderRadius: 22,
+                overflow: 'hidden',
+                shadowColor: '#4C3FC4',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.22,
+                shadowRadius: 16,
+                elevation: 8,
               }}>
-                {/* Decorative orb */}
                 <View style={{
-                  position: 'absolute', top: -20, right: -20,
-                  width: 120, height: 120, borderRadius: 60,
-                  backgroundColor: 'rgba(255,255,255,0.07)',
-                }} />
-                <View style={{
-                  position: 'absolute', bottom: -30, left: 80,
-                  width: 90, height: 90, borderRadius: 45,
-                  backgroundColor: 'rgba(245,72,106,0.25)',
-                }} />
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                  {/* Icon */}
+                  backgroundColor: '#4C3FC4',
+                  paddingHorizontal: 20,
+                  paddingVertical: 20,
+                }}>
                   <View style={{
-                    width: 52, height: 52, borderRadius: 17,
-                    backgroundColor: 'rgba(255,255,255,0.18)',
-                    alignItems: 'center', justifyContent: 'center',
-                    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.25)',
-                  }}>
-                    <Ionicons name="book" size={26} color="#fff" />
-                  </View>
-
-                  {/* Text */}
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: -0.3 }}>
-                      {classLabel}
-                    </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 3 }}>
-                      {classSubtitle}
-                    </Text>
-                  </View>
-
-                  {/* Arrow */}
+                    position: 'absolute', top: -20, right: -20,
+                    width: 120, height: 120, borderRadius: 60,
+                    backgroundColor: 'rgba(255,255,255,0.07)',
+                  }} />
                   <View style={{
-                    width: 36, height: 36, borderRadius: 12,
-                    backgroundColor: 'rgba(255,255,255,0.15)',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                    position: 'absolute', bottom: -30, left: 80,
+                    width: 90, height: 90, borderRadius: 45,
+                    backgroundColor: 'rgba(245,72,106,0.25)',
+                  }} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                    <View style={{
+                      width: 52, height: 52, borderRadius: 17,
+                      backgroundColor: 'rgba(255,255,255,0.18)',
+                      alignItems: 'center', justifyContent: 'center',
+                      borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.25)',
+                    }}>
+                      <Ionicons name="book" size={26} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: -0.3 }}>
+                        {classLabel}
+                      </Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 3 }}>
+                        {classSubtitle}
+                      </Text>
+                    </View>
+                    <View style={{
+                      width: 36, height: 36, borderRadius: 12,
+                      backgroundColor: 'rgba(255,255,255,0.15)',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons name="arrow-forward" size={18} color="#fff" />
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-          </Pressable>
-        </View>
+            </Pressable>
+          </View>
+        )}
 
         {/* ── Feature grid ─────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>

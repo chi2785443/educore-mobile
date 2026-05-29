@@ -51,3 +51,11 @@ export const useRejectReport = (schoolId: string) => {
     },
   });
 };
+
+export const useStudentReports = (studentId: string | undefined) =>
+  useQuery({
+    queryKey: ['student-reports', studentId],
+    queryFn: () => reportService.getStudentReports(studentId!),
+    enabled: !!studentId,
+    staleTime: 60_000,
+  });

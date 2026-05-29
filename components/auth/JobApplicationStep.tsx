@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, FlatList, Alert } from 'react-native';
+import { View, Text, Pressable, FlatList } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as DocumentPicker from 'expo-document-picker';
@@ -62,7 +63,7 @@ export function JobApplicationStep({ onBack }: Props) {
         resumeName: resumeFile?.name,
         resumeMimeType: resumeFile?.mimeType,
       },
-      { onError: (err) => Alert.alert('Error', err.message) }
+      { onError: (err) => toast.error(err.message) }
     );
   };
 

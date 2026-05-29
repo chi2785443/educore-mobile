@@ -12,6 +12,7 @@ import { assessmentService } from '@/services/assessment.service';
 import { Assessment } from '@/interface/assessment.interface';
 import AssessmentCard from '@/components/assessment/AssessmentCard';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 
 type StatusFilter = 'all' | 'available' | 'completed';
 
@@ -141,18 +142,12 @@ export default function MyAssessmentsScreen() {
         </View>
       </View>
 
-      {/* Filter chips */}
-      <View style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
-        {statusTabs.map(s => {
-          const active = statusFilter === s.key;
-          return (
-            <Pressable key={s.key} onPress={() => setStatusFilter(s.key)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#6366f1' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#6366f1' : '#e5e7eb' }}>
-              <Ionicons name={s.icon} size={13} color={active ? '#fff' : '#6b7280'} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{s.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ClassroomDetailTabs
+        tabs={statusTabs}
+        activeTab={statusFilter}
+        onTabChange={setStatusFilter}
+        accentColor="#6366f1"
+      />
 
       {filtered.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>

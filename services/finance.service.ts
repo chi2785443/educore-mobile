@@ -22,8 +22,8 @@ export const financeService = {
     }
   },
 
-  getMyStudentFees: async (schoolId: string, params?: { academicYear?: string; term?: string }): Promise<StudentFee[]> => {
-    const res = await apiClient.get(`/finance/student-fees/school/${schoolId}`, { params });
+  getMyStudentFees: async (userId: string, params?: { academicYear?: string; term?: string }): Promise<StudentFee[]> => {
+    const res = await apiClient.get(`/finance/student-fees/student/${userId}`, { params });
     return exList<StudentFee>(res.data);
   },
 };

@@ -1,6 +1,7 @@
 import { apiClient } from './axios.service';
 import {
   Conversation,
+  ConversationParticipant,
   Message,
   MessageableUser,
   SendMessagePayload,
@@ -10,7 +11,7 @@ import {
 
 // Raw shape returned by GET /messages/conversations
 interface ConvDto {
-  conversation: Omit<Conversation, 'unreadCount'> & {
+  conversation: Omit<Conversation, 'unreadCount' | 'participants'> & {
     lastMessage?: string | null;
     lastMessageAt?: string | null;
   };
@@ -24,6 +25,7 @@ interface ConvDto {
   } | null;
   unreadCount: number;
   participantNames?: string[];
+  participantProfiles?: ConversationParticipant[];
 }
 
 const extract = <T>(data: unknown): T => {
@@ -46,6 +48,7 @@ function mapConvDto(item: ConvDto): Conversation {
     name: c.name,
     type: c.type,
     participantIds: c.participantIds ?? [],
+    participants: item.participantProfiles,
     classroomId: c.classroomId,
     schoolId: c.schoolId,
     createdBy: c.createdBy,

@@ -59,8 +59,20 @@ export interface StudentScore {
   incorrectAnswers: number;
   questionsAnswered: number;
   remarks?: string;
-  gradedAt?: string;
+  gradedAt?: string | null;
+  gradedBy?: string | null;
+  isReleased?: boolean;
   student?: { firstName: string; lastName: string; profilePicture?: string };
+  assessment?: {
+    id: string;
+    title: string;
+    type: string;
+    term: string;
+    academicYear: string;
+    totalMarks: number;
+    subject?: { id: string; name: string; color: string };
+    classroom?: { id: string; name: string; grade?: string };
+  };
 }
 
 export interface ClassStats {

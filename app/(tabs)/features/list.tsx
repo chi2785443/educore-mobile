@@ -1,16 +1,18 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, ScrollView, Pressable, TextInput, RefreshControl,
+  View, Text, ScrollView, Pressable, TextInput, RefreshControl, Modal, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { toast } from '@/components/ui/Toast';
 import { useAuthStore } from '@/store/authStore';
 import {
-  useMyTeacherClassrooms, useMyStudentClassrooms, useClassroomsBySchool,
+  useMyTeacherClassrooms, useMyStudentClassrooms, useClassroomsBySchool, useCreateClassroom,
 } from '@/hooks/useClassroom';
 import { UserRole } from '@/interface/user.interface';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 
 /* ── Grade colour map ──────────────────────────────────────────── */
 const GRADE_PALETTE: Record<string, { fg: string; bg: string; grad: string }> = {
@@ -22,7 +24,7 @@ const GRADE_PALETTE: Record<string, { fg: string; bg: string; grad: string }> = 
   SS3:  { fg: '#7c3aed', bg: '#EDE9FE', grad: '#7c3aed' },
 };
 const DEFAULT_PAL = { fg: '#4C3FC4', bg: '#F0EEFF', grad: '#4C3FC4' };
-const getPalette = (grade?: string) => (grade && GRADE_PALETTE[grade]) ?? DEFAULT_PAL;
+const getPalette = (grade?: string): { fg: string; bg: string; grad: string } => (grade ? GRADE_PALETTE[grade] : null) ?? DEFAULT_PAL;
 
 interface Classroom {
   id: string;
@@ -120,9 +122,96 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
   );
 }
 
+const GRADES = ['JSS1','JSS2','JSS3','SS1','SS2','SS3'];
+const SECTIONS = ['A','B','C','D','E'];
+
+function CreateClassroomSheet({ visible, onClose, schoolId }: { visible: boolean; onClose: () => void; schoolId: string }) {
+  const [name, setName] = useState('');
+  const [grade, setGrade] = useState('');
+  const [section, setSection] = useState('');
+  const [capacity, setCapacity] = useState('');
+  const [roomNumber, setRoomNumber] = useState('');
+  const mutation = useCreateClassroom(schoolId);
+
+  const reset = () => { setName(''); setGrade(''); setSection(''); setCapacity(''); setRoomNumber(''); };
+
+  const handleCreate = async () => {
+    if (!name.trim()) { toast.error('Classroom name is required'); return; }
+    try {
+      await mutation.mutateAsync({ schoolId, name: name.trim(), grade: grade || undefined, section: section || undefined, capacity: capacity ? parseInt(capacity, 10) : undefined, roomNumber: roomNumber.trim() || undefined });
+      toast.success('Classroom created');
+      reset(); onClose();
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed to create classroom'); }
+  };
+
+  const inputStyle = { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#1e293b' };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', gap: 12 }}>
+          <Pressable onPress={onClose}><Ionicons name="close" size={22} color="#374151" /></Pressable>
+          <Text style={{ fontSize: 17, fontWeight: '900', color: '#0f172a', flex: 1 }}>New Classroom</Text>
+        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Name *</Text>
+            <TextInput value={name} onChangeText={setName} placeholder="e.g. JSS1A" placeholderTextColor="#9ca3af" style={inputStyle} />
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Grade</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {GRADES.map(g => { const active = grade === g; return (
+                  <Pressable key={g} onPress={() => setGrade(active ? '' : g)}>
+                    <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{g}</Text>
+                    </View>
+                  </Pressable>
+                ); })}
+              </View>
+            </ScrollView>
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Section</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {SECTIONS.map(s => { const active = section === s; return (
+                  <Pressable key={s} onPress={() => setSection(active ? '' : s)}>
+                    <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#6366f1' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#6366f1' : '#e5e7eb' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{s}</Text>
+                    </View>
+                  </Pressable>
+                ); })}
+              </View>
+            </ScrollView>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Capacity</Text>
+              <TextInput value={capacity} onChangeText={setCapacity} placeholder="e.g. 40" placeholderTextColor="#9ca3af" keyboardType="number-pad" style={inputStyle} />
+            </View>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Room Number</Text>
+              <TextInput value={roomNumber} onChangeText={setRoomNumber} placeholder="e.g. B12" placeholderTextColor="#9ca3af" style={inputStyle} />
+            </View>
+          </View>
+          <Pressable onPress={handleCreate} disabled={mutation.isPending} style={({ pressed }) => ({ opacity: pressed || mutation.isPending ? 0.8 : 1 })}>
+            <View style={{ backgroundColor: '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+              {mutation.isPending && <ActivityIndicator color="#fff" size="small" />}
+              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>{mutation.isPending ? 'Creating…' : 'Create Classroom'}</Text>
+            </View>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 export default function ClassroomListScreen() {
   const [search, setSearch] = useState('');
-  const [activeGrade, setActiveGrade] = useState<string | null>(null);
+  const [activeGrade, setActiveGrade] = useState<string>('all');
+  const [showCreate, setShowCreate] = useState(false);
 
   const user = useAuthStore(s => s.user);
   const selectedSchoolId = useAuthStore(s => s.selectedSchoolId);
@@ -169,7 +258,7 @@ export default function ClassroomListScreen() {
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.grade?.toLowerCase().includes(search.toLowerCase()) ||
       c.section?.toLowerCase().includes(search.toLowerCase());
-    const matchGrade = !activeGrade || c.grade === activeGrade;
+    const matchGrade = activeGrade === 'all' || c.grade === activeGrade;
     return matchSearch && matchGrade;
   }), [classrooms, search, activeGrade]);
 
@@ -178,6 +267,7 @@ export default function ClassroomListScreen() {
   if (isLoading) return <LoadingScreen color="#4C3FC4" message="Loading classrooms" />;
 
   return (
+    <>
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
         <View style={{ marginBottom: 14 }}>
@@ -212,41 +302,12 @@ export default function ClassroomListScreen() {
       </View>
 
       {grades.length > 1 && (
-        <View style={{ height: 46, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-        <ScrollView
-          horizontal showsHorizontalScrollIndicator={false}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row', alignItems: 'center' }}
-        >
-          <Pressable
-            onPress={() => setActiveGrade(null)}
-            style={{
-              paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-              backgroundColor: !activeGrade ? '#4C3FC4' : '#f3f4f6',
-              borderWidth: 1, borderColor: !activeGrade ? '#4C3FC4' : '#e5e7eb',
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: !activeGrade ? '#fff' : '#6b7280' }}>All</Text>
-          </Pressable>
-          {grades.map(g => {
-            const pal = getPalette(g);
-            const isActive = activeGrade === g;
-            return (
-              <Pressable
-                key={g}
-                onPress={() => setActiveGrade(isActive ? null : g)}
-                style={{
-                  paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-                  backgroundColor: isActive ? pal.fg : '#f3f4f6',
-                  borderWidth: 1, borderColor: isActive ? pal.fg : '#e5e7eb',
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : '#6b7280' }}>{g}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-        </View>
+        <ClassroomDetailTabs
+          tabs={[{ key: 'all', label: 'All' }, ...grades.map(g => ({ key: g, label: g }))]}
+          activeTab={activeGrade}
+          onTabChange={setActiveGrade}
+          accentColor="#4C3FC4"
+        />
       )}
 
       <View style={{ flex: 1 }}>
@@ -273,9 +334,9 @@ export default function ClassroomListScreen() {
               ? `No classrooms match "${search}".`
               : 'Classrooms assigned to you will appear here.'}
           </Text>
-          {(search || activeGrade) && (
+          {(search || activeGrade !== 'all') && (
             <Pressable
-              onPress={() => { setSearch(''); setActiveGrade(null); }}
+              onPress={() => { setSearch(''); setActiveGrade('all'); }}
               style={{ marginTop: 4, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#4C3FC4' }}
             >
               <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Clear filters</Text>
@@ -291,7 +352,18 @@ export default function ClassroomListScreen() {
           {filtered.map(c => <ClassroomCard key={c.id} classroom={c} />)}
         </ScrollView>
       )}
+
+      {/* FAB — admin only */}
+      {isAdmin && (
+        <Pressable onPress={() => setShowCreate(true)} style={{ position: 'absolute', bottom: 28, right: 20 }}>
+          <View style={{ backgroundColor: '#4C3FC4', width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', shadowColor: '#4C3FC4', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 6 }}>
+            <Ionicons name="add" size={26} color="#fff" />
+          </View>
+        </Pressable>
+      )}
       </View>
     </SafeAreaView>
+    <CreateClassroomSheet visible={showCreate} onClose={() => setShowCreate(false)} schoolId={schoolId} />
+    </>
   );
 }

@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import { format } from 'date-fns';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuthStore } from '@/store/authStore';
@@ -591,24 +592,12 @@ export default function DocumentsScreen() {
         </View>
       </View>
 
-      {/* Tab pills */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-        {tabs.map(t => (
-          <Pressable
-            key={t.key}
-            onPress={() => setTab(t.key)}
-            style={{
-              flex: 1, paddingVertical: 9, borderRadius: 12, alignItems: 'center',
-              backgroundColor: tab === t.key ? '#d97706' : '#f3f4f6',
-              borderWidth: 1, borderColor: tab === t.key ? '#d97706' : '#e5e7eb',
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: tab === t.key ? '#fff' : '#6b7280' }}>
-              {t.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <ClassroomDetailTabs
+        tabs={tabs}
+        activeTab={tab}
+        onTabChange={setTab}
+        accentColor="#d97706"
+      />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

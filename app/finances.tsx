@@ -51,7 +51,7 @@ export default function FinancesScreen() {
   const schoolId = primary?.schoolId ?? '';
 
   const { data: salary, isLoading: loadingSalary, refetch: refetchSalary } = useSalaryStructure(!isStudent ? user?.id : undefined);
-  const { data: fees = [], isLoading: loadingFees, refetch: refetchFees } = useMyStudentFees(isStudent ? schoolId : undefined);
+  const { data: fees = [], isLoading: loadingFees, refetch: refetchFees } = useMyStudentFees(isStudent ? user?.id : undefined);
 
   const isLoading = isStudent ? loadingFees : loadingSalary;
   const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +70,7 @@ export default function FinancesScreen() {
     : 0;
 
   // Student fee totals
-  const feeTotal = fees.reduce((a, f) => a + f.totalAmount, 0);
+  const feeTotal = fees.reduce((a, f) => a + f.totalFee, 0);
   const feePaid = fees.reduce((a, f) => a + f.amountPaid, 0);
   const feeBalance = fees.reduce((a, f) => a + f.balance, 0);
 
@@ -121,7 +121,7 @@ export default function FinancesScreen() {
             </View>
           ) : (
             fees.map(fee => {
-              const paidPct = fee.totalAmount > 0 ? Math.min((fee.amountPaid / fee.totalAmount) * 100, 100) : 0;
+              const paidPct = fee.totalFee > 0 ? Math.min((fee.amountPaid / fee.totalFee) * 100, 100) : 0;
               return (
                 <View key={fee.id} style={{ backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2 }}>
                   {/* Header */}
@@ -132,19 +132,19 @@ export default function FinancesScreen() {
                         <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{fee.classroom.name}</Text>
                       )}
                     </View>
-                    <View style={{ backgroundColor: fee.isPaid ? '#dcfce7' : fee.balance > 0 ? '#fee2e2' : '#fef3c7', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: fee.isPaid ? '#16a34a' : fee.balance > 0 ? '#dc2626' : '#b45309' }}>
-                        {fee.isPaid ? 'Paid' : fee.balance > 0 ? 'Outstanding' : 'Partial'}
+                    <View style={{ backgroundColor: fee.isFullyPaid ? '#dcfce7' : fee.balance > 0 ? '#fee2e2' : '#fef3c7', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: fee.isFullyPaid ? '#16a34a' : fee.balance > 0 ? '#dc2626' : '#b45309' }}>
+                        {fee.isFullyPaid ? 'Paid' : fee.balance > 0 ? 'Outstanding' : 'Partial'}
                       </Text>
                     </View>
                   </View>
                   {/* Progress bar */}
                   <View style={{ marginHorizontal: 14, height: 6, backgroundColor: '#f1f5f9', borderRadius: 3, marginBottom: 10 }}>
-                    <View style={{ height: 6, borderRadius: 3, backgroundColor: fee.isPaid ? '#22c55e' : '#6366f1', width: `${paidPct}%` as `${number}%` }} />
+                    <View style={{ height: 6, borderRadius: 3, backgroundColor: fee.isFullyPaid ? '#22c55e' : '#6366f1', width: `${paidPct}%` as `${number}%` }} />
                   </View>
                   {/* Amounts */}
                   <View style={{ flexDirection: 'row', paddingHorizontal: 14, paddingBottom: 14, gap: 16 }}>
-                    <Text style={{ fontSize: 12, color: '#9ca3af' }}>Total: <Text style={{ fontWeight: '700', color: '#374151' }}>{fmt(fee.totalAmount)}</Text></Text>
+                    <Text style={{ fontSize: 12, color: '#9ca3af' }}>Total: <Text style={{ fontWeight: '700', color: '#374151' }}>{fmt(fee.totalFee)}</Text></Text>
                     <Text style={{ fontSize: 12, color: '#9ca3af' }}>Paid: <Text style={{ fontWeight: '700', color: '#059669' }}>{fmt(fee.amountPaid)}</Text></Text>
                     {fee.balance > 0 && <Text style={{ fontSize: 12, color: '#9ca3af' }}>Due: <Text style={{ fontWeight: '700', color: '#dc2626' }}>{fmt(fee.balance)}</Text></Text>}
                   </View>

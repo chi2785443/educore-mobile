@@ -12,6 +12,7 @@ import {
   useDeleteNotification,
 } from '@/hooks/useNotifications';
 import { Notification } from '@/interface/notification.interface';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 
 const TYPE_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
   ASSESSMENT:     { icon: 'clipboard-outline',      color: '#4C3FC4', bg: '#F0EEFF' },
@@ -125,8 +126,9 @@ function NotifRow({ notif, onRead, onDelete }: {
 }
 
 export default function NotificationsScreen() {
-  const [unreadOnly, setUnreadOnly] = useState(false);
-  const { data: notifications = [], isLoading, refetch } = useNotifications(unreadOnly);
+  type NotifTab = 'all' | 'unread';
+  const [notifTab, setNotifTab] = useState<NotifTab>('all');
+  const { data: notifications = [], isLoading, refetch } = useNotifications(notifTab === 'unread');
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllRead();
   const deleteNotif = useDeleteNotification();
@@ -173,35 +175,15 @@ export default function NotificationsScreen() {
         )}
       </View>
 
-      {/* Filter pills */}
-      <View style={{
-        flexDirection: 'row', gap: 8,
-        paddingHorizontal: 16, paddingVertical: 10,
-        borderBottomWidth: 1, borderBottomColor: '#f8fafc',
-      }}>
-        {[
-          { label: 'All', value: false },
-          { label: 'Unread', value: true },
-        ].map(opt => (
-          <Pressable
-            key={String(opt.value)}
-            onPress={() => setUnreadOnly(opt.value)}
-            style={{
-              paddingHorizontal: 14, paddingVertical: 6,
-              borderRadius: 20,
-              backgroundColor: unreadOnly === opt.value ? '#4C3FC4' : '#f1f5f9',
-            }}
-          >
-            <Text style={{
-              fontSize: 13, fontWeight: '700',
-              color: unreadOnly === opt.value ? '#fff' : '#64748b',
-            }}>
-              {opt.label}
-              {opt.value && unreadCount > 0 ? ` (${unreadCount})` : ''}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <ClassroomDetailTabs
+        tabs={[
+          { key: 'all',    label: 'All' },
+          { key: 'unread', label: unreadCount > 0 ? `Unread (${unreadCount})` : 'Unread' },
+        ] as { key: NotifTab; label: string }[]}
+        activeTab={notifTab}
+        onTabChange={setNotifTab}
+        accentColor="#4C3FC4"
+      />
 
       {/* List */}
       {isLoading ? (
@@ -218,7 +200,7 @@ export default function NotificationsScreen() {
             <Ionicons name="notifications-off-outline" size={32} color="#cbd5e1" />
           </View>
           <Text style={{ fontSize: 16, fontWeight: '700', color: '#475569', textAlign: 'center' }}>
-            {unreadOnly ? 'No unread notifications' : 'No notifications yet'}
+            {notifTab === 'unread' ? 'No unread notifications' : 'No notifications yet'}
           </Text>
           <Text style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', lineHeight: 20 }}>
             You're all caught up! Notifications about assessments, announcements, and more will appear here.

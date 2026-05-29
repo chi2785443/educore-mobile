@@ -44,10 +44,11 @@ export interface StudentFee {
   otherFees: number;
   fineAmount: number;
   discountAmount: number;
+  totalFee: number;
   totalAmount: number;
   amountPaid: number;
   balance: number;
-  isPaid: boolean;
+  isFullyPaid: boolean;
   classroom?: { name: string; grade?: string; section?: string };
   createdAt?: string;
 }

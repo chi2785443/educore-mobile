@@ -10,12 +10,12 @@ export const useSalaryStructure = (employeeId: string | undefined) =>
   });
 
 export const useMyStudentFees = (
-  schoolId: string | undefined,
+  userId: string | undefined,
   params?: { academicYear?: string; term?: string },
 ) =>
   useQuery({
-    queryKey: ['student-fees', schoolId, params],
-    queryFn: () => financeService.getMyStudentFees(schoolId!, params),
-    enabled: !!schoolId,
+    queryKey: ['student-fees', userId, params],
+    queryFn: () => financeService.getMyStudentFees(userId!, params),
+    enabled: !!userId,
     staleTime: 5 * 60_000,
   });

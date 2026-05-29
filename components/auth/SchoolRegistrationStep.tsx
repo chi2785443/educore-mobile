@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
@@ -30,7 +31,7 @@ export function SchoolRegistrationStep({ onBack }: Props) {
   const onSubmit = (data: SchoolRegistrationFormData) => {
     createSchool(
       { ...data, email: data.email || undefined },
-      { onError: (err) => Alert.alert('Error', err.message) }
+      { onError: (err) => toast.error(err.message) }
     );
   };
 

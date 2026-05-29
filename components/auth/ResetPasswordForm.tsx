@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text } from 'react-native';
+import { toast } from '@/components/ui/Toast';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { resetPasswordSchema, ResetPasswordFormData } from '@/schemas/auth.schema';
@@ -25,12 +26,12 @@ export function ResetPasswordForm({ token }: Props) {
 
   const onSubmit = (data: ResetPasswordFormData) => {
     if (!token) {
-      Alert.alert('Invalid Link', 'This reset link is missing a token. Please request a new one.');
+      toast.error('Invalid reset link. Please request a new one.');
       return;
     }
     resetPassword(
       { token, newPassword: data.password },
-      { onError: (err) => Alert.alert('Error', err.message) }
+      { onError: (err) => toast.error(err.message) }
     );
   };
 

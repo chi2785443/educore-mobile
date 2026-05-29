@@ -57,6 +57,29 @@
 
 ---
 
+## Tab Navigation — Standard
+
+- **Always use `ClassroomDetailTabs`** (`components/classroom/ClassroomDetailTabs.tsx`) for any page-level tab or filter bar — never custom pill buttons, horizontal-scroll chip rows, or inline segment controls.
+- Props: `tabs: { key: T; label: string }[]`, `activeTab: T`, `onTabChange: (tab: T) => void`, `accentColor?: string` (defaults to `#6366f1`).
+- The underline style is the app-wide standard: white background, colored underline on active tab, gray inactive text. `ClassroomDetailTabs` uses a `ScrollView` internally so it handles any number of tabs.
+- **Exception:** segmented controls embedded inside a dark-background header (e.g. the staff "Browse / Applied / Interviews" tabs on `STAFF_BG`) can keep their own style since `ClassroomDetailTabs` requires a white background.
+- Count badges / extra info: append to the label string — e.g. `` `Jobs (${n})` `` — rather than a separate badge view.
+- If tab state is `boolean | null`, convert to a string union (`'all' | 'present' | 'absent'`) and map to the boolean in filter logic — `ClassroomDetailTabs` is generic over `T extends string`.
+- If a filter array has a `color` field per item (e.g. status filters), drop per-item colors and use a single `accentColor` to stay consistent.
+
+---
+
+## Date & Time Pickers
+
+- **No external library** — use the custom `DatePickerModal` / `TimePickerModal` pattern (no `@react-native-community/datetimepicker`)
+- **Reference implementation:** `components/assessment/CreateAssessmentSheet.tsx`
+- `DatePickerModal` — bottom-sheet calendar grid, outputs `YYYY-MM-DD` string
+- `TimePickerModal` — bottom-sheet up/down spinners, outputs `HH:MM` (24 h), minute steps of 5
+- Trigger UI: `Pressable` wrapping a styled `View` (matches `inputStyle`) with a calendar/clock icon; show clear (`close-circle`) icon when value is set
+- Outputs are plain strings — convert to ISO at submit time (e.g. `new Date(\`${date}T23:59:59Z\`).toISOString()`)
+
+---
+
 ## Classroom Tab
 
 - Assessment questions from `GET /assessment-questions/:assessmentId` — NOT from `attempt.answerSubmissions`

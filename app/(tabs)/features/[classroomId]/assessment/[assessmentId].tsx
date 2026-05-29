@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  View, Text, ScrollView, Pressable, Alert, ActivityIndicator, TextInput,
+  View, Text, ScrollView, Pressable, Alert, ActivityIndicator, TextInput, Modal,
+  Dimensions,
 } from 'react-native';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +10,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import { AssessmentStatus, AssessmentType } from '@/interface/assessment.interface';
-import { useAssessment, usePublishAssessment, useDeleteAssessment } from '@/hooks/useAssessment';
+import { Question } from '@/interface/question.interface';
+import {
+  useAssessment, usePublishAssessment, useDeleteAssessment,
+  useAssessmentQuestions, useAddAssessmentQuestions, useRemoveAssessmentQuestion,
+} from '@/hooks/useAssessment';
+import { useQuestions } from '@/hooks/useQuestionBank';
 import { useAttemptsForAssessment, useStartAttempt, useMyAttempts } from '@/hooks/useStudentAttempt';
 import { useScoresForAssessment, useAssessmentStats, useMyScoreForAssessment } from '@/hooks/useStudentScore';
 import { useRetakesForAssessment, useMyRetakeRequests, useCreateRetakeRequest } from '@/hooks/useRetakeRequest';
@@ -17,6 +23,8 @@ import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import ScoreCard from '@/components/assessment/ScoreCard';
 import RetakeRequestRow from '@/components/assessment/RetakeRequestRow';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+
+const SCREEN_H = Dimensions.get('window').height;
 
 /* ── Color maps ─────────────────────────────────────────────────── */
 const TYPE_COLORS: Record<AssessmentType, string> = {
@@ -68,9 +76,21 @@ export default function AssessmentDetailScreen() {
   const [activeTab, setActiveTab] = useState<AnyTab>('info');
   const [retakeReason, setRetakeReason] = useState('');
   const [showRetakeInput, setShowRetakeInput] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selected, setSelected] = useState<Record<string, number>>({}); // questionId → marks
 
   /* Data */
   const { data: assessment, isLoading } = useAssessment(assessmentId);
+  const schoolId = assessment?.schoolId ?? '';
+  const { data: questions = [], isLoading: loadingQuestions } = useAssessmentQuestions(
+    isStaff && activeTab === 'questions' ? assessmentId : undefined,
+  );
+  const { data: bankQuestions = [], isLoading: loadingBank } = useQuestions(
+    isStaff && pickerOpen ? schoolId : undefined,
+    assessment?.subjectId ? { subjectId: assessment.subjectId } : undefined,
+  );
+  const addMutation = useAddAssessmentQuestions(assessmentId ?? '');
+  const removeMutation = useRemoveAssessmentQuestion(assessmentId ?? '');
   const { data: attempts = [], isLoading: loadingAttempts } = useAttemptsForAssessment(
     (isStaff || isAdmin) && activeTab === 'attempts' ? assessmentId : undefined,
   );
@@ -98,6 +118,59 @@ export default function AssessmentDetailScreen() {
   /* Derived */
   const typeColor = assessment ? (TYPE_COLORS[assessment.type] ?? '#4C3FC4') : '#4C3FC4';
   const statusSt  = assessment ? STATUS_STYLE[assessment.status] : STATUS_STYLE.draft;
+
+  const existingQuestionIds = useMemo(
+    () => new Set(questions.map(q => q.questionId)),
+    [questions],
+  );
+  const availableBank = useMemo(
+    () => (bankQuestions as Question[]).filter(q => !existingQuestionIds.has(q.id)),
+    [bankQuestions, existingQuestionIds],
+  );
+
+  const toggleSelect = (q: Question) => {
+    setSelected(prev => {
+      if (prev[q.id] !== undefined) {
+        const next = { ...prev }; delete next[q.id]; return next;
+      }
+      return { ...prev, [q.id]: 1 };
+    });
+  };
+
+  const handleAddQuestions = async () => {
+    const entries = Object.entries(selected);
+    if (entries.length === 0) return;
+    const nextOrder = questions.length + 1;
+    try {
+      await addMutation.mutateAsync(
+        entries.map(([questionId, marks], i) => ({
+          questionId, marks, questionOrder: nextOrder + i,
+        })),
+      );
+      setSelected({});
+      setPickerOpen(false);
+      toast.success(`${entries.length} question${entries.length !== 1 ? 's' : ''} added`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add questions');
+    }
+  };
+
+  const handleRemoveQuestion = (questionId: string) => {
+    Alert.alert('Remove Question', 'Remove this question from the assessment?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove', style: 'destructive',
+        onPress: async () => {
+          try {
+            await removeMutation.mutateAsync(questionId);
+            toast.success('Question removed');
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Failed to remove question');
+          }
+        },
+      },
+    ]);
+  };
 
   const myPendingRetake = myRetakeRequests.find(
     r => r.assessmentId === assessmentId && r.status === 'pending',
@@ -388,19 +461,179 @@ export default function AssessmentDetailScreen() {
 
       {/* QUESTIONS TAB (staff only) */}
       {activeTab === 'questions' && (
-        <View style={{ flex: 1, padding: 16 }}>
-          <View style={{ backgroundColor: '#eff6ff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#bfdbfe', gap: 12, alignItems: 'center' }}>
-            <Ionicons name="help-circle-outline" size={40} color="#2563eb" />
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1e40af', textAlign: 'center' }}>
-              {assessment.questionCount !== undefined
-                ? `${assessment.questionCount} question${assessment.questionCount !== 1 ? 's' : ''} added`
-                : 'No question count available'}
-            </Text>
-            <Text style={{ fontSize: 13, color: '#3b82f6', textAlign: 'center', lineHeight: 20 }}>
-              Question management is available on the web platform. After adding questions, return here to publish the assessment.
-            </Text>
-          </View>
-        </View>
+        <>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 100 }}>
+            {loadingQuestions ? (
+              <View style={{ paddingTop: 40, alignItems: 'center' }}>
+                <ActivityIndicator color={typeColor} />
+              </View>
+            ) : (
+              <>
+                {questions.length > 0 && (
+                  <View style={{ backgroundColor: typeColor + '12', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="list-outline" size={16} color={typeColor} />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: typeColor }}>
+                      {questions.length} question{questions.length !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                )}
+
+                {questions.length === 0 && (
+                  <EmptyState icon="help-circle-outline" title="No questions yet" subtitle="Add questions from your question bank below." />
+                )}
+
+                {[...questions].sort((a, b) => a.questionOrder - b.questionOrder).map((aq, idx) => (
+                  <View key={aq.id} style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', padding: 14, gap: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: typeColor + '18', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 12, fontWeight: '900', color: typeColor }}>{idx + 1}</Text>
+                      </View>
+                      <View style={{ backgroundColor: aq.question.type === 'objective' ? '#dbeafe' : '#fef3c7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: aq.question.type === 'objective' ? '#1d4ed8' : '#b45309', textTransform: 'capitalize' }}>{aq.question.type}</Text>
+                      </View>
+                      <View style={{ backgroundColor: '#f0fdf4', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#16a34a' }}>{aq.marks} mk{aq.marks !== 1 ? 's' : ''}</Text>
+                      </View>
+                      <Pressable onPress={() => handleRemoveQuestion(aq.questionId)} style={{ marginLeft: 'auto' }}>
+                        <Ionicons name="trash-outline" size={16} color="#dc2626" />
+                      </Pressable>
+                    </View>
+                    <Text style={{ fontSize: 14, color: '#1e293b', lineHeight: 20 }}>{aq.question.questionText}</Text>
+                    {aq.question.type === 'objective' && aq.question.options && aq.question.options.length > 0 && (
+                      <View style={{ gap: 6 }}>
+                        {aq.question.options.map((opt, oi) => {
+                          const isCorrect = aq.question.correctAnswer === opt;
+                          return (
+                            <View key={oi} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, backgroundColor: isCorrect ? '#f0fdf4' : '#f8fafc', borderWidth: 1, borderColor: isCorrect ? '#bbf7d0' : '#f1f5f9' }}>
+                              <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: isCorrect ? '#16a34a' : '#d1d5db', alignItems: 'center', justifyContent: 'center', backgroundColor: isCorrect ? '#16a34a' : 'transparent' }}>
+                                {isCorrect && <Ionicons name="checkmark" size={11} color="#fff" />}
+                              </View>
+                              <Text style={{ fontSize: 13, color: isCorrect ? '#15803d' : '#374151', flex: 1, fontWeight: isCorrect ? '700' : '400' }}>{opt}</Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </>
+            )}
+          </ScrollView>
+
+          {/* Add Questions FAB */}
+          {assessment?.status === 'draft' && (
+            <Pressable
+              onPress={() => { setSelected({}); setPickerOpen(true); }}
+              style={{ position: 'absolute', bottom: 24, right: 20 }}
+            >
+              <View style={{ backgroundColor: typeColor, borderRadius: 28, paddingHorizontal: 18, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: typeColor, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 6 }}>
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>Add Questions</Text>
+              </View>
+            </Pressable>
+          )}
+
+          {/* Question Picker Modal */}
+          <Modal visible={pickerOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPickerOpen(false)}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
+              {/* Header */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', gap: 12 }}>
+                <Pressable onPress={() => setPickerOpen(false)}>
+                  <Ionicons name="close" size={22} color="#374151" />
+                </Pressable>
+                <Text style={{ fontSize: 17, fontWeight: '900', color: '#0f172a', flex: 1 }}>Add from Question Bank</Text>
+                {Object.keys(selected).length > 0 && (
+                  <View style={{ backgroundColor: typeColor + '18', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: typeColor }}>{Object.keys(selected).length} selected</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Marks summary bar */}
+              {Object.keys(selected).length > 0 && (() => {
+                const selectedTotal = Object.values(selected).reduce((s, m) => s + m, 0);
+                const assessmentTotal = assessment?.totalMarks ?? 0;
+                const over = selectedTotal > assessmentTotal;
+                const exact = selectedTotal === assessmentTotal;
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: over ? '#fff7ed' : exact ? '#f0fdf4' : '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                    <Ionicons name={over ? 'warning-outline' : exact ? 'checkmark-circle-outline' : 'calculator-outline'} size={15} color={over ? '#d97706' : exact ? '#16a34a' : '#6b7280'} />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: over ? '#92400e' : exact ? '#15803d' : '#374151' }}>
+                      Selected total: <Text style={{ color: over ? '#d97706' : exact ? '#16a34a' : typeColor }}>{selectedTotal}</Text>
+                      {' / '}{assessmentTotal} marks
+                    </Text>
+                    {over && <Text style={{ fontSize: 11, color: '#d97706', marginLeft: 'auto' }}>Exceeds assessment total</Text>}
+                    {exact && <Text style={{ fontSize: 11, color: '#16a34a', marginLeft: 'auto' }}>Perfect match</Text>}
+                  </View>
+                );
+              })()}
+
+              {/* Question list */}
+              {loadingBank ? (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator color={typeColor} size="large" />
+                </View>
+              ) : availableBank.length === 0 ? (
+                <View style={{ flex: 1 }}>
+                  <EmptyState icon="library-outline" title="No questions available" subtitle={bankQuestions.length > 0 ? 'All questions in this subject are already added.' : 'Add questions to your question bank first.'} />
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 100 }}>
+                  {(availableBank as Question[]).map(q => {
+                    const isSelected = selected[q.id] !== undefined;
+                    const DIFF_COLOR: Record<string, string> = { easy: '#16a34a', medium: '#d97706', hard: '#dc2626' };
+                    return (
+                      <Pressable key={q.id} onPress={() => toggleSelect(q)}>
+                        <View style={{ backgroundColor: '#fff', borderRadius: 14, borderWidth: 1.5, borderColor: isSelected ? typeColor : '#f1f5f9', padding: 14, gap: 8 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: isSelected ? typeColor : '#d1d5db', backgroundColor: isSelected ? typeColor : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                              {isSelected && <Ionicons name="checkmark" size={13} color="#fff" />}
+                            </View>
+                            <View style={{ backgroundColor: q.type === 'objective' ? '#dbeafe' : '#fef3c7', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                              <Text style={{ fontSize: 10, fontWeight: '700', color: q.type === 'objective' ? '#1d4ed8' : '#b45309', textTransform: 'capitalize' }}>{q.type}</Text>
+                            </View>
+                            {q.difficulty && (
+                              <View style={{ borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: (DIFF_COLOR[q.difficulty] ?? '#6b7280') + '18' }}>
+                                <Text style={{ fontSize: 10, fontWeight: '700', color: DIFF_COLOR[q.difficulty] ?? '#6b7280', textTransform: 'capitalize' }}>{q.difficulty}</Text>
+                              </View>
+                            )}
+                            {isSelected && (
+                              <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Text style={{ fontSize: 11, color: '#6b7280' }}>Marks:</Text>
+                                <TextInput
+                                  value={String(selected[q.id] ?? 1)}
+                                  onChangeText={v => setSelected(prev => ({ ...prev, [q.id]: parseFloat(v) || 1 }))}
+                                  keyboardType="decimal-pad"
+                                  style={{ backgroundColor: typeColor + '12', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 13, fontWeight: '700', color: typeColor, minWidth: 44, textAlign: 'center' }}
+                                  onPress={e => e.stopPropagation?.()}
+                                />
+                              </View>
+                            )}
+                          </View>
+                          <Text style={{ fontSize: 13, color: '#1e293b', lineHeight: 19 }} numberOfLines={3}>{q.questionText}</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
+              {/* Add button */}
+              {Object.keys(selected).length > 0 && (
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
+                  <Pressable onPress={handleAddQuestions} disabled={addMutation.isPending} style={({ pressed }) => ({ opacity: pressed || addMutation.isPending ? 0.8 : 1 })}>
+                    <View style={{ backgroundColor: typeColor, borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                      {addMutation.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="add-circle-outline" size={18} color="#fff" />}
+                      <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>
+                        {addMutation.isPending ? 'Adding…' : `Add ${Object.keys(selected).length} Question${Object.keys(selected).length !== 1 ? 's' : ''}`}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </View>
+              )}
+            </SafeAreaView>
+          </Modal>
+        </>
       )}
 
       {/* ATTEMPTS TAB (staff/admin) */}
@@ -511,27 +744,51 @@ export default function AssessmentDetailScreen() {
       {activeTab === 'score' && isStudent && (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 14 }}>
           {(loadingMyScore || loadingMyAttempts) ? (
-            <View style={{ paddingTop: 40, alignItems: 'center' }}>
-              <ActivityIndicator color={typeColor} />
+            <View style={{ paddingTop: 60, alignItems: 'center', gap: 12 }}>
+              <ActivityIndicator color={typeColor} size="large" />
+              <Text style={{ fontSize: 13, color: '#9ca3af' }}>Loading your score…</Text>
             </View>
           ) : !myCompletedAttempt ? (
-            <EmptyState
-              icon="clipboard-outline"
-              title="You haven't taken this test yet"
-              subtitle="Start the assessment from the Info tab to see your score here."
-            />
-          ) : !myScore ? (
-            <EmptyState
-              icon="hourglass-outline"
-              title="Awaiting grading"
-              subtitle="Your submission was received. Your score will appear here once graded."
-            />
+            /* Not taken yet */
+            <View style={{ borderRadius: 24, overflow: 'hidden', borderWidth: 1.5, borderColor: '#e0e7ff', shadowColor: '#4C3FC4', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 3 }}>
+              <View style={{ backgroundColor: '#f5f3ff', paddingVertical: 36, paddingHorizontal: 24, alignItems: 'center', gap: 16 }}>
+                <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#ede9fe', borderWidth: 3, borderColor: '#ddd6fe', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="clipboard-outline" size={38} color="#7c3aed" />
+                </View>
+                <View style={{ alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontSize: 20, fontWeight: '900', color: '#4c1d95', letterSpacing: -0.3 }}>Not Attempted Yet</Text>
+                  <Text style={{ fontSize: 13, color: '#6d28d9', textAlign: 'center', lineHeight: 20 }}>
+                    Take the assessment first.{'\n'}Your score will show here once submitted.
+                  </Text>
+                </View>
+              </View>
+              <View style={{ backgroundColor: '#fff', flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#ede9fe' }}>
+                {[
+                  { icon: 'play-circle-outline' as const, label: 'Start from Info tab', color: '#7c3aed' },
+                  { icon: 'star-outline' as const, label: 'Earn your grade', color: '#0ea5e9' },
+                  { icon: 'trophy-outline' as const, label: 'Track your progress', color: '#f59e0b' },
+                ].map((s, i) => (
+                  <View key={s.label} style={{ flex: 1, alignItems: 'center', paddingVertical: 14, gap: 6, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: '#f5f3ff' }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: s.color + '15', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name={s.icon} size={17} color={s.color} />
+                    </View>
+                    <Text style={{ fontSize: 9, fontWeight: '700', color: '#6b7280', textAlign: 'center', paddingHorizontal: 4 }}>{s.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
           ) : (
+            /* Attempted — show pending card if not yet graded, else real score */
             <>
-              <ScoreCard score={myScore} compact={false} />
+              <ScoreCard
+                score={myScore ?? { id: '', assessmentId: assessmentId ?? '', studentId: '', score: 0, totalMarks: 0, percentage: 0, isPassed: false, grade: '', gradePoint: 0, correctAnswers: 0, incorrectAnswers: 0, questionsAnswered: 0 }}
+                compact={false}
+                pending={!myScore}
+                underReview={!!myScore && myScore.isReleased === false}
+              />
 
               {/* Retake section */}
-              {!myScore.isPassed && !myPendingRetake && (
+              {myScore && myScore.isReleased === true && !myScore.isPassed && !myPendingRetake && (
                 <View style={{ gap: 10 }}>
                   {showRetakeInput ? (
                     <>

@@ -13,6 +13,7 @@ import { useSchoolSettings } from '@/hooks/useSchool';
 import { Assessment, AssessmentStatus, AssessmentType } from '@/interface/assessment.interface';
 import AssessmentCard from '@/components/assessment/AssessmentCard';
 import CreateAssessmentSheet from '@/components/assessment/CreateAssessmentSheet';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
 const TYPE_COLOR: Record<AssessmentType, string> = {
@@ -103,17 +104,12 @@ export default function AssessmentsScreen() {
         </View>
       </View>
 
-      {/* Status filter chips */}
-      <View style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}>
-        {statusTabs.map(s => {
-          const active = statusFilter === s.key;
-          return (
-            <Pressable key={s.key} onPress={() => setStatusFilter(s.key)} style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{s.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ClassroomDetailTabs
+        tabs={statusTabs}
+        activeTab={statusFilter}
+        onTabChange={setStatusFilter}
+        accentColor="#4C3FC4"
+      />
 
       {filtered.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>

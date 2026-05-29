@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, Pressable, TextInput,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Linking, Modal,
 } from 'react-native';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
+import { Image } from 'expo-image';
+import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import {
@@ -241,9 +243,17 @@ function AdminApplicationCard({ item, onPress }: { item: JobApplication; onPress
         <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: cfg.color }} />
         <View style={{ padding: 16, paddingLeft: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 44, height: 44, borderRadius: 15, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Text style={{ fontSize: 14, fontWeight: '900', color: cfg.color }}>{ini}</Text>
-            </View>
+            {item.applicant?.profilePicture ? (
+              <Image
+                source={{ uri: item.applicant.profilePicture }}
+                style={{ width: 44, height: 44, borderRadius: 15, flexShrink: 0 }}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={{ width: 44, height: 44, borderRadius: 15, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Text style={{ fontSize: 14, fontWeight: '900', color: cfg.color }}>{ini}</Text>
+              </View>
+            )}
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>{name}</Text>
               <Text style={{ fontSize: 12, color: '#64748b', marginTop: 1 }} numberOfLines={1}>{item.jobPosting?.title ?? 'General Application'}</Text>
@@ -694,6 +704,106 @@ function ScheduleInterviewForm({ application, schoolId, onBack, onDone }: {
 const ROLES: SchoolJobRole[] = ['teacher','assistant_teacher','head_teacher','principal','vice_principal','counselor','librarian','lab_technician','admin_staff','accountant','security','janitor','driver','nurse','it_support','other'];
 const EMP_TYPES: EmploymentType[] = ['full_time','part_time','contract','temporary','internship'];
 const EXP_LEVELS: ExperienceLevel[] = ['entry','intermediate','senior','expert'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function DatePickerModal({ visible, value, onSelect, onClose }: {
+  visible: boolean;
+  value: string | undefined;
+  onSelect: (date: string) => void;
+  onClose: () => void;
+}) {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [selected, setSelected] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (value) {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        setYear(d.getFullYear()); setMonth(d.getMonth()); setSelected(d.getDate());
+      }
+    }
+  }, [value, visible]);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
+
+  const handleSelect = (day: number) => {
+    setSelected(day);
+    const s = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    onSelect(s);
+    onClose();
+  };
+
+  const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }} onPress={onClose}>
+        <Pressable onPress={e => e.stopPropagation?.()}>
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb', alignSelf: 'center', marginTop: 12, marginBottom: 16 }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 }}>
+              <Pressable onPress={prevMonth} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="chevron-back" size={18} color="#374151" />
+              </Pressable>
+              <Text style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: '#0f172a' }}>
+                {MONTHS[month]} {year}
+              </Text>
+              <Pressable onPress={nextMonth} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="chevron-forward" size={18} color="#374151" />
+              </Pressable>
+            </View>
+            <View style={{ flexDirection: 'row', paddingHorizontal: 12, marginBottom: 4 }}>
+              {DAY_NAMES.map(d => (
+                <Text key={d} style={{ flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#9ca3af' }}>{d}</Text>
+              ))}
+            </View>
+            <View style={{ paddingHorizontal: 12 }}>
+              {Array.from({ length: cells.length / 7 }, (_, row) => (
+                <View key={row} style={{ flexDirection: 'row', marginBottom: 4 }}>
+                  {cells.slice(row * 7, row * 7 + 7).map((day, col) => {
+                    const cellStr = day ? `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` : '';
+                    const isToday = cellStr === todayStr;
+                    const isSelected = day === selected;
+                    return (
+                      <Pressable
+                        key={col}
+                        onPress={() => day && handleSelect(day)}
+                        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 38 }}
+                      >
+                        {day ? (
+                          <View style={{
+                            width: 34, height: 34, borderRadius: 17,
+                            backgroundColor: isSelected ? '#4C3FC4' : isToday ? '#F0EEFF' : 'transparent',
+                            alignItems: 'center', justifyContent: 'center',
+                            borderWidth: isToday && !isSelected ? 1.5 : 0,
+                            borderColor: '#4C3FC4',
+                          }}>
+                            <Text style={{ fontSize: 14, fontWeight: isSelected || isToday ? '800' : '500', color: isSelected ? '#fff' : isToday ? '#4C3FC4' : '#1e293b' }}>
+                              {day}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
 
 function CreateJobForm({ schoolId, editing, onBack, onDone }: {
   schoolId: string;
@@ -713,6 +823,7 @@ function CreateJobForm({ schoolId, editing, onBack, onDone }: {
   const [salaryMin, setSalaryMin] = useState(editing?.salaryMin?.toString() ?? '');
   const [salaryMax, setSalaryMax] = useState(editing?.salaryMax?.toString() ?? '');
   const [deadline, setDeadline] = useState(editing?.applicationDeadline?.slice(0, 10) ?? '');
+  const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [positions, setPositions] = useState(editing?.positionsAvailable?.toString() ?? '');
   const [publishNow, setPublishNow] = useState(editing?.status === 'active');
 
@@ -839,13 +950,33 @@ function CreateJobForm({ schoolId, editing, onBack, onDone }: {
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <FieldLabel label="Deadline" />
-            <TextInput value={deadline} onChangeText={setDeadline} placeholder="YYYY-MM-DD" placeholderTextColor="#cbd5e1" style={inputStyle} />
+            <Pressable onPress={() => setShowDeadlinePicker(true)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+              <View style={[inputStyle, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                <Text style={{ fontSize: 14, color: deadline ? '#1e293b' : '#cbd5e1', flex: 1 }}>
+                  {deadline || 'Select date…'}
+                </Text>
+                {deadline ? (
+                  <Pressable onPress={() => setDeadline('')} hitSlop={8}>
+                    <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                  </Pressable>
+                ) : (
+                  <Ionicons name="calendar-outline" size={16} color={deadline ? '#4C3FC4' : '#94a3b8'} />
+                )}
+              </View>
+            </Pressable>
           </View>
           <View style={{ flex: 1 }}>
             <FieldLabel label="Positions" />
             <TextInput value={positions} onChangeText={setPositions} placeholder="1" placeholderTextColor="#cbd5e1" keyboardType="numeric" style={inputStyle} />
           </View>
         </View>
+
+        <DatePickerModal
+          visible={showDeadlinePicker}
+          value={deadline || undefined}
+          onSelect={setDeadline}
+          onClose={() => setShowDeadlinePicker(false)}
+        />
 
         {/* Publish toggle */}
         <Pressable onPress={() => setPublishNow(!publishNow)} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
@@ -1015,28 +1146,16 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
         </View>
       </View>
 
-      {/* Segment tabs */}
-      <View style={{ backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}>
-        {([
-          { id: 'postings' as AdminTab,     label: 'Jobs',        badge: postings.length },
-          { id: 'applications' as AdminTab, label: 'Applicants',  badge: applications.length },
-          { id: 'interviews' as AdminTab,   label: 'Interviews',  badge: upcomingIvs },
-        ]).map(t => {
-          const active = adminTab === t.id;
-          return (
-            <Pressable key={t.id} onPress={() => setAdminTab(t.id)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, flex: 1 })}>
-              <View style={{ alignItems: 'center', paddingVertical: 8, borderRadius: 12, backgroundColor: active ? '#6366f1' : '#f8fafc', borderWidth: 1.5, borderColor: active ? '#6366f1' : '#e2e8f0', gap: 2 }}>
-                <Text style={{ fontSize: 12, fontWeight: '800', color: active ? '#fff' : '#64748b' }}>{t.label}</Text>
-                {t.badge > 0 && !active && (
-                  <View style={{ backgroundColor: '#6366f1', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>{t.badge}</Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ClassroomDetailTabs
+        tabs={[
+          { key: 'postings',     label: `Jobs${postings.length > 0 ? ` (${postings.length})` : ''}` },
+          { key: 'applications', label: `Applicants${applications.length > 0 ? ` (${applications.length})` : ''}` },
+          { key: 'interviews',   label: `Interviews${upcomingIvs > 0 ? ` (${upcomingIvs})` : ''}` },
+        ] as { key: AdminTab; label: string }[]}
+        activeTab={adminTab}
+        onTabChange={setAdminTab}
+        accentColor="#6366f1"
+      />
 
       {/* Status filter bar */}
       {adminTab === 'postings' && (
@@ -1110,10 +1229,31 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
             </Text>
           </View>
         ) : (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}>
-            {applications.map(a => (
-              <AdminApplicationCard key={a.id} item={a} onPress={() => setScreen({ kind: 'app_detail', application: a })} />
-            ))}
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+            {(() => {
+              const grouped = applications.reduce<Record<string, typeof applications>>((acc, a) => {
+                const key = a.jobPosting?.role ?? a.jobPosting?.title ?? 'General';
+                (acc[key] = acc[key] ?? []).push(a);
+                return acc;
+              }, {});
+              return Object.entries(grouped).map(([roleKey, items]) => (
+                <View key={roleKey} style={{ marginBottom: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#0f172a', textTransform: 'capitalize' }}>
+                      {ROLE_LABELS[roleKey] ?? roleKey.replace(/_/g, ' ')}
+                    </Text>
+                    <View style={{ backgroundColor: '#eef2ff', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#6366f1' }}>{items.length}</Text>
+                    </View>
+                  </View>
+                  <View style={{ gap: 10 }}>
+                    {items.map(a => (
+                      <AdminApplicationCard key={a.id} item={a} onPress={() => setScreen({ kind: 'app_detail', application: a })} />
+                    ))}
+                  </View>
+                </View>
+              ));
+            })()}
           </ScrollView>
         )
       )}
@@ -1146,32 +1286,49 @@ function AdminJobsScreen({ schoolId, schoolName }: { schoolId: string; schoolNam
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StaffJobCard({ job, onPress }: { job: Job; onPress: () => void }) {
-  const open = !job.status || job.status === 'open' || job.status === 'active';
-  const expired = !!job.deadline && new Date(job.deadline) < new Date();
+  const now = new Date();
+  const deadlineDate = job.deadline ? new Date(job.deadline) : null;
+  const deadlinePassed = !!deadlineDate && deadlineDate < now;
+  const statusClosed = !!job.status && !['open', 'active'].includes(job.status);
+  const isOpen = !statusClosed && !deadlinePassed;
+
+  // Days remaining until deadline
+  const daysLeft = deadlineDate && !deadlinePassed
+    ? Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const badge = statusClosed
+    ? { label: job.status === 'filled' ? 'Filled' : 'Closed', bg: '#fee2e2', text: '#dc2626' }
+    : deadlinePassed
+      ? { label: 'Deadline passed', bg: '#fef3c7', text: '#b45309' }
+      : { label: 'Open', bg: '#dcfce7', text: '#15803d' };
+
+  const barColor = statusClosed ? '#ef4444' : deadlinePassed ? '#f59e0b' : '#0ea5e9';
+  const iconBg   = statusClosed ? '#fee2e2' : deadlinePassed ? '#fef3c7' : '#e0f2fe';
+  const iconColor = statusClosed ? '#ef4444' : deadlinePassed ? '#d97706' : '#0284c7';
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
       <View style={{
         backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden',
-        borderWidth: 1, borderColor: open ? '#f1f5f9' : '#fecaca',
+        borderWidth: 1, borderColor: isOpen ? '#f1f5f9' : deadlinePassed ? '#fef3c7' : '#fecaca',
         shadowColor: '#0f172a', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 3 }, shadowRadius: 10, elevation: 3,
       }}>
-        <View style={{ height: 3, backgroundColor: open ? '#0ea5e9' : '#ef4444' }} />
+        <View style={{ height: 3, backgroundColor: barColor }} />
         <View style={{ padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-            <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: open ? '#e0f2fe' : '#fee2e2', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Ionicons name="briefcase-outline" size={20} color={open ? '#0284c7' : '#ef4444'} />
+            <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: iconBg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Ionicons name="briefcase-outline" size={20} color={iconColor} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>{job.title}</Text>
               <Text style={{ fontSize: 13, color: '#0ea5e9', fontWeight: '600', marginTop: 2 }} numberOfLines={1}>{job.school?.name}</Text>
             </View>
-            {!open && (
-              <View style={{ backgroundColor: '#fee2e2', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#dc2626' }}>{expired ? 'Expired' : 'Closed'}</Text>
-              </View>
-            )}
+            <View style={{ backgroundColor: badge.bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, flexShrink: 0 }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: badge.text }}>{badge.label}</Text>
+            </View>
           </View>
+
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
             {job.employmentType && (
               <View style={{ backgroundColor: '#e0f2fe', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
@@ -1188,6 +1345,20 @@ function StaffJobCard({ job, onPress }: { job: Job; onPress: () => void }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#f0fdf4', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
                 <Ionicons name="cash-outline" size={10} color="#16a34a" />
                 <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>{job.salary}</Text>
+              </View>
+            )}
+            {/* Deadline indicator */}
+            {deadlineDate && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: deadlinePassed ? '#fef3c7' : daysLeft !== null && daysLeft <= 7 ? '#fff7ed' : '#f8fafc', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                <Ionicons name="time-outline" size={10} color={deadlinePassed ? '#b45309' : daysLeft !== null && daysLeft <= 7 ? '#ea580c' : '#64748b'} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: deadlinePassed ? '#b45309' : daysLeft !== null && daysLeft <= 7 ? '#ea580c' : '#64748b' }}>
+                  {deadlinePassed
+                    ? `Closed ${fmtDate(job.deadline!)}`
+                    : daysLeft === 0 ? 'Closes today'
+                    : daysLeft === 1 ? 'Closes tomorrow'
+                    : daysLeft !== null && daysLeft <= 7 ? `Closes in ${daysLeft} days`
+                    : `Closes ${fmtDate(job.deadline!)}`}
+                </Text>
               </View>
             )}
           </View>
@@ -1551,8 +1722,9 @@ function StaffJobsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
-      <View style={{ backgroundColor: STAFF_BG, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+      {/* Header — title only */}
+      <View style={{ backgroundColor: STAFF_BG, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
           </Pressable>
@@ -1562,28 +1734,28 @@ function StaffJobsScreen() {
           </View>
           <Ionicons name="briefcase-outline" size={22} color="#7dd3fc" />
         </View>
-
-        {/* Tab pills */}
-        <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: 3, gap: 2 }}>
-          {([
-            { id: 'browse' as StaffTab,     label: 'Browse' },
-            { id: 'applied' as StaffTab,    label: `Applied (${applications.length})` },
-            { id: 'interviews' as StaffTab, label: `Interviews${pendingIvs > 0 ? ` (${pendingIvs})` : ''}` },
-          ]).map(t => (
-            <Pressable key={t.id} onPress={() => setTab(t.id)} style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: tab === t.id ? '#fff' : 'transparent' }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: tab === t.id ? STAFF_BG : 'rgba(255,255,255,0.5)' }}>{t.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {tab === 'browse' && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, marginTop: 10 }}>
-            <Ionicons name="search-outline" size={15} color="rgba(255,255,255,0.4)" />
-            <TextInput value={search} onChangeText={setSearch} placeholder="Search jobs or schools…" placeholderTextColor="rgba(255,255,255,0.3)" style={{ flex: 1, fontSize: 13, color: '#fff' }} />
-            {search.length > 0 && <Pressable onPress={() => setSearch('')}><Ionicons name="close-circle" size={15} color="rgba(255,255,255,0.4)" /></Pressable>}
-          </View>
-        )}
       </View>
+
+      {/* Underline tabs */}
+      <ClassroomDetailTabs
+        tabs={[
+          { key: 'browse',     label: 'Browse' },
+          { key: 'applied',    label: applications.length > 0 ? `Applied (${applications.length})` : 'Applied' },
+          { key: 'interviews', label: pendingIvs > 0 ? `Interviews (${pendingIvs})` : 'Interviews' },
+        ] as { key: StaffTab; label: string }[]}
+        activeTab={tab}
+        onTabChange={setTab}
+        accentColor="#0ea5e9"
+      />
+
+      {/* Search bar — browse tab only */}
+      {tab === 'browse' && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingHorizontal: 16, paddingVertical: 10 }}>
+          <Ionicons name="search-outline" size={15} color="#94a3b8" />
+          <TextInput value={search} onChangeText={setSearch} placeholder="Search jobs or schools…" placeholderTextColor="#cbd5e1" style={{ flex: 1, fontSize: 13, color: '#0f172a' }} />
+          {search.length > 0 && <Pressable onPress={() => setSearch('')}><Ionicons name="close-circle" size={15} color="#94a3b8" /></Pressable>}
+        </View>
+      )}
 
       {tab === 'browse' && (
         loadingJobs ? (
@@ -1608,8 +1780,10 @@ function StaffJobsScreen() {
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
             <Ionicons name="document-text-outline" size={48} color="#d1d5db" />
             <Text style={{ fontSize: 16, fontWeight: '800', color: '#374151', textAlign: 'center' }}>No applications yet</Text>
-            <Pressable onPress={() => setTab('browse')} style={{ backgroundColor: '#0ea5e9', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 }}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Browse Jobs</Text>
+            <Pressable onPress={() => setTab('browse')} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+              <View style={{ backgroundColor: '#0ea5e9', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 }}>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Browse Jobs</Text>
+              </View>
             </Pressable>
           </View>
         ) : (

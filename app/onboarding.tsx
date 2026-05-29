@@ -4,15 +4,14 @@ import {
   StatusBar, ViewToken,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring,
   withRepeat, withTiming, withDelay, Easing,
-  FadeIn, FadeInDown, SlideInDown,
+  FadeIn, FadeInUp, FadeInDown,
 } from 'react-native-reanimated';
 import Svg, {
-  Circle, Path, Rect, G, Ellipse, Polygon,
-  Line, Defs, RadialGradient, Stop, ClipPath,
+  Circle, Path, Rect, G, Ellipse, Polygon, Line,
+  Defs, LinearGradient as SvgLinearGradient, Stop, ClipPath,
 } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -20,593 +19,504 @@ import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: W, height: H } = Dimensions.get('window');
-const SMOOTH = { duration: 2000, easing: Easing.inOut(Easing.quad) };
 
-/* ─────────────────────────────────────────────────────────────────
-   Slide definitions
-───────────────────────────────────────────────────────────────── */
+/* ─── Slide definitions ──────────────────────────────────────────── */
 const SLIDES = [
   {
     id: '0',
-    gradient: ['#0f0326', '#3b0764', '#6d28d9'] as const,
-    accent: '#a78bfa',
-    accentBtn: '#7c3aed',
-    accentSoft: 'rgba(167,139,250,0.15)',
+    bg: '#FEF0E6',
+    accent: '#4C3FC4',
     tag: 'WELCOME',
     title: 'Education,\nreimagined.',
-    body: 'EduCore brings schools, students, staff and parents together in one beautiful platform.',
-    features: [],
+    body: 'EduCore brings schools, students, staff and parents together in one beautiful place.',
   },
   {
     id: '1',
-    gradient: ['#050d1f', '#1e3a8a', '#2563eb'] as const,
-    accent: '#60a5fa',
-    accentBtn: '#2563eb',
-    accentSoft: 'rgba(96,165,250,0.15)',
+    bg: '#E8F4FF',
+    accent: '#0284c7',
     tag: 'FOR SCHOOLS',
     title: 'Manage your\nschool with ease.',
-    body: 'Enrollment, payroll, attendance and results — all under one roof.',
-    features: [
-      { icon: 'people-outline' as const, label: 'Staff & Student Management' },
-      { icon: 'cash-outline' as const, label: 'Finance & Payroll' },
-      { icon: 'bar-chart-outline' as const, label: 'Results & Reports' },
-    ],
+    body: 'Enrollment, attendance, payroll and results — all in one powerful dashboard.',
   },
   {
     id: '2',
-    gradient: ['#021510', '#064e3b', '#059669'] as const,
-    accent: '#34d399',
-    accentBtn: '#059669',
-    accentSoft: 'rgba(52,211,153,0.15)',
+    bg: '#E8F5EE',
+    accent: '#059669',
     tag: 'FOR LEARNERS',
     title: 'Learn, grow,\nand excel.',
-    body: 'Track assessments, view scores, follow your timetable, and celebrate every win.',
-    features: [
-      { icon: 'clipboard-outline' as const, label: 'Assessments & Quizzes' },
-      { icon: 'trophy-outline' as const, label: 'Scores & Results' },
-      { icon: 'calendar-outline' as const, label: 'Timetable & Attendance' },
-    ],
+    body: 'Track assessments, view scores, follow your timetable and celebrate every win.',
   },
   {
     id: '3',
-    gradient: ['#1a0500', '#7c2d12', '#ea580c'] as const,
-    accent: '#fb923c',
-    accentBtn: '#ea580c',
-    accentSoft: 'rgba(251,146,60,0.15)',
+    bg: '#F0EEFF',
+    accent: '#6366f1',
     tag: 'STAY CONNECTED',
     title: "Your child's\njourney, in\nyour hands.",
-    body: "Parents get real-time updates, announcements, and a direct line to the school — always.",
-    features: [
-      { icon: 'chatbubbles-outline' as const, label: 'Messages & Enquiries' },
-      { icon: 'megaphone-outline' as const, label: 'School Announcements' },
-      { icon: 'notifications-outline' as const, label: 'Real-time Notifications' },
-    ],
+    body: "Parents get real-time updates and a direct line to the school — always.",
   },
 ] as const;
 
-/* ─────────────────────────────────────────────────────────────────
-   Illustration 0 — Graduation cap + orbiting stars
-───────────────────────────────────────────────────────────────── */
+const FLOAT = { duration: 2200, easing: Easing.inOut(Easing.quad) };
+
+/* ─── Slide 0 — Floating graduation cap ─────────────────────────── */
 function WelcomeIllustration() {
-  const floatY   = useSharedValue(0);
-  const pulseS   = useSharedValue(1);
-  const star1Y   = useSharedValue(0);
-  const star2Y   = useSharedValue(0);
-  const star3Y   = useSharedValue(0);
-  const sparkleO = useSharedValue(0.3);
+  const floatY = useSharedValue(0);
+  const s1Y = useSharedValue(0);
+  const s2Y = useSharedValue(0);
+  const s3Y = useSharedValue(0);
+  const rotPencil = useSharedValue(-8);
 
   useEffect(() => {
-    floatY.value   = withRepeat(withTiming(-16, SMOOTH), -1, true);
-    pulseS.value   = withRepeat(withTiming(1.25, { duration: 1800, easing: Easing.inOut(Easing.quad) }), -1, true);
-    star1Y.value   = withRepeat(withDelay(0,   withTiming(-12, { duration: 1900 })), -1, true);
-    star2Y.value   = withRepeat(withDelay(350, withTiming(-9,  { duration: 2200 })), -1, true);
-    star3Y.value   = withRepeat(withDelay(650, withTiming(-14, { duration: 1700 })), -1, true);
-    sparkleO.value = withRepeat(withTiming(1,  { duration: 1400 }), -1, true);
+    floatY.value   = withRepeat(withTiming(-18, FLOAT), -1, true);
+    s1Y.value      = withRepeat(withDelay(0,   withTiming(-14, { duration: 2000 })), -1, true);
+    s2Y.value      = withRepeat(withDelay(400, withTiming(-10, { duration: 1700 })), -1, true);
+    s3Y.value      = withRepeat(withDelay(700, withTiming(-16, { duration: 2400 })), -1, true);
+    rotPencil.value = withRepeat(withTiming(8, { duration: 2000, easing: Easing.inOut(Easing.quad) }), -1, true);
   }, []);
 
-  const capStyle    = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
-  const glowStyle   = useAnimatedStyle(() => ({ transform: [{ scale: pulseS.value }], opacity: 0.12 + (pulseS.value - 1) * 0.25 }));
-  const s1Style     = useAnimatedStyle(() => ({ transform: [{ translateY: star1Y.value }] }));
-  const s2Style     = useAnimatedStyle(() => ({ transform: [{ translateY: star2Y.value }] }));
-  const s3Style     = useAnimatedStyle(() => ({ transform: [{ translateY: star3Y.value }] }));
-  const sparkStyle  = useAnimatedStyle(() => ({ opacity: sparkleO.value }));
+  const capSt    = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
+  const s1St     = useAnimatedStyle(() => ({ transform: [{ translateY: s1Y.value }] }));
+  const s2St     = useAnimatedStyle(() => ({ transform: [{ translateY: s2Y.value }] }));
+  const s3St     = useAnimatedStyle(() => ({ transform: [{ translateY: s3Y.value }] }));
+  const pencilSt = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotPencil.value}deg` }] }));
 
   return (
-    <View style={{ width: W * 0.85, height: H * 0.30, alignItems: 'center', justifyContent: 'center' }}>
-      {/* Glow blob */}
-      <Animated.View style={[glowStyle, {
-        position: 'absolute', width: 220, height: 220, borderRadius: 110,
-        backgroundColor: 'rgba(139,92,246,0.35)',
-      }]} />
+    <View style={{ width: W, height: H * 0.52, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Soft blob behind cap */}
+      <View style={{
+        position: 'absolute', width: 260, height: 260, borderRadius: 130,
+        backgroundColor: 'rgba(76,63,196,0.07)',
+      }} />
 
-      {/* Main cap */}
-      <Animated.View style={[capStyle, { alignItems: 'center', justifyContent: 'center' }]}>
-        <Svg width={170} height={145} viewBox="0 0 170 145">
+      {/* Cap */}
+      <Animated.View style={[capSt, { alignItems: 'center' }]}>
+        <Svg width={220} height={180} viewBox="0 0 220 180">
           <Defs>
-            <RadialGradient id="capGlow" cx="50%" cy="50%" r="50%">
-              <Stop offset="0%" stopColor="#c4b5fd" stopOpacity="1" />
-              <Stop offset="100%" stopColor="#7c3aed" stopOpacity="1" />
-            </RadialGradient>
-          </Defs>
-          {/* Glow under cap */}
-          <Ellipse cx="85" cy="110" rx="55" ry="10" fill="rgba(139,92,246,0.3)" />
-          {/* Board */}
-          <Path d="M85 18 L158 56 L85 72 L12 56 Z" fill="url(#capGlow)" />
-          {/* Board shine */}
-          <Path d="M85 18 L158 56 L152 60 L85 24 Z" fill="rgba(255,255,255,0.22)" />
-          {/* Cap body */}
-          <Rect x="64" y="56" width="42" height="32" rx="5" fill="#5b21b6" />
-          {/* Cap top flat */}
-          <Rect x="64" y="52" width="42" height="10" rx="3" fill="#7c3aed" />
-          {/* Tassel line */}
-          <Line x1="155" y1="56" x2="150" y2="96" stroke="#fcd34d" strokeWidth="3.5" strokeLinecap="round" />
-          {/* Tassel bob */}
-          <Circle cx="150" cy="102" r="9" fill="#fcd34d" />
-          <Circle cx="150" cy="102" r="5" fill="#f59e0b" />
-          {/* Diploma scroll */}
-          <Rect x="30" y="88" width="28" height="20" rx="4" fill="rgba(255,255,255,0.15)" />
-          <Line x1="34" y1="95" x2="54" y2="95" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-          <Line x1="34" y1="100" x2="50" y2="100" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-        </Svg>
-      </Animated.View>
-
-      {/* Star top-right */}
-      <Animated.View style={[s1Style, { position: 'absolute', top: 10, right: 28 }]}>
-        <Svg width={30} height={30} viewBox="0 0 30 30">
-          <Polygon points="15,2 18,11 28,11 20,17 23,26 15,20 7,26 10,17 2,11 12,11" fill="#fcd34d" />
-        </Svg>
-      </Animated.View>
-
-      {/* Star left */}
-      <Animated.View style={[s2Style, { position: 'absolute', left: 22, top: H * 0.07 }]}>
-        <Svg width={22} height={22} viewBox="0 0 22 22">
-          <Polygon points="11,1 13,8 21,8 15,12 17,20 11,15 5,20 7,12 1,8 9,8" fill="#a78bfa" />
-        </Svg>
-      </Animated.View>
-
-      {/* Sparkle dot */}
-      <Animated.View style={[s3Style, sparkStyle, { position: 'absolute', right: 55, bottom: 28 }]}>
-        <Svg width={14} height={14} viewBox="0 0 14 14">
-          <Circle cx="7" cy="7" r="6" fill="#fcd34d" />
-        </Svg>
-      </Animated.View>
-
-      {/* Small orbit dot */}
-      <Animated.View style={[s2Style, { position: 'absolute', right: 30, bottom: 55 }]}>
-        <Svg width={10} height={10} viewBox="0 0 10 10">
-          <Circle cx="5" cy="5" r="4" fill="rgba(167,139,250,0.7)" />
-        </Svg>
-      </Animated.View>
-    </View>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   Illustration 1 — School building + animated elements
-───────────────────────────────────────────────────────────────── */
-function SchoolIllustration() {
-  const floatY   = useSharedValue(0);
-  const winA     = useSharedValue(0.4);
-  const winB     = useSharedValue(0.8);
-  const flagRot  = useSharedValue(0);
-  const chartBar = useSharedValue(0.6);
-
-  useEffect(() => {
-    floatY.value   = withRepeat(withTiming(-12, SMOOTH), -1, true);
-    winA.value     = withRepeat(withTiming(1,   { duration: 1600 }), -1, true);
-    winB.value     = withRepeat(withTiming(0.4, { duration: 2100 }), -1, true);
-    flagRot.value  = withRepeat(withTiming(8,   { duration: 1200, easing: Easing.inOut(Easing.quad) }), -1, true);
-    chartBar.value = withRepeat(withTiming(1,   { duration: 1800 }), -1, true);
-  }, []);
-
-  const buildStyle  = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
-  const winAStyle   = useAnimatedStyle(() => ({ opacity: winA.value }));
-  const winBStyle   = useAnimatedStyle(() => ({ opacity: winB.value }));
-  const flagStyle   = useAnimatedStyle(() => ({ transform: [{ rotate: `${flagRot.value}deg` }] }));
-  const barStyle    = useAnimatedStyle(() => ({ transform: [{ scaleY: chartBar.value }], opacity: chartBar.value }));
-
-  return (
-    <View style={{ width: W * 0.85, height: H * 0.30, alignItems: 'center', justifyContent: 'center' }}>
-      {/* Ground glow */}
-      <Animated.View style={[buildStyle]}>
-        <Svg width={200} height={155} viewBox="0 0 200 155">
-          <Defs>
-            <RadialGradient id="blueGlow" cx="50%" cy="100%" r="60%">
-              <Stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
-              <Stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Ellipse cx="100" cy="148" rx="80" ry="10" fill="rgba(96,165,250,0.25)" />
-
-          {/* Main building body */}
-          <Rect x="30" y="65" width="140" height="80" rx="4" fill="#1e3a8a" />
-          {/* Roof */}
-          <Path d="M20 68 L100 20 L180 68 Z" fill="#1d4ed8" />
-          {/* Roof shine */}
-          <Path d="M20 68 L100 20 L110 22 L30 68 Z" fill="rgba(255,255,255,0.15)" />
-
-          {/* Windows row 1 */}
-          <Rect x="48" y="78" width="24" height="20" rx="3" fill="#bfdbfe" />
-          <Rect x="88" y="78" width="24" height="20" rx="3" fill="#93c5fd" />
-          <Rect x="128" y="78" width="24" height="20" rx="3" fill="#bfdbfe" />
-          {/* Windows row 2 */}
-          <Rect x="48" y="106" width="24" height="20" rx="3" fill="#93c5fd" />
-          <Rect x="128" y="106" width="24" height="20" rx="3" fill="#bfdbfe" />
-
-          {/* Door */}
-          <Rect x="82" y="108" width="36" height="37" rx="4" fill="#1e40af" />
-          <Rect x="82" y="108" width="36" height="37" rx="4" fill="rgba(0,0,0,0.2)" />
-          <Circle cx="115" cy="127" r="2.5" fill="#fbbf24" />
-
-          {/* Flagpole */}
-          <Line x1="100" y1="20" x2="100" y2="0" stroke="#93c5fd" strokeWidth="2.5" strokeLinecap="round" />
-
-          {/* Steps */}
-          <Rect x="74" y="143" width="52" height="7" rx="2" fill="#1d4ed8" />
-          <Rect x="68" y="148" width="64" height="6" rx="2" fill="#2563eb" />
-        </Svg>
-      </Animated.View>
-
-      {/* Animated window glows */}
-      <Animated.View style={[winAStyle, { position: 'absolute', left: W * 0.15, top: H * 0.045 }]}>
-        <Svg width={26} height={22} viewBox="0 0 26 22">
-          <Rect x="0" y="0" width="26" height="22" rx="3" fill="#fef08a" />
-        </Svg>
-      </Animated.View>
-      <Animated.View style={[winBStyle, { position: 'absolute', right: W * 0.15, top: H * 0.045 }]}>
-        <Svg width={26} height={22} viewBox="0 0 26 22">
-          <Rect x="0" y="0" width="26" height="22" rx="3" fill="#fef08a" />
-        </Svg>
-      </Animated.View>
-
-      {/* Flag */}
-      <Animated.View style={[flagStyle, { position: 'absolute', top: 2, left: W * 0.46 }]}>
-        <Svg width={24} height={18} viewBox="0 0 24 18">
-          <Path d="M0 0 L24 6 L0 12 Z" fill="#fb923c" />
-        </Svg>
-      </Animated.View>
-
-      {/* Floating chart bars - top right */}
-      <Animated.View style={[barStyle, { position: 'absolute', right: 18, top: 20 }]}>
-        <Svg width={40} height={36} viewBox="0 0 40 36">
-          <Rect x="2"  y="20" width="8"  height="16" rx="2" fill="rgba(96,165,250,0.8)" />
-          <Rect x="14" y="12" width="8"  height="24" rx="2" fill="rgba(147,197,253,0.9)" />
-          <Rect x="26" y="6"  width="8"  height="30" rx="2" fill="rgba(96,165,250,1)" />
-        </Svg>
-      </Animated.View>
-    </View>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   Illustration 2 — Open book + floating letters
-───────────────────────────────────────────────────────────────── */
-function LearnersIllustration() {
-  const floatY  = useSharedValue(0);
-  const letter1 = useSharedValue(0);
-  const letter2 = useSharedValue(0);
-  const letter3 = useSharedValue(0);
-  const pencilR = useSharedValue(-12);
-  const glowP   = useSharedValue(1);
-
-  useEffect(() => {
-    floatY.value  = withRepeat(withTiming(-14, SMOOTH), -1, true);
-    letter1.value = withRepeat(withDelay(0,   withTiming(-18, { duration: 2000 })), -1, true);
-    letter2.value = withRepeat(withDelay(500, withTiming(-14, { duration: 1700 })), -1, true);
-    letter3.value = withRepeat(withDelay(900, withTiming(-20, { duration: 2300 })), -1, true);
-    pencilR.value = withRepeat(withTiming(12, { duration: 2400, easing: Easing.inOut(Easing.quad) }), -1, true);
-    glowP.value   = withRepeat(withTiming(1.3, { duration: 1600, easing: Easing.inOut(Easing.quad) }), -1, true);
-  }, []);
-
-  const bookStyle    = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
-  const l1Style      = useAnimatedStyle(() => ({ transform: [{ translateY: letter1.value }] }));
-  const l2Style      = useAnimatedStyle(() => ({ transform: [{ translateY: letter2.value }] }));
-  const l3Style      = useAnimatedStyle(() => ({ transform: [{ translateY: letter3.value }] }));
-  const pencilStyle  = useAnimatedStyle(() => ({ transform: [{ rotate: `${pencilR.value}deg` }] }));
-  const glowStyle    = useAnimatedStyle(() => ({ transform: [{ scale: glowP.value }], opacity: 0.18 }));
-
-  return (
-    <View style={{ width: W * 0.85, height: H * 0.30, alignItems: 'center', justifyContent: 'center' }}>
-      <Animated.View style={[glowStyle, {
-        position: 'absolute', width: 200, height: 180, borderRadius: 100,
-        backgroundColor: 'rgba(52,211,153,0.35)',
-      }]} />
-
-      <Animated.View style={bookStyle}>
-        <Svg width={190} height={140} viewBox="0 0 190 140">
-          <Defs>
-            <RadialGradient id="bookGlow" cx="50%" cy="80%" r="60%">
-              <Stop offset="0%" stopColor="#34d399" stopOpacity="0.4" />
-              <Stop offset="100%" stopColor="#065f46" stopOpacity="0" />
-            </RadialGradient>
+            <SvgLinearGradient id="capG" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0%" stopColor="#7c6ef0" />
+              <Stop offset="100%" stopColor="#4C3FC4" />
+            </SvgLinearGradient>
           </Defs>
           {/* Shadow */}
-          <Ellipse cx="95" cy="132" rx="65" ry="9" fill="rgba(52,211,153,0.2)" />
-
-          {/* Left page */}
-          <Path d="M95 28 L20 40 L20 118 L95 110 Z" fill="#065f46" />
-          <Path d="M95 28 L22 40 L22 115 L95 107 Z" fill="#047857" />
-          {/* Left page lines */}
-          <Line x1="32" y1="56" x2="88" y2="52" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-          <Line x1="32" y1="66" x2="88" y2="62" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-          <Line x1="32" y1="76" x2="88" y2="72" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-          <Line x1="32" y1="86" x2="88" y2="82" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-          <Line x1="32" y1="96" x2="88" y2="92" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-
-          {/* Right page */}
-          <Path d="M95 28 L170 40 L170 118 L95 110 Z" fill="#065f46" />
-          <Path d="M95 28 L168 40 L168 115 L95 107 Z" fill="#047857" />
-          {/* Right page lines */}
-          <Line x1="102" y1="52" x2="158" y2="56" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-          <Line x1="102" y1="62" x2="158" y2="66" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-          <Line x1="102" y1="72" x2="158" y2="76" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-          <Line x1="102" y1="82" x2="158" y2="86" stroke="rgba(52,211,153,0.4)" strokeWidth="1.5" />
-
-          {/* Spine */}
-          <Rect x="92" y="25" width="6" height="88" rx="3" fill="#34d399" />
-
-          {/* Star on book */}
-          <Polygon points="50,62 52,68 58,68 53,72 55,78 50,74 45,78 47,72 42,68 48,68" fill="#fcd34d" />
+          <Ellipse cx="110" cy="166" rx="70" ry="10" fill="rgba(76,63,196,0.12)" />
+          {/* Board */}
+          <Path d="M110 30 L195 72 L110 90 L25 72 Z" fill="url(#capG)" />
+          <Path d="M110 30 L195 72 L185 76 L110 38 Z" fill="rgba(255,255,255,0.2)" />
+          {/* Cap body */}
+          <Rect x="84" y="72" width="52" height="42" rx="6" fill="#3730a3" />
+          <Rect x="84" y="68" width="52" height="12" rx="4" fill="#4C3FC4" />
+          {/* Tassel string */}
+          <Line x1="192" y1="72" x2="186" y2="118" stroke="#fbbf24" strokeWidth="4" strokeLinecap="round" />
+          {/* Tassel bob */}
+          <Circle cx="186" cy="126" r="12" fill="#fbbf24" />
+          <Circle cx="186" cy="126" r="7" fill="#f59e0b" />
+          {/* Book stack */}
+          <Rect x="20" y="116" width="50" height="12" rx="4" fill="#fb923c" />
+          <Rect x="22" y="104" width="46" height="12" rx="4" fill="#fbbf24" />
+          <Rect x="24" y="92"  width="42" height="12" rx="4" fill="#4C3FC4" />
+          {/* Diploma */}
+          <Rect x="148" y="104" width="38" height="28" rx="6" fill="#fff" />
+          <Line x1="154" y1="112" x2="180" y2="112" stroke="#e5e7eb" strokeWidth="2" />
+          <Line x1="154" y1="118" x2="180" y2="118" stroke="#e5e7eb" strokeWidth="2" />
+          <Line x1="154" y1="124" x2="172" y2="124" stroke="#e5e7eb" strokeWidth="2" />
+          <Circle cx="162" cy="128" r="6" fill="#fbbf24" />
         </Svg>
       </Animated.View>
 
-      {/* Floating A */}
-      <Animated.View style={[l1Style, { position: 'absolute', left: 25, top: H * 0.02 }]}>
-        <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(52,211,153,0.25)', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#34d399', fontSize: 16, fontWeight: '900' }}>A</Text>
-        </View>
+      {/* Stars */}
+      <Animated.View style={[s1St, { position: 'absolute', top: H * 0.04, right: W * 0.14 }]}>
+        <Svg width={36} height={36} viewBox="0 0 36 36">
+          <Polygon points="18,2 22,13 34,13 24,20 28,32 18,24 8,32 12,20 2,13 14,13" fill="#fbbf24" />
+        </Svg>
       </Animated.View>
-
-      {/* Floating + */}
-      <Animated.View style={[l2Style, { position: 'absolute', right: 22, top: H * 0.03 }]}>
-        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(251,191,36,0.25)', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#fbbf24', fontSize: 18, fontWeight: '900' }}>+</Text>
-        </View>
+      <Animated.View style={[s2St, { position: 'absolute', top: H * 0.06, left: W * 0.1 }]}>
+        <Svg width={26} height={26} viewBox="0 0 26 26">
+          <Polygon points="13,2 15.5,9 23,9 17,13.5 19.5,21 13,17 6.5,21 9,13.5 3,9 10.5,9" fill="#a78bfa" />
+        </Svg>
       </Animated.View>
-
-      {/* Floating π */}
-      <Animated.View style={[l3Style, { position: 'absolute', right: 50, bottom: 20 }]}>
-        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(52,211,153,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#6ee7b7', fontSize: 14, fontWeight: '900' }}>π</Text>
-        </View>
+      <Animated.View style={[s3St, { position: 'absolute', bottom: H * 0.08, left: W * 0.08 }]}>
+        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#fbbf24' }} />
       </Animated.View>
 
       {/* Pencil */}
-      <Animated.View style={[pencilStyle, { position: 'absolute', right: 14, bottom: 50 }]}>
-        <Svg width={18} height={60} viewBox="0 0 18 60">
-          <Rect x="4" y="4" width="10" height="44" rx="2" fill="#fbbf24" />
-          <Path d="M4 48 L9 60 L14 48 Z" fill="#f87171" />
-          <Rect x="4" y="4" width="10" height="8" rx="2" fill="#d1d5db" />
+      <Animated.View style={[pencilSt, { position: 'absolute', bottom: H * 0.05, right: W * 0.1 }]}>
+        <Svg width={22} height={70} viewBox="0 0 22 70">
+          <Rect x="5" y="5"  width="12" height="50" rx="3" fill="#fbbf24" />
+          <Path d="M5 55 L11 70 L17 55 Z" fill="#f87171" />
+          <Rect x="5" y="5"  width="12" height="10" rx="3" fill="#d1d5db" />
+          <Line x1="11" y1="15" x2="11" y2="55" stroke="rgba(0,0,0,0.08)" strokeWidth="1" />
         </Svg>
       </Animated.View>
     </View>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   Illustration 3 — Phone + chat bubbles
-───────────────────────────────────────────────────────────────── */
-function ConnectedIllustration() {
+/* ─── Slide 1 — School + floating charts ─────────────────────────── */
+function SchoolIllustration() {
   const floatY  = useSharedValue(0);
-  const bub1Y   = useSharedValue(0);
-  const bub2Y   = useSharedValue(0);
-  const bub3Y   = useSharedValue(0);
-  const ringS   = useSharedValue(1);
-  const heartS  = useSharedValue(1);
-  const bub1O   = useSharedValue(1);
-  const bub2O   = useSharedValue(0.7);
-  const bub3O   = useSharedValue(0.5);
+  const barS    = useSharedValue(0.5);
+  const cloudY  = useSharedValue(0);
 
   useEffect(() => {
-    floatY.value = withRepeat(withTiming(-12, SMOOTH), -1, true);
-    bub1Y.value  = withRepeat(withTiming(-55, { duration: 2200 }), -1, false);
-    bub2Y.value  = withRepeat(withDelay(600, withTiming(-50, { duration: 2000 })), -1, false);
-    bub3Y.value  = withRepeat(withDelay(1100, withTiming(-45, { duration: 1900 })), -1, false);
-    bub1O.value  = withRepeat(withTiming(0, { duration: 2200 }), -1, false);
-    bub2O.value  = withRepeat(withDelay(600, withTiming(0, { duration: 2000 })), -1, false);
-    bub3O.value  = withRepeat(withDelay(1100, withTiming(0, { duration: 1900 })), -1, false);
-    ringS.value  = withRepeat(withTiming(1.5, { duration: 1500, easing: Easing.out(Easing.quad) }), -1, false);
-    heartS.value = withRepeat(withTiming(1.25, { duration: 900, easing: Easing.inOut(Easing.quad) }), -1, true);
+    floatY.value = withRepeat(withTiming(-14, FLOAT), -1, true);
+    barS.value   = withRepeat(withTiming(1.0, { duration: 1800, easing: Easing.inOut(Easing.quad) }), -1, true);
+    cloudY.value = withRepeat(withDelay(300, withTiming(-10, { duration: 2500 })), -1, true);
   }, []);
 
-  const phoneStyle = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
-  const b1Style    = useAnimatedStyle(() => ({ transform: [{ translateY: bub1Y.value }], opacity: bub1O.value }));
-  const b2Style    = useAnimatedStyle(() => ({ transform: [{ translateY: bub2Y.value }], opacity: bub2O.value }));
-  const b3Style    = useAnimatedStyle(() => ({ transform: [{ translateY: bub3Y.value }], opacity: bub3O.value }));
-  const ringStyle  = useAnimatedStyle(() => ({ transform: [{ scale: ringS.value }], opacity: (2 - ringS.value) * 0.4 }));
-  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartS.value }] }));
+  const buildSt = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
+  const barSt   = useAnimatedStyle(() => ({ transform: [{ scaleY: barS.value }], transformOrigin: 'bottom' }));
+  const cloudSt = useAnimatedStyle(() => ({ transform: [{ translateY: cloudY.value }] }));
 
   return (
-    <View style={{ width: W * 0.85, height: H * 0.30, alignItems: 'center', justifyContent: 'center' }}>
-      {/* Ping ring */}
-      <Animated.View style={[ringStyle, {
-        position: 'absolute', width: 160, height: 160, borderRadius: 80,
-        borderWidth: 2, borderColor: 'rgba(251,146,60,0.6)',
+    <View style={{ width: W, height: H * 0.52, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        position: 'absolute', width: 260, height: 260, borderRadius: 130,
+        backgroundColor: 'rgba(2,132,199,0.06)',
+      }} />
+
+      <Animated.View style={buildSt}>
+        <Svg width={230} height={195} viewBox="0 0 230 195">
+          <Defs>
+            <SvgLinearGradient id="buildG" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#38bdf8" />
+              <Stop offset="100%" stopColor="#0284c7" />
+            </SvgLinearGradient>
+          </Defs>
+          {/* Shadow */}
+          <Ellipse cx="115" cy="188" rx="82" ry="8" fill="rgba(2,132,199,0.1)" />
+          {/* Main body */}
+          <Rect x="28" y="82" width="174" height="100" rx="6" fill="url(#buildG)" />
+          {/* Roof */}
+          <Path d="M18 86 L115 26 L212 86 Z" fill="#0ea5e9" />
+          <Path d="M18 86 L115 26 L128 30 L35 86 Z" fill="rgba(255,255,255,0.18)" />
+          {/* Windows row 1 */}
+          {[52, 98, 144].map(x => (
+            <Rect key={x} x={x} y="96" width="28" height="24" rx="4" fill="#e0f2fe" />
+          ))}
+          {/* Windows glow */}
+          {[52, 144].map(x => (
+            <Rect key={x} x={x+4} y="100" width="20" height="16" rx="3" fill="#fef08a" opacity="0.6" />
+          ))}
+          {/* Door */}
+          <Rect x="96" y="128" width="38" height="54" rx="6" fill="#075985" />
+          <Circle cx="130" cy="156" r="3" fill="#fbbf24" />
+          {/* Steps */}
+          <Rect x="82" y="180" width="66" height="8" rx="2" fill="#0369a1" />
+          {/* Flagpole */}
+          <Line x1="115" y1="26" x2="115" y2="2" stroke="#7dd3fc" strokeWidth="3" strokeLinecap="round" />
+          <Path d="M115 2 L138 10 L115 18 Z" fill="#fb923c" />
+        </Svg>
+      </Animated.View>
+
+      {/* Floating bar chart */}
+      <Animated.View style={[barSt, { position: 'absolute', right: W * 0.07, top: H * 0.08 }]}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 10, gap: 4,
+          shadowColor: '#000', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4 }}>
+          {[{ h: 28, c: '#0284c7' }, { h: 40, c: '#38bdf8' }, { h: 22, c: '#0284c7' }].map((b, i) => (
+            <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}>
+              <View style={{ width: 10, height: b.h, borderRadius: 3, backgroundColor: b.c, opacity: 0.85 }} />
+            </View>
+          ))}
+          <Text style={{ fontSize: 9, fontWeight: '700', color: '#0284c7', marginTop: 2 }}>Stats</Text>
+        </View>
+      </Animated.View>
+
+      {/* Floating cloud badge */}
+      <Animated.View style={[cloudSt, { position: 'absolute', left: W * 0.06, top: H * 0.1 }]}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8,
+          shadowColor: '#000', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4,
+          flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: '#e0f2fe', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="people-outline" size={13} color="#0284c7" />
+          </View>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: '#0f172a' }}>248 Students</Text>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+/* ─── Slide 2 — Student on books (inspired by reference) ─────────── */
+function LearnersIllustration() {
+  const floatY = useSharedValue(0);
+  const iconY1 = useSharedValue(0);
+  const iconY2 = useSharedValue(0);
+  const iconY3 = useSharedValue(0);
+  const iconY4 = useSharedValue(0);
+
+  useEffect(() => {
+    floatY.value = withRepeat(withTiming(-16, FLOAT), -1, true);
+    iconY1.value = withRepeat(withDelay(0,    withTiming(-12, { duration: 2100 })), -1, true);
+    iconY2.value = withRepeat(withDelay(350,  withTiming(-10, { duration: 1800 })), -1, true);
+    iconY3.value = withRepeat(withDelay(650,  withTiming(-14, { duration: 2300 })), -1, true);
+    iconY4.value = withRepeat(withDelay(900,  withTiming(-8,  { duration: 1600 })), -1, true);
+  }, []);
+
+  const figSt = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
+  const i1St  = useAnimatedStyle(() => ({ transform: [{ translateY: iconY1.value }] }));
+  const i2St  = useAnimatedStyle(() => ({ transform: [{ translateY: iconY2.value }] }));
+  const i3St  = useAnimatedStyle(() => ({ transform: [{ translateY: iconY3.value }] }));
+  const i4St  = useAnimatedStyle(() => ({ transform: [{ translateY: iconY4.value }] }));
+
+  return (
+    <View style={{ width: W, height: H * 0.52, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        position: 'absolute', width: 280, height: 280, borderRadius: 140,
+        backgroundColor: 'rgba(5,150,105,0.06)',
+      }} />
+
+      <Animated.View style={figSt}>
+        <Svg width={240} height={210} viewBox="0 0 240 210">
+          <Defs>
+            <SvgLinearGradient id="skinG" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#fcd9b6" />
+              <Stop offset="100%" stopColor="#f6b98e" />
+            </SvgLinearGradient>
+            <SvgLinearGradient id="shirtG" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#6ee7b7" />
+              <Stop offset="100%" stopColor="#059669" />
+            </SvgLinearGradient>
+          </Defs>
+
+          {/* Shadow */}
+          <Ellipse cx="120" cy="202" rx="90" ry="9" fill="rgba(5,150,105,0.12)" />
+
+          {/* Book stack (bottom) */}
+          <Rect x="30"  y="155" width="180" height="18" rx="6" fill="#f97316" />
+          <Rect x="36"  y="137" width="168" height="18" rx="6" fill="#fbbf24" />
+          <Rect x="42"  y="120" width="156" height="18" rx="6" fill="#4C3FC4" />
+          <Rect x="48"  y="103" width="144" height="18" rx="6" fill="#059669" />
+
+          {/* Bookmark on books */}
+          <Rect x="96" y="100" width="8" height="22" rx="2" fill="#f87171" />
+
+          {/* Legs / sitting */}
+          <Path d="M88 98 L68 140 L90 140 L102 98 Z" fill="#2563eb" />
+          <Path d="M152 98 L160 140 L180 140 L168 98 Z" fill="#2563eb" />
+          {/* Shoes */}
+          <Ellipse cx="80"  cy="142" rx="14" ry="7" fill="#1e293b" />
+          <Ellipse cx="170" cy="142" rx="14" ry="7" fill="#1e293b" />
+
+          {/* Body / shirt */}
+          <Path d="M88 52 Q120 44 152 52 L160 98 L80 98 Z" fill="url(#shirtG)" />
+
+          {/* Arms */}
+          <Path d="M88 58 Q62 72 68 90 Q74 98 84 94 Q80 80 92 68 Z" fill="url(#skinG)" />
+          <Path d="M152 58 Q178 72 172 90 Q166 98 156 94 Q160 80 148 68 Z" fill="url(#skinG)" />
+
+          {/* Laptop */}
+          <Rect x="80"  y="80" width="80" height="52" rx="6" fill="#1e293b" />
+          <Rect x="84"  y="84" width="72" height="44" rx="4" fill="#3b82f6" />
+          {/* Screen content */}
+          <Rect x="88"  y="88" width="50" height="6" rx="3" fill="rgba(255,255,255,0.4)" />
+          <Rect x="88"  y="98" width="36" height="4" rx="2" fill="rgba(255,255,255,0.25)" />
+          <Rect x="88"  y="106" width="44" height="4" rx="2" fill="rgba(255,255,255,0.25)" />
+          <Rect x="88"  y="114" width="28" height="4" rx="2" fill="rgba(255,255,255,0.25)" />
+          {/* Laptop base */}
+          <Rect x="72"  y="132" width="96" height="6"  rx="3" fill="#334155" />
+
+          {/* Neck */}
+          <Rect x="112" y="34" width="16" height="18" rx="4" fill="url(#skinG)" />
+
+          {/* Head */}
+          <Ellipse cx="120" cy="24" rx="24" ry="22" fill="url(#skinG)" />
+
+          {/* Hair */}
+          <Path d="M96 22 Q96 0 120 2 Q144 0 144 22 Q136 8 120 8 Q104 8 96 22 Z" fill="#1e293b" />
+          <Path d="M96 22 Q90 10 100 6 Q96 14 96 22 Z" fill="#1e293b" />
+
+          {/* Eyes */}
+          <Ellipse cx="113" cy="22" rx="3" ry="3.5" fill="#1e293b" />
+          <Ellipse cx="127" cy="22" rx="3" ry="3.5" fill="#1e293b" />
+          <Circle cx="114" cy="21" r="1" fill="#fff" />
+          <Circle cx="128" cy="21" r="1" fill="#fff" />
+
+          {/* Smile */}
+          <Path d="M113 30 Q120 36 127 30" stroke="#c2855a" strokeWidth="2" strokeLinecap="round" fill="none" />
+        </Svg>
+      </Animated.View>
+
+      {/* Floating icons */}
+      <Animated.View style={[i1St, { position: 'absolute', top: H * 0.03, right: W * 0.1 }]}>
+        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#fff',
+          alignItems: 'center', justifyContent: 'center',
+          shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4 }}>
+          <Ionicons name="trophy-outline" size={20} color="#f59e0b" />
+        </View>
+      </Animated.View>
+
+      <Animated.View style={[i2St, { position: 'absolute', top: H * 0.06, left: W * 0.07 }]}>
+        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#fff',
+          alignItems: 'center', justifyContent: 'center',
+          shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4 }}>
+          <Ionicons name="book-outline" size={18} color="#059669" />
+        </View>
+      </Animated.View>
+
+      <Animated.View style={[i3St, { position: 'absolute', bottom: H * 0.1, right: W * 0.08 }]}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6,
+          flexDirection: 'row', alignItems: 'center', gap: 4,
+          shadowColor: '#000', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4 }}>
+          <Text style={{ fontSize: 14 }}>⭐</Text>
+          <Text style={{ fontSize: 12, fontWeight: '800', color: '#0f172a' }}>A+</Text>
+        </View>
+      </Animated.View>
+
+      <Animated.View style={[i4St, { position: 'absolute', bottom: H * 0.12, left: W * 0.06 }]}>
+        <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#fef3c7',
+          alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 18 }}>💡</Text>
+        </View>
+      </Animated.View>
+
+      {/* Cap badge top */}
+      <Animated.View style={[i1St, { position: 'absolute', top: H * 0.02, left: W * 0.22 }]}>
+        <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#E0EEFF',
+          alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="school-outline" size={18} color="#0284c7" />
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+/* ─── Slide 3 — Phone + connection bubbles ─────────────────────── */
+function ConnectedIllustration() {
+  const floatY = useSharedValue(0);
+  const b1Y    = useSharedValue(0);
+  const b2Y    = useSharedValue(0);
+  const heartS = useSharedValue(1);
+  const ringS  = useSharedValue(1);
+
+  useEffect(() => {
+    floatY.value = withRepeat(withTiming(-14, FLOAT), -1, true);
+    b1Y.value    = withRepeat(withDelay(0,   withTiming(-12, { duration: 2000 })), -1, true);
+    b2Y.value    = withRepeat(withDelay(500, withTiming(-10, { duration: 2300 })), -1, true);
+    heartS.value = withRepeat(withTiming(1.3, { duration: 900, easing: Easing.inOut(Easing.quad) }), -1, true);
+    ringS.value  = withRepeat(withTiming(1.6, { duration: 1600, easing: Easing.out(Easing.quad) }), -1, false);
+  }, []);
+
+  const phoneSt = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
+  const b1St    = useAnimatedStyle(() => ({ transform: [{ translateY: b1Y.value }] }));
+  const b2St    = useAnimatedStyle(() => ({ transform: [{ translateY: b2Y.value }] }));
+  const heartSt = useAnimatedStyle(() => ({ transform: [{ scale: heartS.value }] }));
+  const ringSt  = useAnimatedStyle(() => ({ transform: [{ scale: ringS.value }], opacity: (2 - ringS.value) * 0.25 }));
+
+  return (
+    <View style={{ width: W, height: H * 0.52, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        position: 'absolute', width: 260, height: 260, borderRadius: 130,
+        backgroundColor: 'rgba(99,102,241,0.06)',
+      }} />
+
+      {/* Pulse ring */}
+      <Animated.View style={[ringSt, {
+        position: 'absolute', width: 200, height: 200, borderRadius: 100,
+        borderWidth: 2, borderColor: 'rgba(99,102,241,0.5)',
       }]} />
 
       {/* Phone */}
-      <Animated.View style={[phoneStyle, { alignItems: 'center', justifyContent: 'center' }]}>
-        <Svg width={110} height={160} viewBox="0 0 110 160">
+      <Animated.View style={[phoneSt, { alignItems: 'center' }]}>
+        <Svg width={150} height={220} viewBox="0 0 150 220">
           <Defs>
-            <RadialGradient id="screenGlow" cx="50%" cy="40%" r="50%">
-              <Stop offset="0%" stopColor="#fed7aa" stopOpacity="0.3" />
-              <Stop offset="100%" stopColor="#7c2d12" stopOpacity="0" />
-            </RadialGradient>
+            <SvgLinearGradient id="phoneG" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#312e81" />
+              <Stop offset="100%" stopColor="#1e1b4b" />
+            </SvgLinearGradient>
+            <SvgLinearGradient id="screenG" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#4f46e5" />
+              <Stop offset="100%" stopColor="#312e81" />
+            </SvgLinearGradient>
           </Defs>
           {/* Shadow */}
-          <Ellipse cx="55" cy="154" rx="36" ry="7" fill="rgba(251,146,60,0.2)" />
-          {/* Phone body */}
-          <Rect x="10" y="8" width="90" height="140" rx="18" fill="#1c0a00" />
-          <Rect x="10" y="8" width="90" height="140" rx="18" fill="url(#screenGlow)" />
+          <Ellipse cx="75" cy="214" rx="46" ry="7" fill="rgba(99,102,241,0.15)" />
+          {/* Body */}
+          <Rect x="12" y="8" width="126" height="200" rx="22" fill="url(#phoneG)" />
           {/* Screen */}
-          <Rect x="16" y="20" width="78" height="112" rx="12" fill="#7c2d12" />
-          {/* Screen content */}
-          <Rect x="22" y="30" width="66" height="8" rx="4" fill="rgba(251,146,60,0.5)" />
-          <Rect x="22" y="44" width="50" height="6" rx="3" fill="rgba(255,255,255,0.15)" />
+          <Rect x="18" y="22" width="114" height="172" rx="16" fill="url(#screenG)" />
           {/* Notch */}
-          <Rect x="40" y="10" width="30" height="8" rx="4" fill="#0d0500" />
+          <Rect x="54" y="10" width="42" height="12" rx="6" fill="#0f0e1f" />
           {/* Home bar */}
-          <Rect x="38" y="142" width="34" height="4" rx="2" fill="rgba(255,255,255,0.2)" />
+          <Rect x="52" y="202" width="46" height="4" rx="2" fill="rgba(255,255,255,0.25)" />
+          {/* Status bar */}
+          <Rect x="26" y="30" width="40" height="4" rx="2" fill="rgba(255,255,255,0.2)" />
+          <Circle cx="112" cy="32" r="3" fill="rgba(255,255,255,0.25)" />
+          {/* App header */}
+          <Rect x="24" y="44" width="102" height="28" rx="8" fill="rgba(255,255,255,0.1)" />
+          <Circle cx="38" cy="58" r="8" fill="rgba(255,255,255,0.2)" />
+          <Rect x="52" y="52" width="50" height="5" rx="2.5" fill="rgba(255,255,255,0.3)" />
+          <Rect x="52" y="61" width="34" height="4" rx="2" fill="rgba(255,255,255,0.15)" />
+          {/* Chat bubbles on screen */}
+          <Rect x="24" y="82" width="72" height="26" rx="10" fill="rgba(255,255,255,0.18)" />
+          <Path d="M24 104 L18 112 L36 104 Z" fill="rgba(255,255,255,0.18)" />
+          <Rect x="30" y="88" width="50" height="5" rx="2.5" fill="rgba(255,255,255,0.4)" />
+          <Rect x="30" y="97" width="36" height="4" rx="2" fill="rgba(255,255,255,0.25)" />
 
-          {/* Chat bubble on screen */}
-          <Rect x="24" y="56" width="44" height="22" rx="8" fill="rgba(251,146,60,0.6)" />
-          <Path d="M24 74 L20 80 L32 74 Z" fill="rgba(251,146,60,0.6)" />
-          <Rect x="40" y="62" width="36" height="20" rx="8" fill="rgba(255,255,255,0.2)" />
-          <Path d="M76 78 L80 84 L68 78 Z" fill="rgba(255,255,255,0.2)" />
+          <Rect x="54" y="118" width="68" height="24" rx="10" fill="rgba(167,139,250,0.55)" />
+          <Path d="M122 138 L128 146 L110 138 Z" fill="rgba(167,139,250,0.55)" />
+          <Rect x="60" y="124" width="44" height="5" rx="2.5" fill="rgba(255,255,255,0.7)" />
+          <Rect x="60" y="133" width="30" height="4" rx="2" fill="rgba(255,255,255,0.4)" />
 
-          {/* Stars on screen */}
-          <Circle cx="32" cy="97" r="4" fill="#fb923c" />
-          <Circle cx="42" cy="97" r="4" fill="#fb923c" />
-          <Circle cx="52" cy="97" r="4" fill="#fb923c" />
-          <Circle cx="62" cy="97" r="3" fill="rgba(251,146,60,0.4)" />
-          <Circle cx="70" cy="97" r="3" fill="rgba(251,146,60,0.4)" />
+          {/* Notification badge */}
+          <Rect x="24" y="152" width="102" height="30" rx="8" fill="rgba(255,255,255,0.08)" />
+          <Circle cx="36" cy="167" r="7" fill="rgba(251,191,36,0.7)" />
+          <Rect x="48" y="162" width="56" height="4" rx="2" fill="rgba(255,255,255,0.3)" />
+          <Rect x="48" y="170" width="38" height="4" rx="2" fill="rgba(255,255,255,0.18)" />
         </Svg>
       </Animated.View>
 
-      {/* Floating bubbles */}
-      <Animated.View style={[b1Style, { position: 'absolute', left: W * 0.08, bottom: H * 0.06 }]}>
-        <Svg width={52} height={34} viewBox="0 0 52 34">
-          <Rect x="0" y="0" width="52" height="28" rx="14" fill="rgba(251,146,60,0.75)" />
-          <Path d="M8 26 L4 34 L18 26 Z" fill="rgba(251,146,60,0.75)" />
-          <Rect x="8" y="8" width="20" height="5" rx="2.5" fill="rgba(255,255,255,0.6)" />
-          <Rect x="8" y="16" width="32" height="5" rx="2.5" fill="rgba(255,255,255,0.4)" />
-        </Svg>
+      {/* Floating chat bubble left */}
+      <Animated.View style={[b1St, { position: 'absolute', left: W * 0.05, top: H * 0.1 }]}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8,
+          shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4,
+          maxWidth: 130 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#0f172a' }}>📢 New announcement!</Text>
+          <Text style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>School notice</Text>
+        </View>
       </Animated.View>
 
-      <Animated.View style={[b2Style, { position: 'absolute', right: W * 0.07, bottom: H * 0.05 }]}>
-        <Svg width={44} height={30} viewBox="0 0 44 30">
-          <Rect x="0" y="0" width="44" height="24" rx="12" fill="rgba(255,255,255,0.18)" />
-          <Path d="M36 22 L40 30 L26 22 Z" fill="rgba(255,255,255,0.18)" />
-          <Rect x="8" y="7" width="28" height="4" rx="2" fill="rgba(255,255,255,0.5)" />
-          <Rect x="8" y="14" width="18" height="4" rx="2" fill="rgba(255,255,255,0.3)" />
-        </Svg>
+      {/* Floating badge right */}
+      <Animated.View style={[b2St, { position: 'absolute', right: W * 0.05, bottom: H * 0.1 }]}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8,
+          shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4,
+          flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: '#f0fdf4', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="checkmark-done" size={14} color="#059669" />
+          </View>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#0f172a' }}>Result published</Text>
+        </View>
       </Animated.View>
 
-      <Animated.View style={[b3Style, { position: 'absolute', left: W * 0.2, bottom: H * 0.07 }]}>
-        <Svg width={32} height={22} viewBox="0 0 32 22">
-          <Rect x="0" y="0" width="32" height="18" rx="9" fill="rgba(253,186,116,0.6)" />
-          <Path d="M4 16 L0 22 L12 16 Z" fill="rgba(253,186,116,0.6)" />
-        </Svg>
-      </Animated.View>
-
-      {/* Heart */}
-      <Animated.View style={[heartStyle, { position: 'absolute', top: 12, right: 28 }]}>
-        <Svg width={26} height={24} viewBox="0 0 26 24">
-          <Path d="M13 22 C13 22 2 15 2 8 C2 4.5 4.5 2 8 2 C10.5 2 12 3.5 13 5 C14 3.5 15.5 2 18 2 C21.5 2 24 4.5 24 8 C24 15 13 22 13 22 Z" fill="#f87171" />
+      {/* Floating heart */}
+      <Animated.View style={[heartSt, { position: 'absolute', top: H * 0.04, right: W * 0.12 }]}>
+        <Svg width={32} height={30} viewBox="0 0 32 30">
+          <Path d="M16 28 C16 28 2 18 2 10 C2 5.5 5.5 2 10 2 C12.8 2 14.8 3.5 16 5.5 C17.2 3.5 19.2 2 22 2 C26.5 2 30 5.5 30 10 C30 18 16 28 16 28 Z" fill="#f87171" />
         </Svg>
       </Animated.View>
     </View>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   Illustrations map
-───────────────────────────────────────────────────────────────── */
-const ILLUSTRATION_COMPONENTS = [
+const ILLUSTRATIONS = [
   WelcomeIllustration,
   SchoolIllustration,
   LearnersIllustration,
   ConnectedIllustration,
 ];
 
-/* ─────────────────────────────────────────────────────────────────
-   Feature pill
-───────────────────────────────────────────────────────────────── */
-function FeaturePill({ icon, label, accent, index }: {
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  label: string; accent: string; index: number;
-}) {
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(300 + index * 90).springify().damping(14)}
-      style={{
-        flexDirection: 'row', alignItems: 'center', gap: 10,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-        borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 6,
-      }}
-    >
-      <View style={{
-        width: 28, height: 28, borderRadius: 8,
-        backgroundColor: `${accent}28`,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Ionicons name={icon} size={14} color={accent} />
-      </View>
-      <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600' }}>
-        {label}
-      </Text>
-    </Animated.View>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   Progress dot
-───────────────────────────────────────────────────────────────── */
+/* ─── Dot indicator ──────────────────────────────────────────────── */
 function Dot({ active, accent }: { active: boolean; accent: string }) {
   return (
-    <Animated.View style={{
-      height: 6, borderRadius: 3,
-      width: active ? 24 : 6,
-      backgroundColor: active ? accent : 'rgba(255,255,255,0.2)',
+    <View style={{
+      height: 7, borderRadius: 3.5,
+      width: active ? 26 : 7,
+      backgroundColor: active ? accent : '#e2e8f0',
       marginHorizontal: 3,
     }} />
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   Slide content
-───────────────────────────────────────────────────────────────── */
-function SlideContent({ slide, isActive }: { slide: typeof SLIDES[number]; isActive: boolean }) {
-  if (!isActive) return null;
-  const isFirst = slide.id === '0';
-
-  return (
-    <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: 20, paddingBottom: 8 }}>
-      <Animated.View entering={FadeInDown.delay(50).duration(400)}>
-        <Text style={{
-          color: slide.accent, fontSize: 11, fontWeight: '800',
-          letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 8,
-        }}>
-          {slide.tag}
-        </Text>
-      </Animated.View>
-
-      <Animated.Text
-        entering={FadeInDown.delay(110).springify().damping(14)}
-        style={{
-          color: '#fff', fontSize: isFirst ? 42 : 34,
-          fontWeight: '900', lineHeight: isFirst ? 48 : 40,
-          letterSpacing: -0.8, marginBottom: 12,
-        }}
-      >
-        {slide.title}
-      </Animated.Text>
-
-      <Animated.Text
-        entering={FadeInDown.delay(190).duration(500)}
-        style={{
-          color: 'rgba(255,255,255,0.55)', fontSize: 14,
-          lineHeight: 21, fontWeight: '400', marginBottom: 16,
-        }}
-      >
-        {slide.body}
-      </Animated.Text>
-
-      {slide.features.length > 0 && (
-        <View>
-          {slide.features.map((f, i) => (
-            <FeaturePill key={f.label} icon={f.icon} label={f.label} accent={slide.accent} index={i} />
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   Main screen
-───────────────────────────────────────────────────────────────── */
+/* ─── Main screen ────────────────────────────────────────────────── */
 export default function OnboardingScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatRef = useRef<FlatList>(null);
@@ -617,12 +527,12 @@ export default function OnboardingScreen() {
   const btnStyle = useAnimatedStyle(() => ({ transform: [{ scale: btnScale.value }] }));
 
   const slide = SLIDES[activeIndex];
-  const IllustrationComponent = ILLUSTRATION_COMPONENTS[activeIndex];
+  const IllustrationComponent = ILLUSTRATIONS[activeIndex];
   const isLast = activeIndex === SLIDES.length - 1;
 
   const handleNext = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    btnScale.value = withSpring(0.93, {}, () => { btnScale.value = withSpring(1); });
+    btnScale.value = withSpring(0.88, {}, () => { btnScale.value = withSpring(1); });
     if (activeIndex < SLIDES.length - 1) {
       const next = activeIndex + 1;
       flatRef.current?.scrollToIndex({ index: next, animated: true });
@@ -644,100 +554,107 @@ export default function OnboardingScreen() {
   }).current;
 
   return (
-    <View style={{ flex: 1 }}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-      {/* Full-screen gradient background */}
-      <LinearGradient
-        colors={[...slide.gradient]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      />
-
-      {/* Soft radial overlay */}
-      <View style={{
-        position: 'absolute', top: -80, left: -60,
-        width: W * 1.2, height: W * 1.2, borderRadius: W * 0.6,
-        backgroundColor: 'rgba(255,255,255,0.04)',
-      }} />
+    <View style={{ flex: 1, backgroundColor: slide.bg }}>
+      <StatusBar barStyle="dark-content" backgroundColor={slide.bg} />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
 
-        {/* Skip */}
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 22, paddingTop: 6 }}>
-          {!isLast && (
-            <Pressable onPress={handleSkip} hitSlop={14}>
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, fontWeight: '600' }}>Skip</Text>
+        {/* Skip button */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 24, paddingTop: 4 }}>
+          {!isLast ? (
+            <Pressable onPress={handleSkip} hitSlop={12}>
+              <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: '600' }}>Skip</Text>
             </Pressable>
-          )}
+          ) : <View style={{ height: 20 }} />}
         </View>
 
-        {/* Illustration */}
+        {/* Illustration area */}
         <Animated.View
           key={`ill-${activeIndex}`}
-          entering={FadeIn.duration(500)}
-          style={{ height: H * 0.33, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+          entering={FadeIn.duration(400)}
+          style={{ alignItems: 'center', justifyContent: 'center' }}
         >
           <IllustrationComponent />
         </Animated.View>
 
-        {/* Swipeable text content */}
+        {/* Text content (swipeable) */}
         <FlatList
           ref={flatRef}
           data={SLIDES as unknown as typeof SLIDES[]}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          scrollEnabled
           keyExtractor={item => item.id}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
           getItemLayout={(_, index) => ({ length: W, offset: W * index, index })}
-          style={{ flex: 1 }}
+          style={{ flexGrow: 0 }}
           renderItem={({ item, index }) => (
-            <View style={{ width: W }}>
-              <SlideContent
-                slide={item}
-                isActive={index === activeIndex}
-                key={`c-${activeIndex}-${item.id}`}
-              />
+            <View style={{ width: W, paddingHorizontal: 32 }}>
+              {index === activeIndex && (
+                <>
+                  <Animated.Text
+                    entering={FadeInDown.delay(40).duration(350)}
+                    style={{ fontSize: 11, fontWeight: '800', color: item.accent,
+                      letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}
+                  >
+                    {item.tag}
+                  </Animated.Text>
+                  <Animated.Text
+                    entering={FadeInDown.delay(90).springify().damping(16)}
+                    style={{ fontSize: 34, fontWeight: '900', color: '#0f172a',
+                      lineHeight: 40, letterSpacing: -0.5, marginBottom: 12 }}
+                  >
+                    {item.title}
+                  </Animated.Text>
+                  <Animated.Text
+                    entering={FadeInDown.delay(160).duration(400)}
+                    style={{ fontSize: 14, color: '#64748b', lineHeight: 22, fontWeight: '400' }}
+                  >
+                    {item.body}
+                  </Animated.Text>
+                </>
+              )}
             </View>
           )}
         />
 
         {/* Bottom controls */}
-        <View style={{ paddingHorizontal: 24, paddingBottom: 14, gap: 18 }}>
-          {/* Dots */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-            {SLIDES.map((_, i) => (
-              <Dot key={i} active={i === activeIndex} accent={slide.accent} />
-            ))}
+        <View style={{ paddingHorizontal: 32, paddingBottom: 20, paddingTop: 24 }}>
+          {/* Dots + circular next button */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Dots */}
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {SLIDES.map((_, i) => (
+                <Dot key={i} active={i === activeIndex} accent={slide.accent} />
+              ))}
+            </View>
+
+            {/* Circular next button */}
+            <Animated.View style={btnStyle}>
+              <Pressable onPress={handleNext}>
+                <View style={{
+                  width: 62, height: 62, borderRadius: 31,
+                  backgroundColor: slide.accent,
+                  alignItems: 'center', justifyContent: 'center',
+                  shadowColor: slide.accent, shadowOpacity: 0.45,
+                  shadowOffset: { width: 0, height: 8 }, shadowRadius: 18, elevation: 10,
+                }}>
+                  <Ionicons
+                    name={isLast ? 'rocket-outline' : 'arrow-forward'}
+                    size={24}
+                    color="#fff"
+                  />
+                </View>
+              </Pressable>
+            </Animated.View>
           </View>
 
-          {/* CTA */}
-          <Animated.View style={btnStyle}>
-            <Pressable
-              onPress={handleNext}
-              style={{
-                height: 56, borderRadius: 18,
-                backgroundColor: slide.accentBtn,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
-                shadowColor: slide.accentBtn, shadowOpacity: 0.55,
-                shadowOffset: { width: 0, height: 10 }, shadowRadius: 22, elevation: 12,
-              }}
-            >
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.3 }}>
-                {isLast ? 'Get Started' : 'Continue'}
-              </Text>
-              <Ionicons name={isLast ? 'rocket-outline' : 'arrow-forward'} size={18} color="#fff" />
-            </Pressable>
-          </Animated.View>
-
+          {/* Sign in link on last slide */}
           {isLast && (
-            <Animated.View entering={SlideInDown.delay(200).springify()} style={{ alignItems: 'center' }}>
+            <Animated.View entering={FadeInUp.delay(200).springify()} style={{ alignItems: 'center', marginTop: 20 }}>
               <Pressable onPress={() => { completeOnboarding(); router.replace('/(auth)/sign-in'); }}>
-                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '500' }}>
+                <Text style={{ fontSize: 13, color: '#94a3b8', fontWeight: '500' }}>
                   Already have an account?{' '}
                   <Text style={{ color: slide.accent, fontWeight: '700' }}>Sign in</Text>
                 </Text>
@@ -745,6 +662,7 @@ export default function OnboardingScreen() {
             </Animated.View>
           )}
         </View>
+
       </SafeAreaView>
     </View>
   );
