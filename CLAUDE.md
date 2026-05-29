@@ -109,10 +109,29 @@
 
 ---
 
+## Results Module
+
+- **Generate Results screen:** `app/generate-results.tsx` — staff see only `useMyTeacherClassrooms`; admins see all classrooms + "All Classrooms" option.
+- **Staff flow on mobile:** Generate → go to Results screen → Submit for Approval. The generate screen shows a reminder banner for staff.
+- `useGenerateResults` and `useSubmitResultsForApproval` mutations are in `hooks/useResults.ts`; service methods in `services/results.service.ts`.
+- Feature card "Generate Results" shown for both staff and admin in `(tabs)/features/index.tsx`.
+
+---
+
+## Registration Flow
+
+- OTP step (`components/auth/OtpStep.tsx`) uses **6-digit** code — schema `min(6).max(6)`.
+- **Choose Your Role** step (step 2 in sign-up) has **no back button** — it is a one-way forward step.
+- Non-tab routes (`app/my-jobs.tsx`, `app/my-enrollments.tsx`, `app/my-enquiries.tsx`) are at `/my-*` — never use `/(tabs)/my-*` to link to them.
+- Users with no school membership who open `/my-jobs` land on `StaffJobsScreen` (public job browse), not an access-restricted screen.
+
+---
+
 ## Chat Tab
 
 - Conversation list grouped: School → Admin → Classes → Groups → Direct Messages. `type === 'team'` hidden from non-admins.
 - ChatRoom: `FlatList inverted`, polls 10s, `KeyboardAvoidingView`
+- DM new-conversation button hidden for parents (`isParent` check in chat tab).
 
 ---
 
