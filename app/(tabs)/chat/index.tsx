@@ -189,6 +189,7 @@ export default function ChatTab() {
   const schoolId = primary?.schoolId ?? '';
   const role = primary?.role;
   const isAdmin = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin;
+  const isParent = role === UserRole.PARENT;
 
   const { data: conversations = [], isLoading, refetch } = useConversations(!!user?.id);
   const [refreshing, setRefreshing] = useState(false);
@@ -232,17 +233,19 @@ export default function ChatTab() {
           <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.4 }}>
             Messages
           </Text>
-          <Pressable onPress={() => setShowPicker(true)}>
-            {({ pressed }) => (
-              <View style={{
-                width: 36, height: 36, borderRadius: 18,
-                backgroundColor: pressed ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.1)',
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Ionicons name="create-outline" size={18} color="rgba(255,255,255,0.85)" />
-              </View>
-            )}
-          </Pressable>
+          {!isParent && (
+            <Pressable onPress={() => setShowPicker(true)}>
+              {({ pressed }) => (
+                <View style={{
+                  width: 36, height: 36, borderRadius: 18,
+                  backgroundColor: pressed ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.1)',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Ionicons name="create-outline" size={18} color="rgba(255,255,255,0.85)" />
+                </View>
+              )}
+            </Pressable>
+          )}
         </View>
 
         {/* Search bar */}

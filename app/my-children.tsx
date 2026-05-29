@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useParentChildren } from '@/hooks/useSchool';
 import { ParentChild } from '@/services/school.service';
 
+
 function getInitials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
 }
@@ -26,14 +27,13 @@ function StatCard({ value, label, color }: { value: number; label: string; color
   );
 }
 
-function ChildCard({ child, onPress }: { child: ParentChild; onPress: () => void }) {
+function ChildCard({ child }: { child: ParentChild }) {
   const s = child.student;
   if (!s) return null;
   const name = `${s.firstName} ${s.lastName}`;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-      <View style={{
+    <View style={{
         backgroundColor: '#fff',
         borderRadius: 18,
         borderWidth: 1,
@@ -123,9 +123,7 @@ function ChildCard({ child, onPress }: { child: ParentChild; onPress: () => void
           </View>
         </View>
 
-        <Ionicons name="chevron-forward" size={16} color="#cbd5e1" />
       </View>
-    </Pressable>
   );
 }
 
@@ -233,7 +231,6 @@ export default function MyChildrenScreen() {
               <ChildCard
                 key={child.id}
                 child={child}
-                onPress={() => child.student && router.push(`/my-children-reports` as never)}
               />
             ))}
           </View>

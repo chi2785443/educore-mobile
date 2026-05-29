@@ -406,11 +406,7 @@ export default function AccountTab() {
                   elevation: 12,
                   borderWidth: 3, borderColor: 'rgba(255,255,255,0.18)',
                 }}>
-                  {initials ? (
-                    <Text style={{ color: '#fff', fontSize: 30, fontWeight: '900' }}>{initials}</Text>
-                  ) : (
-                    <Ionicons name="person" size={38} color="rgba(255,255,255,0.9)" />
-                  )}
+                  <Ionicons name="person" size={38} color="rgba(255,255,255,0.9)" />
                 </View>
               )}
               <View style={{
@@ -502,16 +498,25 @@ export default function AccountTab() {
                   shadowRadius: 10,
                   elevation: 4,
                 }}>
-                  {/* School initial */}
-                  <View style={{
-                    width: 50, height: 50, borderRadius: 15,
-                    backgroundColor: roleInfo.bg,
-                    alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <Text style={{ fontWeight: '900', fontSize: 22, color: roleInfo.color }}>
-                      {primaryMembership?.school?.name?.[0]?.toUpperCase() ?? '?'}
-                    </Text>
+                  {/* School logo / initial */}
+                  <View style={{ width: 50, height: 50, borderRadius: 15, overflow: 'hidden', flexShrink: 0 }}>
+                    {primaryMembership?.school?.logo ? (
+                      <Image
+                        source={{ uri: primaryMembership.school.logo }}
+                        style={{ width: 50, height: 50 }}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View style={{
+                        width: 50, height: 50,
+                        backgroundColor: roleInfo.bg,
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Text style={{ fontWeight: '900', fontSize: 22, color: roleInfo.color }}>
+                          {primaryMembership?.school?.name?.[0]?.toUpperCase() ?? '?'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
                   {/* School info */}
@@ -559,11 +564,13 @@ export default function AccountTab() {
                 onPress={() => router.push('/my-jobs' as never)}
               />
             )}
-            <SettingsRow
-              icon="document-text-outline" iconBg="#d1fae5" iconColor="#059669"
-              label="Enrollment" value="School enrollment applications"
-              onPress={() => router.push('/my-enrollments' as never)}
-            />
+            {!isParent && (
+              <SettingsRow
+                icon="document-text-outline" iconBg="#d1fae5" iconColor="#059669"
+                label="Enrollment" value="School enrollment applications"
+                onPress={() => router.push('/my-enrollments' as never)}
+              />
+            )}
             {isParent && (
               <SettingsRow
                 icon="chatbubble-outline" iconBg="#fef3c7" iconColor="#d97706"
@@ -630,8 +637,8 @@ export default function AccountTab() {
           </SettingsGroup>
 
           <SettingsGroup label="Support">
-            <SettingsRow icon="help-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="Help & Support" onPress={() => {}} />
-            <SettingsRow icon="information-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="About EduCore" value="v1.0.0" onPress={() => {}} />
+            <SettingsRow icon="help-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="Help & Support" onPress={() => router.push('/account/help-support' as never)} />
+            <SettingsRow icon="information-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="About EduCore" value="v1.0.0" onPress={() => router.push('/account/about' as never)} />
           </SettingsGroup>
 
           {/* ── Dev: reset onboarding ────────────────────────────── */}

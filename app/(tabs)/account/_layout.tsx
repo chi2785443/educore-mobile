@@ -6,6 +6,8 @@ export default function AccountStackLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="edit-profile" />
       <Stack.Screen name="change-password" />
+      <Stack.Screen name="help-support" />
+      <Stack.Screen name="about" />
     </Stack>
   );
 }

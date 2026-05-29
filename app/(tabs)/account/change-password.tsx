@@ -9,8 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useChangePassword } from '@/hooks/useUser';
 
-const HEADER_BG = '#0B0F14';
-
 function PasswordField({
   label, value, onChangeText, placeholder,
 }: {
@@ -33,9 +31,15 @@ function PasswordField({
           autoCapitalize="none"
           autoCorrect={false}
           style={{
-            backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb',
-            borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
-            paddingRight: 48, fontSize: 15, color: '#111827',
+            backgroundColor: '#f8fafc',
+            borderWidth: 1,
+            borderColor: '#e5e7eb',
+            borderRadius: 14,
+            paddingHorizontal: 14,
+            paddingVertical: 14,
+            paddingRight: 48,
+            fontSize: 15,
+            color: '#111827',
           }}
         />
         <Pressable
@@ -97,7 +101,6 @@ export default function ChangePasswordScreen() {
     if (newPassword.length < 8) { toast.error('New password must be at least 8 characters'); return; }
     if (newPassword === currentPassword) { toast.error('New password must be different from your current password'); return; }
     if (newPassword !== confirmPassword) { toast.error('New password and confirmation do not match'); return; }
-
     changePassword({ currentPassword, newPassword });
   };
 
@@ -107,103 +110,202 @@ export default function ChangePasswordScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
-        {/* Header */}
-        <View style={{ backgroundColor: HEADER_BG, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Pressable onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="arrow-back" size={18} color="#fff" />
+        {/* ── Hero header ── */}
+        <View style={{
+          backgroundColor: '#d97706',
+          paddingHorizontal: 16,
+          paddingTop: 18,
+          paddingBottom: 28,
+          borderBottomLeftRadius: 28,
+          borderBottomRightRadius: 28,
+        }}>
+          {/* Decorative orbs */}
+          <View style={{
+            position: 'absolute', top: -20, right: -20,
+            width: 120, height: 120, borderRadius: 60,
+            backgroundColor: 'rgba(255,255,255,0.07)',
+          }} />
+          <View style={{
+            position: 'absolute', bottom: -30, left: 60,
+            width: 90, height: 90, borderRadius: 45,
+            backgroundColor: 'rgba(255,255,255,0.05)',
+          }} />
+
+          {/* Top row: back + title */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+              <View style={{
+                width: 36, height: 36, borderRadius: 12,
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Ionicons name="arrow-back" size={18} color="#fff" />
+              </View>
             </Pressable>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900' }}>Change Password</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 1 }}>Update your account password</Text>
+              <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>
+                Change Password
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
+                Update your account password
+              </Text>
             </View>
           </View>
+
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 40 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+        >
 
-          {/* Security icon */}
-          <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-            <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="shield-checkmark-outline" size={30} color="#d97706" />
-            </View>
-          </View>
-
-          {/* Current password */}
-          <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#e5e7eb', gap: 6 }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>
-              Current Password
-            </Text>
-            <PasswordField
-              label="Current Password"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholder="Enter your current password"
-            />
-          </View>
-
-          {/* New password */}
-          <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#e5e7eb', gap: 18 }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.6 }}>
-              New Password
-            </Text>
-
-            <View style={{ gap: 8 }}>
-              <PasswordField
-                label="New Password"
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="At least 8 characters"
-              />
-              <StrengthBar password={newPassword} />
-            </View>
-
-            <PasswordField
-              label="Confirm New Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Repeat your new password"
-            />
-
-            {confirmPassword.length > 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons
-                  name={newPassword === confirmPassword ? 'checkmark-circle' : 'close-circle'}
-                  size={15}
-                  color={newPassword === confirmPassword ? '#16a34a' : '#dc2626'}
-                />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: newPassword === confirmPassword ? '#16a34a' : '#dc2626' }}>
-                  {newPassword === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Tips */}
-          <View style={{ backgroundColor: '#f5f3ff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#e0e7ff' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <Ionicons name="bulb-outline" size={16} color="#7c3aed" />
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#5b21b6' }}>Password tips</Text>
-            </View>
-            {[
-              'Use at least 8 characters',
-              'Mix uppercase and lowercase letters',
-              'Include at least one number',
-              'Add a special character (!@#$%)',
-            ].map(tip => (
-              <View key={tip} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
-                <Ionicons name="ellipse" size={5} color="#7c3aed" style={{ marginTop: 6 }} />
-                <Text style={{ fontSize: 12, color: '#6d28d9', lineHeight: 18, flex: 1 }}>{tip}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Submit */}
-          <Pressable onPress={handleSubmit} disabled={isPending || !canSubmit} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+          {/* ── Current password card ── */}
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 20,
+            borderWidth: 1, borderColor: '#f1f5f9',
+            overflow: 'hidden',
+            shadowColor: '#000', shadowOpacity: 0.04,
+            shadowOffset: { width: 0, height: 2 }, shadowRadius: 8, elevation: 2,
+          }}>
             <View style={{
-              backgroundColor: canSubmit ? '#6366f1' : '#e5e7eb',
-              borderRadius: 14, paddingVertical: 16,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+              paddingHorizontal: 16, paddingVertical: 10,
+              backgroundColor: '#fafafa', borderBottomWidth: 1, borderColor: '#f1f5f9',
+            }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1.2 }}>
+                Current Password
+              </Text>
+            </View>
+            <View style={{ padding: 16 }}>
+              <PasswordField
+                label="Current Password"
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Enter your current password"
+              />
+            </View>
+          </View>
+
+          {/* ── New password card ── */}
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 20,
+            borderWidth: 1, borderColor: '#f1f5f9',
+            overflow: 'hidden',
+            shadowColor: '#000', shadowOpacity: 0.04,
+            shadowOffset: { width: 0, height: 2 }, shadowRadius: 8, elevation: 2,
+          }}>
+            <View style={{
+              paddingHorizontal: 16, paddingVertical: 10,
+              backgroundColor: '#fafafa', borderBottomWidth: 1, borderColor: '#f1f5f9',
+            }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1.2 }}>
+                New Password
+              </Text>
+            </View>
+            <View style={{ padding: 16, gap: 18 }}>
+              <View style={{ gap: 8 }}>
+                <PasswordField
+                  label="New Password"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="At least 8 characters"
+                />
+                <StrengthBar password={newPassword} />
+              </View>
+
+              <View style={{ height: 1, backgroundColor: '#f1f5f9' }} />
+
+              <View style={{ gap: 8 }}>
+                <PasswordField
+                  label="Confirm New Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Repeat your new password"
+                />
+                {confirmPassword.length > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons
+                      name={newPassword === confirmPassword ? 'checkmark-circle' : 'close-circle'}
+                      size={15}
+                      color={newPassword === confirmPassword ? '#16a34a' : '#dc2626'}
+                    />
+                    <Text style={{
+                      fontSize: 12, fontWeight: '700',
+                      color: newPassword === confirmPassword ? '#16a34a' : '#dc2626',
+                    }}>
+                      {newPassword === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* ── Tips card ── */}
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 20,
+            borderWidth: 1, borderColor: '#f1f5f9',
+            overflow: 'hidden',
+            shadowColor: '#000', shadowOpacity: 0.04,
+            shadowOffset: { width: 0, height: 2 }, shadowRadius: 8, elevation: 2,
+          }}>
+            <View style={{
+              paddingHorizontal: 16, paddingVertical: 10,
+              backgroundColor: '#fafafa', borderBottomWidth: 1, borderColor: '#f1f5f9',
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+            }}>
+              <Ionicons name="bulb-outline" size={13} color="#7c3aed" />
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 1.2 }}>
+                Password Tips
+              </Text>
+            </View>
+            <View style={{ padding: 16, gap: 10 }}>
+              {[
+                { icon: 'checkmark-circle-outline' as const, tip: 'Use at least 8 characters' },
+                { icon: 'checkmark-circle-outline' as const, tip: 'Mix uppercase and lowercase letters' },
+                { icon: 'checkmark-circle-outline' as const, tip: 'Include at least one number' },
+                { icon: 'checkmark-circle-outline' as const, tip: 'Add a special character (!@#$%)' },
+              ].map(({ icon, tip }) => (
+                <View key={tip} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{
+                    width: 28, height: 28, borderRadius: 9,
+                    backgroundColor: '#f5f3ff',
+                    alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Ionicons name={icon} size={14} color="#7c3aed" />
+                  </View>
+                  <Text style={{ fontSize: 13, color: '#475569', flex: 1 }}>{tip}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* ── Submit button ── */}
+          <Pressable
+            onPress={handleSubmit}
+            disabled={isPending || !canSubmit}
+            style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1 })}
+          >
+            <View style={{
+              backgroundColor: canSubmit ? '#d97706' : '#e5e7eb',
+              borderRadius: 16,
+              paddingVertical: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              shadowColor: canSubmit ? '#d97706' : 'transparent',
+              shadowOpacity: 0.35,
+              shadowOffset: { width: 0, height: 4 },
+              shadowRadius: 10,
+              elevation: canSubmit ? 4 : 0,
             }}>
               {isPending
                 ? <ActivityIndicator size="small" color="#fff" />
@@ -213,6 +315,7 @@ export default function ChangePasswordScreen() {
               </Text>
             </View>
           </Pressable>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
