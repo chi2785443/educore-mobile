@@ -1110,16 +1110,13 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
               )}
               {isStudent && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                  <ActionCard icon="clipboard-outline" label="My Assessments" desc="View pending tests" color="#6366f1" bg="#eef2ff" onPress={() => nav('/account/my-assessments')} />
-                  <ActionCard icon="trophy-outline" label="My Results" desc="Term report cards" color="#0ea5e9" bg="#f0f9ff" onPress={() => nav('/account/results')} />
+                  <ActionCard icon="clipboard-outline" label="My Assessments" desc="View pending tests" color="#6366f1" bg="#eef2ff" onPress={() => nav('/my-assessments')} />
+                  <ActionCard icon="trophy-outline" label="My Results" desc="Term report cards" color="#0ea5e9" bg="#f0f9ff" onPress={() => nav('/results')} />
                 </View>
               )}
               {isParent && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                  <ActionCard icon="chatbubbles-outline" label="Message School" desc="Chat with teachers" color="#6366f1" bg="#eef2ff" onPress={() => nav('/chat')} />
-                  <ActionCard icon="library-outline" label="School Library" desc="Browse resources" color="#7c3aed" bg="#f5f3ff" onPress={() => nav('/account/library')} />
-                  <ActionCard icon="document-text-outline" label="My Documents" desc="Uploaded files" color="#d97706" bg="#fffbeb" onPress={() => nav('/account/documents')} />
-                  <ActionCard icon="notifications-outline" label="Announcements" desc="School news" color="#d97706" bg="#fffbeb" onPress={() => nav('/account')} />
+                  <ActionCard icon="chatbubble-outline" label="Enquiries" desc="Questions sent to schools" color="#d97706" bg="#fef3c7" onPress={() => nav('/my-enquiries')} />
                 </View>
               )}
             </ScrollView>
