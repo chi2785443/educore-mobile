@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, Pressable, TextInput, Alert,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Easing,
 } from 'react-native';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAssessment, useAssessmentQuestions } from '@/hooks/useAssessment';
 import { useAttemptById, useSubmitAnswer, useSubmitAttempt } from '@/hooks/useStudentAttempt';
+import { studentAttemptService } from '@/services/student-attempt.service';
 import { AnswerSubmission } from '@/interface/attempt.interface';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
@@ -29,8 +30,25 @@ function ProgressBar({ current, total, color }: { current: number; total: number
   );
 }
 
-const isVideoUri = (uri: string) =>
-  uri.startsWith('file://') || uri.includes('.mp4') || uri.includes('.mov') || uri.includes('video');
+/* ── Pulsing red dot to indicate live recording ─────────────────── */
+function RecordingDot() {
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.4, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    ).start();
+  }, [scale]);
+  return (
+    <Animated.View style={{
+      width: 8, height: 8, borderRadius: 4,
+      backgroundColor: '#ef4444',
+      transform: [{ scale }],
+    }} />
+  );
+}
 
 export default function TakeAssessmentScreen() {
   const { assessmentId, attemptId } = useLocalSearchParams<{
@@ -51,10 +69,75 @@ export default function TakeAssessmentScreen() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [timerStarted, setTimerStarted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [recordingVideo, setRecordingVideo] = useState(false);
   const theoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* Build questions array — fix field names: questionOrder, questionText, type */
+  /* ── Camera / proctoring ─────────────────────────────────────── */
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
+  const cameraRef = useRef<CameraView>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const isRecordingRef = useRef(false);
+  const recordingPromiseRef = useRef<Promise<{ uri: string } | undefined> | null>(null);
+
+  /* Request camera + mic on mount */
+  useEffect(() => {
+    (async () => {
+      const cam = await requestCameraPermission();
+      const mic = await requestMicPermission();
+      if (!cam.granted || !mic.granted) {
+        Alert.alert(
+          'Camera Required',
+          'Camera and microphone access is required for this proctored assessment.',
+          [{ text: 'Go Back', onPress: () => router.back() }],
+          { cancelable: false },
+        );
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Start recording once camera is mounted and ready */
+  const handleCameraReady = useCallback(() => {
+    if (isRecordingRef.current) return;
+    // Small delay to let the camera's internal video pipeline fully initialise
+    // before calling recordAsync — avoids the "Camera is not ready yet" race.
+    setTimeout(() => {
+      if (!cameraRef.current || isRecordingRef.current) return;
+      try {
+        isRecordingRef.current = true;
+        setIsRecording(true);
+        recordingPromiseRef.current = cameraRef.current.recordAsync({ maxDuration: 7200 });
+        recordingPromiseRef.current.catch(() => {
+          isRecordingRef.current = false;
+          setIsRecording(false);
+        });
+      } catch {
+        isRecordingRef.current = false;
+        setIsRecording(false);
+      }
+    }, 500);
+  }, []);
+
+  /* Stop recording and fire-and-forget upload */
+  const stopAndUploadRecording = useCallback(() => {
+    if (!isRecordingRef.current || !cameraRef.current) return;
+    cameraRef.current.stopRecording();
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    const promise = recordingPromiseRef.current;
+    recordingPromiseRef.current = null;
+    if (promise && attemptId) {
+      promise
+        .then(result => {
+          if (result?.uri) {
+            studentAttemptService.uploadRecording(attemptId, result.uri).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+  }, [attemptId]);
+
+  /* Build questions */
   const questions = useMemo<AnswerSubmission[]>(() =>
     [...assessmentQs]
       .sort((a, b) => (a.questionOrder ?? 0) - (b.questionOrder ?? 0))
@@ -98,11 +181,12 @@ export default function TakeAssessmentScreen() {
   const handleAutoSubmit = useCallback(async () => {
     if (submitting) return;
     setSubmitting(true);
+    stopAndUploadRecording();
     try {
       await submitAttemptMutation.mutateAsync({ attemptId: attemptId ?? '', timeRemaining: 0 });
     } catch { /* best-effort */ }
     router.replace('/features');
-  }, [submitting, attemptId, submitAttemptMutation, router]);
+  }, [submitting, attemptId, submitAttemptMutation, router, stopAndUploadRecording]);
 
   useEffect(() => {
     if (!timerStarted || timeRemaining <= 0) return;
@@ -114,6 +198,17 @@ export default function TakeAssessmentScreen() {
     }, 1000);
     return () => clearInterval(id);
   }, [timerStarted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Stop recording on unmount (safety net) */
+  useEffect(() => {
+    return () => {
+      if (isRecordingRef.current && cameraRef.current) {
+        cameraRef.current.stopRecording();
+        isRecordingRef.current = false;
+      }
+      if (theoryDebounceRef.current) clearTimeout(theoryDebounceRef.current);
+    };
+  }, []);
 
   /* Save answer fire-and-forget */
   const saveAnswer = useCallback((questionId: string, answer: string) => {
@@ -142,6 +237,7 @@ export default function TakeAssessmentScreen() {
           onPress: async () => {
             if (currentQ) saveAnswer(currentQ.assessmentQuestionId, answers[currentQ.assessmentQuestionId] ?? '');
             setSubmitting(true);
+            stopAndUploadRecording();
             try {
               await submitAttemptMutation.mutateAsync({ attemptId: attemptId ?? '', timeRemaining });
               router.replace('/features');
@@ -175,61 +271,6 @@ export default function TakeAssessmentScreen() {
     }, 3000);
   };
 
-  /* Video recording via expo-image-picker */
-  const handleRecordVideo = async () => {
-    if (!currentQ) return;
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Camera Permission', 'Camera access is needed to record a video answer.');
-      return;
-    }
-    setRecordingVideo(true);
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: 'videos',
-        allowsEditing: false,
-        videoMaxDuration: 300,
-        quality: 0.7,
-      });
-      if (!result.canceled && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        setAnswers(prev => ({ ...prev, [currentQ.assessmentQuestionId]: uri }));
-        saveAnswer(currentQ.assessmentQuestionId, uri);
-      }
-    } catch {
-      toast.error('Failed to record video. Please try again.');
-    } finally {
-      setRecordingVideo(false);
-    }
-  };
-
-  const handlePickVideo = async () => {
-    if (!currentQ) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Library Permission', 'Media library access is needed to attach a video.');
-      return;
-    }
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'videos',
-        allowsEditing: false,
-        quality: 0.7,
-      });
-      if (!result.canceled && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        setAnswers(prev => ({ ...prev, [currentQ.assessmentQuestionId]: uri }));
-        saveAnswer(currentQ.assessmentQuestionId, uri);
-      }
-    } catch {
-      toast.error('Failed to pick video. Please try again.');
-    }
-  };
-
-  useEffect(() => {
-    return () => { if (theoryDebounceRef.current) clearTimeout(theoryDebounceRef.current); };
-  }, []);
-
   if (loadingAssessment || loadingAttempt || loadingQs) {
     return <LoadingScreen color="#6366f1" message="Loading assessment" />;
   }
@@ -240,9 +281,7 @@ export default function TakeAssessmentScreen() {
         <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: 'rgba(99,102,241,0.15)', alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="help-circle-outline" size={38} color="#6366f1" />
         </View>
-        <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', textAlign: 'center' }}>
-          No Questions Yet
-        </Text>
+        <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', textAlign: 'center' }}>No Questions Yet</Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', lineHeight: 22 }}>
           This assessment has no questions added yet. Please contact your teacher.
         </Text>
@@ -261,7 +300,7 @@ export default function TakeAssessmentScreen() {
   const answeredCount = Object.values(answers).filter(a => a.trim()).length;
   const timerCritical = timeRemaining > 0 && timeRemaining < 120;
   const timerColor = timerCritical ? '#ef4444' : '#a5b4fc';
-  const hasVideoAnswer = currentAnswer && isVideoUri(currentAnswer);
+  const cameraGranted = !!cameraPermission?.granted && !!micPermission?.granted;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0B0F14' }}>
@@ -398,93 +437,23 @@ export default function TakeAssessmentScreen() {
               </Text>
             </View>
           ) : (
-            /* Theory answer — text + video */
-            <View style={{ gap: 12 }}>
-              {/* Text answer */}
-              <TextInput
-                value={hasVideoAnswer ? '' : currentAnswer}
-                onChangeText={handleTheoryChange}
-                placeholder={hasVideoAnswer ? 'Video answer recorded ✓' : 'Write your answer here…'}
-                placeholderTextColor={hasVideoAnswer ? '#4ade80' : 'rgba(255,255,255,0.25)'}
-                multiline
-                numberOfLines={7}
-                textAlignVertical="top"
-                editable={!hasVideoAnswer}
-                style={{
-                  backgroundColor: hasVideoAnswer ? 'rgba(74,222,128,0.08)' : '#1a2030',
-                  borderWidth: 1.5,
-                  borderColor: hasVideoAnswer ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.12)',
-                  borderRadius: 14, padding: 14,
-                  color: '#fff', fontSize: 15, lineHeight: 23,
-                  minHeight: 140,
-                }}
-              />
-
-              {/* Video recorded indicator */}
-              {hasVideoAnswer && (
-                <View style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 10,
-                  backgroundColor: 'rgba(74,222,128,0.12)', borderRadius: 14, padding: 14,
-                  borderWidth: 1, borderColor: 'rgba(74,222,128,0.25)',
-                }}>
-                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(74,222,128,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="videocam" size={20} color="#4ade80" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#4ade80', fontWeight: '700', fontSize: 13 }}>Video answer recorded</Text>
-                    <Text style={{ color: 'rgba(74,222,128,0.6)', fontSize: 11, marginTop: 2 }}>
-                      {currentAnswer.split('/').pop()?.slice(0, 40)}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => setAnswers(prev => ({ ...prev, [currentQ.assessmentQuestionId]: '' }))}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="rgba(255,100,100,0.7)" />
-                  </Pressable>
-                </View>
-              )}
-
-              {/* Video action buttons */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Pressable
-                  onPress={handleRecordVideo}
-                  disabled={recordingVideo}
-                  style={({ pressed }) => ({ flex: 1, opacity: pressed || recordingVideo ? 0.7 : 1 })}
-                >
-                  <View style={{
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    backgroundColor: 'rgba(99,102,241,0.15)', borderRadius: 14,
-                    paddingVertical: 12, paddingHorizontal: 10,
-                    borderWidth: 1, borderColor: 'rgba(99,102,241,0.3)',
-                  }}>
-                    {recordingVideo
-                      ? <ActivityIndicator color="#6366f1" size="small" />
-                      : <Ionicons name="videocam-outline" size={17} color="#6366f1" />}
-                    <Text style={{ color: '#a5b4fc', fontWeight: '700', fontSize: 13 }}>
-                      {recordingVideo ? 'Opening…' : 'Record Video'}
-                    </Text>
-                  </View>
-                </Pressable>
-
-                <Pressable
-                  onPress={handlePickVideo}
-                  style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.7 : 1 })}
-                >
-                  <View style={{
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14,
-                    paddingVertical: 12, paddingHorizontal: 10,
-                    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-                  }}>
-                    <Ionicons name="cloud-upload-outline" size={17} color="rgba(255,255,255,0.5)" />
-                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontWeight: '700', fontSize: 13 }}>
-                      Pick from Gallery
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            </View>
+            <TextInput
+              value={currentAnswer}
+              onChangeText={handleTheoryChange}
+              placeholder="Write your answer here…"
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              multiline
+              numberOfLines={7}
+              textAlignVertical="top"
+              style={{
+                backgroundColor: '#1a2030',
+                borderWidth: 1.5,
+                borderColor: 'rgba(255,255,255,0.12)',
+                borderRadius: 14, padding: 14,
+                color: '#fff', fontSize: 15, lineHeight: 23,
+                minHeight: 140,
+              }}
+            />
           )}
 
           {/* ── Question navigator ───────────────────────────────── */}
@@ -581,7 +550,50 @@ export default function TakeAssessmentScreen() {
         )}
       </View>
 
-      {/* Safe bottom inset handled by paddingBottom above */}
+      {/* ── PiP camera feed ──────────────────────────────────────── */}
+      {cameraGranted && (
+        <View style={{
+          position: 'absolute',
+          top: insets.top + 58,
+          right: 10,
+          width: 76,
+          height: 104,
+          borderRadius: 14,
+          overflow: 'hidden',
+          borderWidth: 2,
+          borderColor: isRecording ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.15)',
+          shadowColor: '#000',
+          shadowOpacity: 0.5,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 8,
+          elevation: 12,
+          zIndex: 999,
+        }}>
+          <CameraView
+            ref={cameraRef}
+            style={{ flex: 1 }}
+            facing="front"
+            mode="video"
+            onCameraReady={handleCameraReady}
+          />
+          {/* Recording indicator overlay */}
+          <View style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            backgroundColor: 'rgba(0,0,0,0.55)',
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+            gap: 4, paddingVertical: 4,
+          }}>
+            {isRecording ? (
+              <>
+                <RecordingDot />
+                <Text style={{ color: '#ef4444', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>REC</Text>
+              </>
+            ) : (
+              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '700' }}>CAM</Text>
+            )}
+          </View>
+        </View>
+      )}
     </View>
   );
 }

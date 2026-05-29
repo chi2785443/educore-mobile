@@ -74,6 +74,18 @@ export const studentAttemptService = {
     return d as StudentAttempt;
   },
 
+  uploadRecording: async (attemptId: string, videoUri: string): Promise<void> => {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: videoUri,
+      type: 'video/mp4',
+      name: `proctor_${attemptId}.mp4`,
+    } as unknown as Blob);
+    await apiClient.post(`/student-attempts/${attemptId}/recording`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   getAttemptsForAssessment: async (assessmentId: string): Promise<StudentAttempt[]> => {
     const res = await apiClient.get(
       `/student-attempts/assessment/${assessmentId}/attempts`,
