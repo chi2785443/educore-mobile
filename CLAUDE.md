@@ -80,11 +80,32 @@
 
 ---
 
-## Classroom Tab
+## Assessment Module
 
-- Assessment questions from `GET /assessment-questions/:assessmentId` — NOT from `attempt.answerSubmissions`
+- Questions: `GET /assessment-questions/:assessmentId` — NOT from `attempt.answerSubmissions`
 - Member detail: `app/(tabs)/features/[classroomId]/member/[memberId].tsx` — all member fields as URL params
 - `CreateAssessmentSheet` props: `classrooms[]` + `schoolId` — **no `classroomId`**; classroom selected inside the sheet
+- **Staff tabs in `[assessmentId].tsx`:** Info · Questions · Attempts · Scores · Marking · Retakes
+- **Marking flow:** `GET /marking/pending/assessment/:id` → list pending attempts → `GET /marking/attempt/:id` → mark answers via `POST /marking/mark-answer` → `POST /marking/submit-marking` to calculate score
+- **`Pressable` layout rule:** never put `flex: 1` inside the callback style — wrap Pressable in a `View style={{ flex: 1 }}` instead; callback for opacity/transform only
+
+---
+
+## Assessment Proctoring (Student)
+
+- `take.tsx` auto-requests camera + mic on mount; goes back if denied — assessment requires proctoring
+- Recording starts via `CameraView.recordAsync({ maxDuration: 7200 })` in `onCameraReady` (with 500 ms delay to avoid pipeline race)
+- On submit/auto-submit: `stopRecording()` → fire-and-forget upload to `POST /student-attempts/:id/recording`
+- PiP widget: 76×104, top-right corner, `zIndex: 999`, pulsing red dot while active
+- `expo-camera@~17.0.10` installed; plugin declared in `app.json` with camera + mic permissions
+
+---
+
+## Student Score States
+
+- `GET /student-scores/my-scores/assessment/:id` returns null for unreleased scores — always use bulk `GET /student-scores/my-scores` and filter client-side by `assessmentId`
+- Three states: no record → **Awaiting Grading** (amber); record + `isReleased: false` → **Under Review** (blue); `isReleased: true` → full score card
+- `ScoreCard` props: `pending` (no record yet), `underReview` (marked but not released), default (show score)
 
 ---
 
