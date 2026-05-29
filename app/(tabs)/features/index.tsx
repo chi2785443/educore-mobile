@@ -159,6 +159,11 @@ export default function FeaturesTab() {
         title: 'Scores', subtitle: 'Assessment scores by class',
         route: '/staff-scores',
       },
+      {
+        icon: 'document-text-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
+        title: 'Generate Results', subtitle: 'Compile term scores',
+        route: '/generate-results',
+      },
     ] : []),
     ...((isStaff || isAdmin) ? [
       {
@@ -170,6 +175,13 @@ export default function FeaturesTab() {
         icon: 'help-circle-outline' as const, iconColor: '#e11d48', iconBg: '#fff1f2',
         title: 'Question Bank', subtitle: 'Browse & create questions',
         route: '/question-bank',
+      },
+    ] : []),
+    ...(isAdmin ? [
+      {
+        icon: 'document-text-outline' as const, iconColor: '#4C3FC4', iconBg: '#F0EEFF',
+        title: 'Generate Results', subtitle: 'Compile & publish term results',
+        route: '/generate-results',
       },
     ] : []),
     ...(!isStudent ? [{

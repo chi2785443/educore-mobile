@@ -27,7 +27,7 @@ export const signInSchema = z.object({
 });
 
 export const otpSchema = z.object({
-  otp: z.string().min(4, 'Enter the 4-digit OTP'),
+  otp: z.string().min(6, 'Enter the 6-digit OTP').max(6, 'Code must be 6 digits'),
 });
 
 export const forgotPasswordSchema = z.object({

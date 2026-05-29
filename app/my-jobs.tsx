@@ -1843,19 +1843,6 @@ export default function JobsScreen() {
     );
   }
 
-  if (isStaff) {
-    return <StaffJobsScreen />;
-  }
-
-  // Students and parents should not see this page — redirect back
-  const router = useRouter();
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' }} edges={['top']}>
-      <Ionicons name="lock-closed-outline" size={48} color="#d1d5db" />
-      <Text style={{ fontSize: 16, fontWeight: '800', color: '#374151', marginTop: 14 }}>Access Restricted</Text>
-      <Pressable onPress={() => router.back()} style={{ marginTop: 16, backgroundColor: '#6366f1', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 10 }}>
-        <Text style={{ color: '#fff', fontWeight: '800' }}>Go Back</Text>
-      </Pressable>
-    </SafeAreaView>
-  );
+  // Staff OR users with no school (browsing for a job to join a school)
+  return <StaffJobsScreen />;
 }

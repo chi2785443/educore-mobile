@@ -22,7 +22,7 @@ const ACTIONS = [
     tagColor: '#34d399',
     iconBg: '#0d9488',
     glowColor: 'rgba(13,148,136,0.15)',
-    route: '/(tabs)/my-enrollments',
+    route: '/my-enrollments',
   },
   {
     icon: 'briefcase-outline' as const,
@@ -33,7 +33,7 @@ const ACTIONS = [
     tagColor: '#4C3FC4',
     iconBg: '#4C3FC4',
     glowColor: 'rgba(76,63,196,0.15)',
-    route: '/(tabs)/my-jobs',
+    route: '/my-jobs',
   },
   {
     icon: 'chatbubble-ellipses-outline' as const,
@@ -44,7 +44,7 @@ const ACTIONS = [
     tagColor: '#F5486A',
     iconBg: '#F5486A',
     glowColor: 'rgba(245,72,106,0.12)',
-    route: '/(tabs)/my-enquiries',
+    route: '/my-enquiries',
   },
 ] as const;
 
@@ -371,13 +371,7 @@ export default function DashboardTab() {
               />
             ) : (
               <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: '#4C3FC4', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }}>
-                {(user?.firstName || user?.lastName) ? (
-                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>
-                    {`${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase()}
-                  </Text>
-                ) : (
-                  <Ionicons name="person" size={18} color="rgba(255,255,255,0.9)" />
-                )}
+                <Ionicons name="person" size={18} color="rgba(255,255,255,0.9)" />
               </View>
             )}
           </Pressable>

@@ -54,7 +54,7 @@ export function OtpStep({ onSuccess, onBack }: Props) {
         render={({ field: { onChange, value, onBlur } }) => (
           <Input
             label="Verification code"
-            placeholder="Enter 4-digit OTP"
+            placeholder="Enter 6-digit OTP"
             keyboardType="number-pad"
             leftIcon="shield-checkmark-outline"
             value={value}

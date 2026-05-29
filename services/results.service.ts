@@ -68,4 +68,18 @@ export const resultsService = {
     const res = await apiClient.get(`/results/student/${studentId}/all-results`);
     return exList<TermResult>(res.data);
   },
+
+  generateResults: async (dto: {
+    schoolId: string;
+    classroomId?: string;
+    term: string;
+    academicYear: string;
+  }): Promise<TermResult[]> => {
+    const res = await apiClient.post('/results/generate', dto);
+    return exList<TermResult>(res.data);
+  },
+
+  submitForApproval: async (classroomId: string, term: string, academicYear: string): Promise<void> => {
+    await apiClient.patch(`/results/classroom/${classroomId}/submit`, {}, { params: { term, academicYear } });
+  },
 };

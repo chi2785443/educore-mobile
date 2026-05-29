@@ -107,10 +107,6 @@ export function RoleSelectionStep({ onSelect, onBack }: Props) {
       >
         Continue
       </Button>
-
-      <Button fullWidth variant="outline" onPress={onBack}>
-        Back
-      </Button>
     </View>
   );
 }

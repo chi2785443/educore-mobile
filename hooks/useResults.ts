@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resultsService } from '@/services/results.service';
 import { ReportCard } from '@/interface/result.interface';
 
@@ -53,3 +53,26 @@ export const useStudentAllResults = (studentId: string | undefined) =>
     enabled: !!studentId,
     staleTime: 2 * 60_000,
   });
+
+export const useGenerateResults = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: { schoolId: string; classroomId?: string; term: string; academicYear: string }) =>
+      resultsService.generateResults(dto),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['school-results'] });
+      qc.invalidateQueries({ queryKey: ['classroom-results'] });
+    },
+  });
+};
+
+export const useSubmitResultsForApproval = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classroomId, term, academicYear }: { classroomId: string; term: string; academicYear: string }) =>
+      resultsService.submitForApproval(classroomId, term, academicYear),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['classroom-results', vars.classroomId] });
+    },
+  });
+};
