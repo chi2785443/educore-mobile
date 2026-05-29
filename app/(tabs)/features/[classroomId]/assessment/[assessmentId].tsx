@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, Pressable, Alert, ActivityIndicator, TextInput, Modal,
-  Dimensions,
+  Dimensions, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,16 +9,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
-import { AssessmentStatus, AssessmentType } from '@/interface/assessment.interface';
+import { AssessmentStatus, AssessmentType, UpdateAssessmentPayload } from '@/interface/assessment.interface';
 import { Question } from '@/interface/question.interface';
 import {
-  useAssessment, usePublishAssessment, useDeleteAssessment,
+  useAssessment, usePublishAssessment, useDeleteAssessment, useUpdateAssessment,
   useAssessmentQuestions, useAddAssessmentQuestions, useRemoveAssessmentQuestion,
 } from '@/hooks/useAssessment';
 import { useQuestions } from '@/hooks/useQuestionBank';
 import { useAttemptsForAssessment, useStartAttempt, useMyAttempts } from '@/hooks/useStudentAttempt';
 import { useScoresForAssessment, useAssessmentStats, useMyScoreForAssessment } from '@/hooks/useStudentScore';
 import { useRetakesForAssessment, useMyRetakeRequests, useCreateRetakeRequest } from '@/hooks/useRetakeRequest';
+import { usePendingMarking, useAttemptMarkingDetails, useMarkTheoryAnswer, useSubmitMarking } from '@/hooks/useMarking';
+import { PendingAttempt, TheoryAnswer } from '@/services/marking.service';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import ScoreCard from '@/components/assessment/ScoreCard';
 import RetakeRequestRow from '@/components/assessment/RetakeRequestRow';
@@ -37,7 +39,7 @@ const STATUS_STYLE: Record<AssessmentStatus, { bg: string; text: string; label: 
   completed: { bg: '#F0EEFF', text: '#4C3FC4', label: 'Completed' },
 };
 
-type StaffTab   = 'info' | 'questions' | 'attempts' | 'scores' | 'retakes';
+type StaffTab   = 'info' | 'questions' | 'attempts' | 'scores' | 'marking' | 'retakes';
 type StudentTab = 'info' | 'score';
 type AdminTab   = 'info' | 'scores';
 type AnyTab     = StaffTab | StudentTab | AdminTab;
@@ -79,6 +81,23 @@ export default function AssessmentDetailScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selected, setSelected] = useState<Record<string, number>>({}); // questionId → marks
 
+  /* Edit assessment state */
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editTotalMarks, setEditTotalMarks] = useState('');
+  const [editPassingMarks, setEditPassingMarks] = useState('');
+  const [editDuration, setEditDuration] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editInstructions, setEditInstructions] = useState('');
+
+  /* Marking state */
+  const [markingAttempt, setMarkingAttempt] = useState<PendingAttempt | null>(null);
+  const [localMarks, setLocalMarks] = useState<Record<string, string>>({});
+  const [localFeedback, setLocalFeedback] = useState<Record<string, string>>({});
+  const [overallRemarks, setOverallRemarks] = useState('');
+
   /* Data */
   const { data: assessment, isLoading } = useAssessment(assessmentId);
   const schoolId = assessment?.schoolId ?? '';
@@ -109,11 +128,21 @@ export default function AssessmentDetailScreen() {
   const { data: myRetakeRequests = [] } = useMyRetakeRequests(isStudent);
   const { data: myAttempts = [], isLoading: loadingMyAttempts } = useMyAttempts(isStudent);
 
+  const { data: pendingMarking = [], isLoading: loadingMarking } = usePendingMarking(
+    isStaff && activeTab === 'marking' ? assessmentId : undefined,
+  );
+  const { data: markingDetails, isLoading: loadingMarkingDetails } = useAttemptMarkingDetails(
+    markingAttempt?.attemptId,
+  );
+
   /* Mutations */
   const publishMutation  = usePublishAssessment(assessmentId ?? '', classroomId ?? '');
   const deleteMutation   = useDeleteAssessment(classroomId ?? '');
+  const updateMutation   = useUpdateAssessment(assessmentId ?? '');
   const startMutation    = useStartAttempt();
   const retakeMutation   = useCreateRetakeRequest();
+  const markAnswerMutation = useMarkTheoryAnswer(assessmentId ?? '');
+  const submitMarkingMutation = useSubmitMarking(assessmentId ?? '');
 
   /* Derived */
   const typeColor = assessment ? (TYPE_COLORS[assessment.type] ?? '#4C3FC4') : '#4C3FC4';
@@ -185,6 +214,7 @@ export default function AssessmentDetailScreen() {
     { key: 'questions', label: 'Questions' },
     { key: 'attempts',  label: 'Attempts' },
     { key: 'scores',    label: 'Scores' },
+    { key: 'marking',   label: 'Marking' },
     { key: 'retakes',   label: 'Retakes' },
   ];
   const studentTabs: { key: StudentTab; label: string }[] = [
@@ -242,6 +272,94 @@ export default function AssessmentDetailScreen() {
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not start assessment. Please try again.');
+    }
+  };
+
+  const handleOpenEdit = () => {
+    if (!assessment) return;
+    setEditTitle(assessment.title);
+    setEditTotalMarks(String(assessment.totalMarks));
+    setEditPassingMarks(String(assessment.passingMarks));
+    setEditDuration(assessment.duration ? String(assessment.duration) : '');
+    setEditDate(assessment.scheduledDate
+      ? new Date(assessment.scheduledDate).toISOString().split('T')[0]
+      : '');
+    setEditStartTime(assessment.startTime ?? '');
+    setEditEndTime(assessment.endTime ?? '');
+    setEditInstructions(assessment.instructions ?? '');
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim()) { toast.error('Title is required'); return; }
+    const payload: UpdateAssessmentPayload = {
+      title: editTitle.trim(),
+      totalMarks: Number(editTotalMarks) || assessment?.totalMarks,
+      passingMarks: Number(editPassingMarks) || assessment?.passingMarks,
+      duration: editDuration ? Number(editDuration) : undefined,
+      scheduledDate: editDate || undefined,
+      startTime: editStartTime || undefined,
+      endTime: editEndTime || undefined,
+      instructions: editInstructions.trim() || undefined,
+    };
+    try {
+      await updateMutation.mutateAsync(payload);
+      setEditOpen(false);
+      toast.success('Assessment updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update assessment');
+    }
+  };
+
+  const handleOpenMarking = (attempt: PendingAttempt) => {
+    setMarkingAttempt(attempt);
+    setLocalMarks({});
+    setLocalFeedback({});
+    setOverallRemarks('');
+  };
+
+  const handleMarkAnswer = async (answer: TheoryAnswer) => {
+    const marksStr = localMarks[answer.id] ?? String(answer.marksAwarded ?? '');
+    const marks = parseFloat(marksStr);
+    if (isNaN(marks) || marks < 0) { toast.error('Enter a valid mark'); return; }
+    const maxMarks = answer.assessmentQuestion?.marks ?? 0;
+    if (marks > maxMarks) { toast.error(`Max marks for this question is ${maxMarks}`); return; }
+    try {
+      await markAnswerMutation.mutateAsync({
+        answerSubmissionId: answer.id,
+        marksAwarded: marks,
+        feedback: localFeedback[answer.id] || undefined,
+      });
+      toast.success('Answer marked');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to mark answer');
+    }
+  };
+
+  const handleSubmitMarking = () => {
+    if (!markingAttempt) return;
+    const isFullyMarked = markingDetails?.statistics?.isFullyMarked;
+    if (!isFullyMarked) {
+      Alert.alert('Incomplete Marking', 'Some theory answers are still pending. Submit anyway?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Submit', onPress: doSubmitMarking },
+      ]);
+    } else {
+      doSubmitMarking();
+    }
+  };
+
+  const doSubmitMarking = async () => {
+    if (!markingAttempt) return;
+    try {
+      await submitMarkingMutation.mutateAsync({
+        attemptId: markingAttempt.attemptId,
+        overallRemarks: overallRemarks.trim() || undefined,
+      });
+      setMarkingAttempt(null);
+      toast.success('Marking submitted — score calculated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to submit marking');
     }
   };
 
@@ -405,6 +523,20 @@ export default function AssessmentDetailScreen() {
                   </View>
                 </Pressable>
               )}
+              <Pressable
+                onPress={handleOpenEdit}
+                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+              >
+                <View style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 14, paddingVertical: 13,
+                  borderWidth: 1, borderColor: '#c7d2fe',
+                  flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
+                }}>
+                  <Ionicons name="create-outline" size={16} color="#4C3FC4" />
+                  <Text style={{ color: '#4C3FC4', fontSize: 14, fontWeight: '700' }}>Edit Assessment</Text>
+                </View>
+              </Pressable>
               <Pressable
                 onPress={handleDelete}
                 disabled={deleteMutation.isPending}
@@ -812,34 +944,38 @@ export default function AssessmentDetailScreen() {
                         }}
                       />
                       <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <Pressable
-                          onPress={() => { setShowRetakeInput(false); setRetakeReason(''); }}
-                          style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.7 : 1 })}
-                        >
-                          <View style={{
-                            paddingVertical: 12, borderRadius: 12,
-                            borderWidth: 1, borderColor: '#e5e7eb',
-                            backgroundColor: '#fff', alignItems: 'center',
-                          }}>
-                            <Text style={{ color: '#6b7280', fontWeight: '700' }}>Cancel</Text>
-                          </View>
-                        </Pressable>
-                        <Pressable
-                          onPress={handleRetakeRequest}
-                          disabled={retakeMutation.isPending}
-                          style={({ pressed }) => ({ flex: 1, opacity: pressed || retakeMutation.isPending ? 0.8 : 1 })}
-                        >
-                          <View style={{
-                            paddingVertical: 12, borderRadius: 12,
-                            backgroundColor: '#4C3FC4',
-                            alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
-                          }}>
-                            {retakeMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
-                            <Text style={{ color: '#fff', fontWeight: '800' }}>
-                              {retakeMutation.isPending ? 'Sending…' : 'Send Request'}
-                            </Text>
-                          </View>
-                        </Pressable>
+                        <View style={{ flex: 1 }}>
+                          <Pressable
+                            onPress={() => { setShowRetakeInput(false); setRetakeReason(''); }}
+                            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                          >
+                            <View style={{
+                              paddingVertical: 12, borderRadius: 12,
+                              borderWidth: 1, borderColor: '#e5e7eb',
+                              backgroundColor: '#fff', alignItems: 'center',
+                            }}>
+                              <Text style={{ color: '#6b7280', fontWeight: '700' }}>Cancel</Text>
+                            </View>
+                          </Pressable>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Pressable
+                            onPress={handleRetakeRequest}
+                            disabled={retakeMutation.isPending}
+                            style={({ pressed }) => ({ opacity: pressed || retakeMutation.isPending ? 0.8 : 1 })}
+                          >
+                            <View style={{
+                              paddingVertical: 12, borderRadius: 12,
+                              backgroundColor: '#4C3FC4',
+                              alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
+                            }}>
+                              {retakeMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
+                              <Text style={{ color: '#fff', fontWeight: '800' }}>
+                                {retakeMutation.isPending ? 'Sending…' : 'Send Request'}
+                              </Text>
+                            </View>
+                          </Pressable>
+                        </View>
                       </View>
                     </>
                   ) : (
@@ -874,6 +1010,76 @@ export default function AssessmentDetailScreen() {
         </ScrollView>
       )}
 
+      {/* MARKING TAB (staff) */}
+      {activeTab === 'marking' && isStaff && (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 36, gap: 12 }}>
+          {loadingMarking ? (
+            <View style={{ paddingTop: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={typeColor} />
+            </View>
+          ) : pendingMarking.length === 0 ? (
+            <EmptyState
+              icon="checkmark-done-circle-outline"
+              title="All marked"
+              subtitle="No theory answers are waiting for marking."
+            />
+          ) : (
+            <>
+              <View style={{ backgroundColor: typeColor + '12', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="pencil-outline" size={15} color={typeColor} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: typeColor }}>
+                  {pendingMarking.filter(p => !p.isFullyMarked).length} attempt{pendingMarking.filter(p => !p.isFullyMarked).length !== 1 ? 's' : ''} need marking
+                </Text>
+              </View>
+              {pendingMarking.map(attempt => (
+                <Pressable
+                  key={attempt.attemptId}
+                  onPress={() => handleOpenMarking(attempt)}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                >
+                  <View style={{
+                    backgroundColor: '#fff', borderRadius: 16, padding: 14,
+                    borderWidth: 1, borderColor: attempt.isFullyMarked ? '#bbf7d0' : '#f1f5f9',
+                    flexDirection: 'row', alignItems: 'center', gap: 12,
+                  }}>
+                    <View style={{
+                      width: 40, height: 40, borderRadius: 20,
+                      backgroundColor: attempt.isFullyMarked ? '#dcfce7' : typeColor + '18',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons
+                        name={attempt.isFullyMarked ? 'checkmark-circle' : 'pencil'}
+                        size={20}
+                        color={attempt.isFullyMarked ? '#16a34a' : typeColor}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: '#1e293b' }}>
+                        {attempt.studentName}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                        Attempt #{attempt.attemptNumber} · {attempt.totalTheory} theory q{attempt.totalTheory !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                      <View style={{
+                        backgroundColor: attempt.isFullyMarked ? '#dcfce7' : '#fef3c7',
+                        borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+                      }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: attempt.isFullyMarked ? '#16a34a' : '#b45309' }}>
+                          {attempt.isFullyMarked ? 'Ready' : `${attempt.pendingCount} pending`}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={14} color="#cbd5e1" />
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </>
+          )}
+        </ScrollView>
+      )}
+
       {/* RETAKES TAB (staff) */}
       {activeTab === 'retakes' && isStaff && (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 36 }}>
@@ -892,6 +1098,304 @@ export default function AssessmentDetailScreen() {
           )}
         </ScrollView>
       )}
+      {/* ── EDIT ASSESSMENT MODAL ──────────────────────────────── */}
+      <Modal visible={editOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditOpen(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', gap: 12 }}>
+            <Pressable onPress={() => setEditOpen(false)}>
+              <Ionicons name="close" size={22} color="#374151" />
+            </Pressable>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: '#0f172a', flex: 1 }}>Edit Assessment</Text>
+            <Pressable onPress={handleSaveEdit} disabled={updateMutation.isPending} style={({ pressed }) => ({ opacity: pressed || updateMutation.isPending ? 0.7 : 1 })}>
+              <View style={{ backgroundColor: '#4C3FC4', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {updateMutation.isPending && <ActivityIndicator color="#fff" size="small" />}
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>
+                  {updateMutation.isPending ? 'Saving…' : 'Save'}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
+
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+
+              {[
+                { label: 'Title', value: editTitle, onChange: setEditTitle, placeholder: 'Assessment title', multiline: false },
+                { label: 'Instructions', value: editInstructions, onChange: setEditInstructions, placeholder: 'Optional instructions…', multiline: true },
+              ].map(f => (
+                <View key={f.label} style={{ gap: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>{f.label}</Text>
+                  <TextInput
+                    value={f.value}
+                    onChangeText={f.onChange}
+                    placeholder={f.placeholder}
+                    placeholderTextColor="#9ca3af"
+                    multiline={f.multiline}
+                    numberOfLines={f.multiline ? 4 : 1}
+                    textAlignVertical={f.multiline ? 'top' : 'center'}
+                    style={{
+                      backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb',
+                      borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
+                      fontSize: 14, color: '#1e293b',
+                      minHeight: f.multiline ? 90 : undefined,
+                    }}
+                  />
+                </View>
+              ))}
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[
+                  { label: 'Total Marks', value: editTotalMarks, onChange: setEditTotalMarks },
+                  { label: 'Passing Marks', value: editPassingMarks, onChange: setEditPassingMarks },
+                  { label: 'Duration (min)', value: editDuration, onChange: setEditDuration },
+                ].map(f => (
+                  <View key={f.label} style={{ flex: 1, gap: 6 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>{f.label}</Text>
+                    <TextInput
+                      value={f.value}
+                      onChangeText={f.onChange}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor="#9ca3af"
+                      placeholder="—"
+                      style={{
+                        backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb',
+                        borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10,
+                        fontSize: 14, color: '#1e293b', textAlign: 'center',
+                      }}
+                    />
+                  </View>
+                ))}
+              </View>
+
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Scheduled Date</Text>
+                <TextInput
+                  value={editDate}
+                  onChangeText={setEditDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#9ca3af"
+                  style={{ backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#1e293b' }}
+                />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[
+                  { label: 'Start Time', value: editStartTime, onChange: setEditStartTime },
+                  { label: 'End Time', value: editEndTime, onChange: setEditEndTime },
+                ].map(f => (
+                  <View key={f.label} style={{ flex: 1, gap: 6 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>{f.label}</Text>
+                    <TextInput
+                      value={f.value}
+                      onChangeText={f.onChange}
+                      placeholder="HH:MM"
+                      placeholderTextColor="#9ca3af"
+                      style={{ backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#1e293b', textAlign: 'center' }}
+                    />
+                  </View>
+                ))}
+              </View>
+
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* ── MARKING DETAILS MODAL ──────────────────────────────── */}
+      <Modal visible={!!markingAttempt} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setMarkingAttempt(null)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
+          {/* Header */}
+          <View style={{
+            paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff',
+            borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
+            flexDirection: 'row', alignItems: 'center', gap: 12,
+          }}>
+            <Pressable onPress={() => setMarkingAttempt(null)}>
+              <Ionicons name="close" size={22} color="#374151" />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a' }}>
+                {markingAttempt?.studentName ?? 'Marking'}
+              </Text>
+              <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>
+                Attempt #{markingAttempt?.attemptNumber} · {markingAttempt?.totalTheory} theory question{markingAttempt?.totalTheory !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            {markingDetails?.statistics?.isFullyMarked && (
+              <View style={{ backgroundColor: '#dcfce7', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#16a34a' }}>✓ All marked</Text>
+              </View>
+            )}
+          </View>
+
+          {loadingMarkingDetails ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <ActivityIndicator color={typeColor} size="large" />
+              <Text style={{ fontSize: 13, color: '#9ca3af' }}>Loading answers…</Text>
+            </View>
+          ) : (
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>
+
+                {/* Stats strip */}
+                {markingDetails?.statistics && (
+                  <View style={{ flexDirection: 'row', backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: '#f1f5f9' }}>
+                    {[
+                      { label: 'Total', value: markingDetails.statistics.totalTheory, color: '#4C3FC4' },
+                      { label: 'Marked', value: markingDetails.statistics.markedCount, color: '#16a34a' },
+                      { label: 'Pending', value: markingDetails.statistics.pendingMarking, color: '#d97706' },
+                    ].map((s, i) => (
+                      <View key={s.label} style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: '#f1f5f9' }}>
+                        <Text style={{ fontSize: 20, fontWeight: '900', color: s.color }}>{s.value}</Text>
+                        <Text style={{ fontSize: 10, color: '#9ca3af', fontWeight: '600', marginTop: 2 }}>{s.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Theory answers */}
+                {(markingDetails?.answers ?? []).map((answer, idx) => {
+                  const maxMarks = answer.assessmentQuestion?.marks ?? 0;
+                  const isMarked = answer.markingStatus === 'marked';
+                  const curMarks = localMarks[answer.id] ?? (isMarked ? String(answer.marksAwarded ?? 0) : '');
+
+                  return (
+                    <View key={answer.id} style={{
+                      backgroundColor: '#fff', borderRadius: 16,
+                      borderWidth: 1, borderColor: isMarked ? '#bbf7d0' : '#f1f5f9',
+                      overflow: 'hidden',
+                    }}>
+                      {/* Question header */}
+                      <View style={{ backgroundColor: isMarked ? '#f0fdf4' : '#f8fafc', paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: typeColor + '18', alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 11, fontWeight: '900', color: typeColor }}>{idx + 1}</Text>
+                        </View>
+                        <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#374151' }}>
+                          {answer.assessmentQuestion?.question?.questionText ?? 'Question'}
+                        </Text>
+                        <View style={{ backgroundColor: isMarked ? '#dcfce7' : '#fef3c7', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: isMarked ? '#16a34a' : '#b45309' }}>
+                            {isMarked ? `${answer.marksAwarded}/${maxMarks}` : `—/${maxMarks}`}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={{ padding: 14, gap: 12 }}>
+                        {/* Student answer */}
+                        <View style={{ backgroundColor: '#f8fafc', borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: typeColor }}>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', marginBottom: 5 }}>Student's Answer</Text>
+                          <Text style={{ fontSize: 13, color: '#1e293b', lineHeight: 20 }}>
+                            {answer.answer?.trim() || <Text style={{ color: '#9ca3af', fontStyle: 'italic' }}>No answer provided</Text>}
+                          </Text>
+                        </View>
+
+                        {/* Marks input */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151', marginBottom: 5 }}>
+                              Marks Awarded <Text style={{ color: '#9ca3af' }}>/ {maxMarks}</Text>
+                            </Text>
+                            <TextInput
+                              value={curMarks}
+                              onChangeText={v => setLocalMarks(prev => ({ ...prev, [answer.id]: v }))}
+                              keyboardType="decimal-pad"
+                              placeholder="0"
+                              placeholderTextColor="#9ca3af"
+                              style={{
+                                backgroundColor: '#f8fafc', borderWidth: 1,
+                                borderColor: '#e5e7eb', borderRadius: 10,
+                                paddingHorizontal: 12, paddingVertical: 8,
+                                fontSize: 15, fontWeight: '700', color: '#1e293b',
+                              }}
+                            />
+                          </View>
+                          <View style={{ paddingTop: 20 }}>
+                            <Pressable
+                              onPress={() => handleMarkAnswer(answer)}
+                              disabled={markAnswerMutation.isPending}
+                              style={({ pressed }) => ({ opacity: pressed || markAnswerMutation.isPending ? 0.7 : 1 })}
+                            >
+                              <View style={{
+                                backgroundColor: isMarked ? '#f0fdf4' : typeColor,
+                                borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10,
+                                flexDirection: 'row', alignItems: 'center', gap: 6,
+                                borderWidth: isMarked ? 1 : 0, borderColor: '#bbf7d0',
+                              }}>
+                                <Ionicons
+                                  name={isMarked ? 'checkmark-circle' : 'checkmark'}
+                                  size={15}
+                                  color={isMarked ? '#16a34a' : '#fff'}
+                                />
+                                <Text style={{ fontSize: 13, fontWeight: '800', color: isMarked ? '#16a34a' : '#fff' }}>
+                                  {isMarked ? 'Update' : 'Mark'}
+                                </Text>
+                              </View>
+                            </Pressable>
+                          </View>
+                        </View>
+
+                        {/* Feedback input */}
+                        <View>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151', marginBottom: 5 }}>Feedback (optional)</Text>
+                          <TextInput
+                            value={localFeedback[answer.id] ?? answer.feedback ?? ''}
+                            onChangeText={v => setLocalFeedback(prev => ({ ...prev, [answer.id]: v }))}
+                            placeholder="Leave feedback for the student…"
+                            placeholderTextColor="#9ca3af"
+                            multiline
+                            numberOfLines={2}
+                            textAlignVertical="top"
+                            style={{
+                              backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e5e7eb',
+                              borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+                              fontSize: 13, color: '#1e293b', minHeight: 64,
+                            }}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {/* Overall remarks */}
+                <View style={{ gap: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Overall Remarks (optional)</Text>
+                  <TextInput
+                    value={overallRemarks}
+                    onChangeText={setOverallRemarks}
+                    placeholder="General remarks for this attempt…"
+                    placeholderTextColor="#9ca3af"
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                    style={{
+                      backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb',
+                      borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
+                      fontSize: 13, color: '#1e293b', minHeight: 80,
+                    }}
+                  />
+                </View>
+
+              </ScrollView>
+
+              {/* Submit marking button */}
+              <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
+                <Pressable onPress={handleSubmitMarking} disabled={submitMarkingMutation.isPending} style={({ pressed }) => ({ opacity: pressed || submitMarkingMutation.isPending ? 0.8 : 1 })}>
+                  <View style={{ backgroundColor: '#22c55e', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                    {submitMarkingMutation.isPending
+                      ? <ActivityIndicator color="#fff" size="small" />
+                      : <Ionicons name="checkmark-done-circle-outline" size={18} color="#fff" />}
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>
+                      {submitMarkingMutation.isPending ? 'Submitting…' : 'Submit Marking & Calculate Score'}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            </KeyboardAvoidingView>
+          )}
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
