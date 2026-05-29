@@ -127,6 +127,32 @@
 
 ---
 
+## Parent Role — Mobile Restrictions
+
+- **Features tab:** parents see only 5 cards: My Children · Children's Reports · Children's Results · Children's Documents · Enquiries. No My Classes hero card, no student/staff features, no Finances, no Attendance, no Library, no Enrollments.
+- **My Children screen (`app/my-children.tsx`):** display-only — child cards are plain `View`, no tap navigation. Separate feature cards handle Reports/Results/Documents.
+- **Children's Reports/Results/Documents:** each has a child-picker index screen + `[studentId]`/`[userId]` detail screen under `app/my-children-reports/`, `app/my-children-results/`, `app/my-children-documents/`.
+- **Quick actions (action tab):** parents see only Enquiries — My Jobs is removed (access-restricted for parents).
+- **Account page:** Enrollment row hidden for parents (`{!isParent && <SettingsRow ... />}`).
+- **Chat tab:** compose/new-DM icon hidden for parents.
+
+---
+
+## Account Screens
+
+- `account/help-support.tsx` — FAQ accordion + contact cards (Email/WhatsApp/Help Centre). Linked from Support settings group.
+- `account/about.tsx` — app version, mission, feature list, legal links. Linked from Support settings group.
+- Both use the standard purple hero header pattern.
+
+---
+
+## Avatar Placeholder Rule
+
+- **Never show initials** when a user has no profile picture — always render `<Ionicons name="person" />` inside the coloured avatar container. Applies to home top-bar and account hero.
+- **School logo in active school card:** `<Image source={{ uri: school.logo }} />` when available; fall back to initial letter only if no logo.
+
+---
+
 ## Chat Tab
 
 - Conversation list grouped: School → Admin → Classes → Groups → Direct Messages. `type === 'team'` hidden from non-admins.
