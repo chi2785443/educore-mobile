@@ -209,6 +209,7 @@ function CreateClassroomSheet({ visible, onClose, schoolId }: { visible: boolean
 }
 
 export default function ClassroomListScreen() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [activeGrade, setActiveGrade] = useState<string>('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -270,13 +271,21 @@ export default function ClassroomListScreen() {
     <>
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
       <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}>
-        <View style={{ marginBottom: 14 }}>
-          <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
-            {pageTitle}
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 }}>
-            {filtered.length} classroom{filtered.length !== 1 ? 's' : ''}
-          </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 12 }}>
+          <Pressable
+            onPress={() => router.back()}
+            style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="arrow-back" size={18} color="#fff" />
+          </Pressable>
+          <View>
+            <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
+              {pageTitle}
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 }}>
+              {filtered.length} classroom{filtered.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
         </View>
 
         <View style={{

@@ -66,7 +66,7 @@ export default function LoadingScreen({ message = 'Loading...', color = '#F5486A
         {/* Logo */}
         <Animated.View style={{ transform: [{ scale: pulse }] }}>
           <Image
-            source={require('@/assets/images/educore_icon_dark.svg')}
+            source={require('@/assets/images/cakale_edu_icon_dark.svg')}
             style={{ width: 48, height: 48 }}
             contentFit="contain"
           />
@@ -76,7 +76,7 @@ export default function LoadingScreen({ message = 'Loading...', color = '#F5486A
       {/* Brand name */}
       <View style={{ alignItems: 'center', gap: 8 }}>
         <Image
-          source={require('@/assets/images/educore_logo_dark.svg')}
+          source={require('@/assets/images/cakale_edu_logo_dark.svg')}
           style={{ width: 130, height: 37 }}
           contentFit="contain"
         />

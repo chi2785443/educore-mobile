@@ -32,7 +32,7 @@ export default function SignInScreen() {
             <View style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.08)' }} />
             <View style={{ position: 'absolute', bottom: -30, left: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(245,72,106,0.10)' }} />
             <Image
-              source={require('@/assets/images/educore_logo_dark.svg')}
+              source={require('@/assets/images/cakale_edu_logo_dark.svg')}
               style={{ width: 130, height: 37 }}
               contentFit="contain"
             />

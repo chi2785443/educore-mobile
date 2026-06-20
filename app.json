@@ -1,23 +1,23 @@
 {
   "expo": {
-    "name": "EduCore",
-    "slug": "educore",
+    "name": "Cakale EDU",
+    "slug": "cakale-edu",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "educore",
+    "scheme": "cakale-edu",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.educore.app",
+      "bundleIdentifier": "com.cakaledu.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "EduCore needs your location to record attendance and verify you are clocking in from the correct site.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "EduCore needs your location to record attendance and verify you are clocking in from the correct site."
+        "NSLocationWhenInUseUsageDescription": "Cakale EDU needs your location to record attendance and verify you are clocking in from the correct site.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cakale EDU needs your location to record attendance and verify you are clocking in from the correct site."
       }
     },
     "android": {
-      "package": "com.educore.app",
+      "package": "com.cakaledu.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
@@ -42,15 +42,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "EduCore needs camera access to record you during proctored assessments.",
-          "microphonePermission": "EduCore needs microphone access to record audio during proctored assessments.",
+          "cameraPermission": "Cakale EDU needs camera access to record you during proctored assessments.",
+          "microphonePermission": "Cakale EDU needs microphone access to record audio during proctored assessments.",
           "recordAudioAndroid": true
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "EduCore needs your location to record attendance and verify you are clocking in from the correct site."
+          "locationAlwaysAndWhenInUsePermission": "Cakale EDU needs your location to record attendance and verify you are clocking in from the correct site."
         }
       ],
       [

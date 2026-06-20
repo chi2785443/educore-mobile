@@ -43,10 +43,10 @@ const CONTACT = [
   {
     icon: 'mail-outline' as const,
     label: 'Email Support',
-    value: 'support@educore.app',
+    value: 'support@cakale-edu.app',
     color: '#4C3FC4',
     bg: '#F0EEFF',
-    action: () => Linking.openURL('mailto:support@educore.app'),
+    action: () => Linking.openURL('mailto:support@cakale-edu.app'),
   },
   {
     icon: 'logo-whatsapp' as const,
@@ -54,15 +54,15 @@ const CONTACT = [
     value: 'Chat with us',
     color: '#16a34a',
     bg: '#dcfce7',
-    action: () => Linking.openURL('https://wa.me/message/educore'),
+    action: () => Linking.openURL('https://wa.me/message/cakale-edu'),
   },
   {
     icon: 'globe-outline' as const,
     label: 'Help Centre',
-    value: 'educore.app/help',
+    value: 'cakale-edu.app/help',
     color: '#0ea5e9',
     bg: '#e0f2fe',
-    action: () => Linking.openURL('https://educore.app/help'),
+    action: () => Linking.openURL('https://cakale-edu.app/help'),
   },
 ];
 

@@ -8,7 +8,7 @@
 ## Styling
 
 - **NativeWind v4** — use `className` always. `style={{}}` only for dynamic values (colors, calculated dims).
-- **SVG logos:** `expo-image` with `require('@/assets/images/educore_*.svg')` — never RN `<Image>` for SVGs
+- **SVG logos:** `expo-image` with `require('@/assets/images/cakale_edu_*.svg')` — never RN `<Image>` for SVGs
 - **Icons:** `Ionicons` from `@expo/vector-icons`
 - **Pressable:** never set `backgroundColor` in callback style — put it on an inner `View`; callback for opacity/transform only
 - **Color palette:** primary `#4C3FC4`, accent `#F5486A`, pastels: `#F0EEFF` / `#FFF0F0` / `#E8F5EE` / `#E8F4FF`
@@ -21,7 +21,7 @@
 
 - **Server state:** TanStack React Query v5
 - **Global state:** Zustand v5 — persisted via AsyncStorage. Stores `user`, `isAuthenticated`, `selectedSchoolId`, `hasOnboarded`
-- **Tokens:** `expo-secure-store` (keys: `educore_access_token`, `educore_refresh_token`)
+- **Tokens:** `expo-secure-store` (keys: `cakale_edu_access_token`, `cakale_edu_refresh_token`)
 - **HTTP:** Axios (`services/axios.service.ts`) — Bearer token, auto-refresh on 401, all errors → `new Error(message)`
 - **Forms:** React Hook Form v7 + Zod v4
 

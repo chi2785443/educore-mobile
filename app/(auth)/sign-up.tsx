@@ -23,7 +23,7 @@ const STEP_TITLES: Record<SignUpStep, string> = {
 const STEP_SUBTITLES: Record<SignUpStep, string> = {
   0: 'Fill in your details to get started',
   1: 'Enter the code we sent to your email',
-  2: 'How will you be using EduCore?',
+  2: 'How will you be using Cakale EDU?',
   3: 'Complete your profile setup',
 };
 

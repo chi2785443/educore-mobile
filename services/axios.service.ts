@@ -1,8 +1,8 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const ACCESS_TOKEN_KEY = 'educore_access_token';
-export const REFRESH_TOKEN_KEY = 'educore_refresh_token';
+export const ACCESS_TOKEN_KEY = 'cakale_edu_access_token';
+export const REFRESH_TOKEN_KEY = 'cakale_edu_refresh_token';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL ?? 'http://localhost:8000/api/v1/';
 

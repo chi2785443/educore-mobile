@@ -17,9 +17,9 @@ const FEATURES = [
 ];
 
 const LINKS = [
-  { icon: 'globe-outline' as const,           label: 'Website',        url: 'https://educore.app' },
-  { icon: 'shield-checkmark-outline' as const, label: 'Privacy Policy', url: 'https://educore.app/privacy' },
-  { icon: 'document-outline' as const,         label: 'Terms of Use',   url: 'https://educore.app/terms' },
+  { icon: 'globe-outline' as const,           label: 'Website',        url: 'https://cakale-edu.app' },
+  { icon: 'shield-checkmark-outline' as const, label: 'Privacy Policy', url: 'https://cakale-edu.app/privacy' },
+  { icon: 'document-outline' as const,         label: 'Terms of Use',   url: 'https://cakale-edu.app/terms' },
 ];
 
 export default function AboutScreen() {
@@ -74,14 +74,14 @@ export default function AboutScreen() {
           elevation: 12,
         }}>
           <Image
-            source={require('@/assets/images/educore_icon.svg')}
+            source={require('@/assets/images/cakale_edu_icon.svg')}
             style={{ width: 54, height: 54 }}
             contentFit="contain"
           />
         </View>
 
         <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.5 }}>
-          EduCore
+          Cakale EDU
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, marginTop: 4 }}>
           School Management System
@@ -119,7 +119,7 @@ export default function AboutScreen() {
           </View>
           <View style={{ padding: 16 }}>
             <Text style={{ fontSize: 14, color: '#475569', lineHeight: 22 }}>
-              EduCore is a modern educational management platform built to connect schools, teachers, students and parents in one seamless experience.
+              Cakale EDU is a modern educational management platform built to connect schools, teachers, students and parents in one seamless experience.
             </Text>
             <Text style={{ fontSize: 14, color: '#475569', lineHeight: 22, marginTop: 10 }}>
               We believe every school deserves powerful, easy-to-use tools — from attendance and assessments to results and communication — all in one place.
@@ -206,7 +206,7 @@ export default function AboutScreen() {
         {/* ── Footer ── */}
         <View style={{ alignItems: 'center', gap: 4, paddingVertical: 8 }}>
           <Text style={{ fontSize: 12, color: '#94a3b8' }}>
-            © {new Date().getFullYear()} EduCore. All rights reserved.
+            © {new Date().getFullYear()} Cakale EDU. All rights reserved.
           </Text>
           <Text style={{ fontSize: 11, color: '#cbd5e1' }}>
             Made with ❤️ for schools everywhere
