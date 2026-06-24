@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, ScrollView, Pressable, Alert, ActivityIndicator, TextInput, Modal,
+  View, Text, ScrollView, Pressable, TouchableOpacity, Alert, ActivityIndicator, TextInput, Modal,
   Dimensions, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import { useScoresForAssessment, useAssessmentStats, useMyScoreForAssessment } f
 import { useRetakesForAssessment, useMyRetakeRequests, useCreateRetakeRequest } from '@/hooks/useRetakeRequest';
 import { usePendingMarking, useAttemptMarkingDetails, useMarkTheoryAnswer, useSubmitMarking } from '@/hooks/useMarking';
 import { PendingAttempt, TheoryAnswer } from '@/services/marking.service';
+import { studentAttemptService } from '@/services/student-attempt.service';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import ScoreCard from '@/components/assessment/ScoreCard';
 import RetakeRequestRow from '@/components/assessment/RetakeRequestRow';
@@ -79,7 +81,7 @@ export default function AssessmentDetailScreen() {
   const [retakeReason, setRetakeReason] = useState('');
   const [showRetakeInput, setShowRetakeInput] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [selected, setSelected] = useState<Record<string, number>>({}); // questionId → marks
+  const [selected, setSelected] = useState<Record<string, number | undefined>>({}); // questionId → marks
 
   /* Edit assessment state */
   const [editOpen, setEditOpen] = useState(false);
@@ -97,6 +99,8 @@ export default function AssessmentDetailScreen() {
   const [localMarks, setLocalMarks] = useState<Record<string, string>>({});
   const [localFeedback, setLocalFeedback] = useState<Record<string, string>>({});
   const [overallRemarks, setOverallRemarks] = useState('');
+  const [recordingPlayerUrl, setRecordingPlayerUrl] = useState<string | null>(null);
+  const [recordingLoading, setRecordingLoading] = useState(false);
 
   /* Data */
   const { data: assessment, isLoading } = useAssessment(assessmentId);
@@ -159,21 +163,26 @@ export default function AssessmentDetailScreen() {
 
   const toggleSelect = (q: Question) => {
     setSelected(prev => {
-      if (prev[q.id] !== undefined) {
+      if (q.id in prev) {
         const next = { ...prev }; delete next[q.id]; return next;
       }
-      return { ...prev, [q.id]: 1 };
+      return { ...prev, [q.id]: undefined };
     });
   };
 
   const handleAddQuestions = async () => {
     const entries = Object.entries(selected);
     if (entries.length === 0) return;
+    const missing = entries.some(([, marks]) => !marks);
+    if (missing) {
+      toast.error('Enter marks for all selected questions');
+      return;
+    }
     const nextOrder = questions.length + 1;
     try {
       await addMutation.mutateAsync(
         entries.map(([questionId, marks], i) => ({
-          questionId, marks, questionOrder: nextOrder + i,
+          questionId, marks: marks as number, questionOrder: nextOrder + i,
         })),
       );
       setSelected({});
@@ -213,8 +222,8 @@ export default function AssessmentDetailScreen() {
     { key: 'info',      label: 'Info' },
     { key: 'questions', label: 'Questions' },
     { key: 'attempts',  label: 'Attempts' },
-    { key: 'scores',    label: 'Scores' },
     { key: 'marking',   label: 'Marking' },
+    { key: 'scores',    label: 'Scores' },
     { key: 'retakes',   label: 'Retakes' },
   ];
   const studentTabs: { key: StudentTab; label: string }[] = [
@@ -284,8 +293,8 @@ export default function AssessmentDetailScreen() {
     setEditDate(assessment.scheduledDate
       ? new Date(assessment.scheduledDate).toISOString().split('T')[0]
       : '');
-    setEditStartTime(assessment.startTime ?? '');
-    setEditEndTime(assessment.endTime ?? '');
+    setEditStartTime(assessment.startTime ? assessment.startTime.slice(0, 5) : '');
+    setEditEndTime(assessment.endTime ? assessment.endTime.slice(0, 5) : '');
     setEditInstructions(assessment.instructions ?? '');
     setEditOpen(true);
   };
@@ -394,7 +403,14 @@ export default function AssessmentDetailScreen() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 22, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <Pressable
+            onPress={() => {
+              if (isStaff) router.replace('/assessments' as never);
+              else if (isStudent) router.replace('/my-assessments' as never);
+              else router.back();
+            }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
             <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="arrow-back" size={18} color="#fff" />
             </View>
@@ -683,7 +699,7 @@ export default function AssessmentDetailScreen() {
 
               {/* Marks summary bar */}
               {Object.keys(selected).length > 0 && (() => {
-                const selectedTotal = Object.values(selected).reduce((s, m) => s + m, 0);
+                const selectedTotal = Object.values(selected).reduce((s, m) => s + (m ?? 0), 0);
                 const assessmentTotal = assessment?.totalMarks ?? 0;
                 const over = selectedTotal > assessmentTotal;
                 const exact = selectedTotal === assessmentTotal;
@@ -712,7 +728,7 @@ export default function AssessmentDetailScreen() {
               ) : (
                 <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 100 }}>
                   {(availableBank as Question[]).map(q => {
-                    const isSelected = selected[q.id] !== undefined;
+                    const isSelected = q.id in selected;
                     const DIFF_COLOR: Record<string, string> = { easy: '#16a34a', medium: '#d97706', hard: '#dc2626' };
                     return (
                       <Pressable key={q.id} onPress={() => toggleSelect(q)}>
@@ -733,8 +749,10 @@ export default function AssessmentDetailScreen() {
                               <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                 <Text style={{ fontSize: 11, color: '#6b7280' }}>Marks:</Text>
                                 <TextInput
-                                  value={String(selected[q.id] ?? 1)}
-                                  onChangeText={v => setSelected(prev => ({ ...prev, [q.id]: parseFloat(v) || 1 }))}
+                                  value={selected[q.id] !== undefined ? String(selected[q.id]) : ''}
+                                  placeholder="0"
+                                  placeholderTextColor={typeColor + '60'}
+                                  onChangeText={v => setSelected(prev => ({ ...prev, [q.id]: v === '' ? undefined : (parseFloat(v) || undefined) }))}
                                   keyboardType="decimal-pad"
                                   style={{ backgroundColor: typeColor + '12', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 13, fontWeight: '700', color: typeColor, minWidth: 44, textAlign: 'center' }}
                                   onPress={e => e.stopPropagation?.()}
@@ -920,7 +938,7 @@ export default function AssessmentDetailScreen() {
               />
 
               {/* Retake section */}
-              {myScore && myScore.isReleased === true && !myScore.isPassed && !myPendingRetake && (
+              {myScore && myScore.isReleased === true && !myPendingRetake && (
                 <View style={{ gap: 10 }}>
                   {showRetakeInput ? (
                     <>
@@ -1031,9 +1049,9 @@ export default function AssessmentDetailScreen() {
                   {pendingMarking.filter(p => !p.isFullyMarked).length} attempt{pendingMarking.filter(p => !p.isFullyMarked).length !== 1 ? 's' : ''} need marking
                 </Text>
               </View>
-              {pendingMarking.map(attempt => (
+              {pendingMarking.map((attempt, idx) => (
                 <Pressable
-                  key={attempt.attemptId}
+                  key={attempt.attemptId ?? `pending-${idx}`}
                   onPress={() => handleOpenMarking(attempt)}
                   style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
                 >
@@ -1253,6 +1271,57 @@ export default function AssessmentDetailScreen() {
                   </View>
                 )}
 
+                {/* Recording */}
+                {markingDetails?.attempt?.recordingUrl && (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    disabled={recordingLoading}
+                    onPress={async () => {
+                      try {
+                        setRecordingLoading(true);
+                        const url = await studentAttemptService.getSignedViewUrl(
+                          markingDetails.attempt.recordingUrl!,
+                        );
+                        setRecordingPlayerUrl(url);
+                      } catch {
+                        toast.error('Could not load recording');
+                      } finally {
+                        setRecordingLoading(false);
+                      }
+                    }}
+                    style={{
+                      backgroundColor: '#1e1b4b', borderRadius: 14, padding: 14,
+                      flexDirection: 'row', alignItems: 'center', gap: 12,
+                    }}
+                  >
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="videocam" size={20} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Proctoring Recording</Text>
+                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>Tap to watch the session recording</Text>
+                    </View>
+                    {recordingLoading
+                      ? <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" />
+                      : <Ionicons name="play-circle" size={28} color="rgba(255,255,255,0.7)" />}
+                  </TouchableOpacity>
+                )}
+
+                {/* In-app recording player modal */}
+                <Modal
+                  visible={!!recordingPlayerUrl}
+                  animationType="slide"
+                  onRequestClose={() => setRecordingPlayerUrl(null)}
+                  statusBarTranslucent
+                >
+                  {recordingPlayerUrl ? (
+                    <RecordingPlayerModal
+                      url={recordingPlayerUrl}
+                      onClose={() => setRecordingPlayerUrl(null)}
+                    />
+                  ) : null}
+                </Modal>
+
                 {/* Theory answers */}
                 {(markingDetails?.answers ?? []).map((answer, idx) => {
                   const maxMarks = answer.assessmentQuestion?.marks ?? 0;
@@ -1397,5 +1466,37 @@ export default function AssessmentDetailScreen() {
       </Modal>
 
     </SafeAreaView>
+  );
+}
+
+function RecordingPlayerModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const player = useVideoPlayer(url, p => {
+    p.play();
+  });
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
+          <TouchableOpacity onPress={onClose} activeOpacity={0.7}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="close" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={{ flex: 1, textAlign: 'center', color: '#fff', fontWeight: '800', fontSize: 15, marginHorizontal: 8 }}>
+            Proctoring Recording
+          </Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        {/* Player */}
+        <VideoView
+          player={player}
+          style={{ flex: 1 }}
+          contentFit="contain"
+          nativeControls
+        />
+      </SafeAreaView>
+    </View>
   );
 }
