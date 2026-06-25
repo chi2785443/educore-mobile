@@ -84,6 +84,7 @@ export interface ClassStats {
   passCount: number;
   failCount: number;
   passPercentage: number;
+  releasedCount: number;
   topPerformers?: { firstName: string; lastName: string; score: number }[];
 }
 
