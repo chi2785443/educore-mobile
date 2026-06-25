@@ -35,7 +35,7 @@ export interface StaffDashboardData {
   counts: { totalClassrooms: number; totalStudents: number; totalAssessments: number; publishedAssessments: number; draftAssessments: number; myReports: number; pendingReports: number };
   todayTimetable: Array<{ id: string; startTime: string; endTime: string; subject: string; classroom: string; room?: string }>;
   myAttendanceToday: { clockedIn: boolean; time: string | null; flagged: boolean };
-  recentAssessments: Array<{ id: string; title: string; status: string; createdAt: string; totalMarks: number; type: string }>;
+  recentAssessments: Array<{ id: string; classroomId: string; title: string; status: string; createdAt: string; totalMarks: number; type: string }>;
   recentAnnouncements: DashboardAnnouncement[];
   upcomingEvents: DashboardEvent[];
 }
@@ -46,7 +46,7 @@ export interface StudentDashboardData {
   todayTimetable: Array<{ id: string; startTime: string; endTime: string; subject: string; classroom: string; room?: string }>;
   clockedInToday: boolean;
   latestResult: { id: string; term: string; academicYear: string; overallPercentage: number; overallGrade: string; classPosition: number; totalStudents: number } | null;
-  recentScores: Array<{ id: string; percentage: number; passed: boolean; grade: string; title: string; type: string; totalMarks: number; createdAt: string }>;
+  recentScores: Array<{ id: string; assessmentId: string | null; classroomId: string | null; score: number; totalMarks: number; percentage: number; passed: boolean; isPassed: boolean; grade: string; gradePoint: number | null; remarks: string | null; gradedAt: string | null; questionsAnswered: number; correctAnswers: number; incorrectAnswers: number; title: string; type: string; createdAt: string }>;
   upcomingAssessments: Array<{ id: string; title: string; assessmentType: string; totalMarks: number; createdAt: string; status: string }>;
   recentAnnouncements: DashboardAnnouncement[];
   upcomingEvents: DashboardEvent[];

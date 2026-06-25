@@ -1,12 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'expo-router';
+import { format, formatDistanceToNow } from 'date-fns';
 import { useStudentDashboard } from '@/hooks/useDashboardRole';
 import {
   DashLoader, GradCard, Card, CardHeader,
   AnnouncementRow, EventRow, PeriodRow, SectionLabel,
 } from './DashboardPrimitives';
+import { StudentDashboardData } from '@/services/dashboard-role.service';
 
 interface Props { schoolId: string; schoolName: string; firstName: string }
 
@@ -14,6 +17,134 @@ const TERM_LABELS: Record<string, string> = {
   FIRST_TERM: '1st Term', SECOND_TERM: '2nd Term', THIRD_TERM: '3rd Term',
   FIRST_SEMESTER: '1st Semester', SECOND_SEMESTER: '2nd Semester',
 };
+
+type DashScore = StudentDashboardData['recentScores'][number];
+
+const TYPE_COLOR: Record<string, string> = {
+  exam: '#F5486A', test: '#4C3FC4', quiz: '#0ea5e9', assignment: '#10b981',
+};
+const TYPE_BG: Record<string, string> = {
+  exam: '#fff0f3', test: '#F0EEFF', quiz: '#f0f9ff', assignment: '#f0fdf4',
+};
+
+function pctColor(pct: number) {
+  if (pct >= 75) return '#16a34a';
+  if (pct >= 60) return '#0284c7';
+  if (pct >= 45) return '#d97706';
+  return '#dc2626';
+}
+function pctBg(pct: number) {
+  if (pct >= 75) return '#dcfce7';
+  if (pct >= 60) return '#dbeafe';
+  if (pct >= 45) return '#fef3c7';
+  return '#fee2e2';
+}
+
+function ScoreDetailModal({ score, onClose }: { score: DashScore; onClose: () => void }) {
+  const pct = Math.round(score.percentage);
+  const color = pctColor(pct);
+  const typeColor = TYPE_COLOR[score.type] ?? '#4C3FC4';
+
+  return (
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top', 'bottom']}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+          {/* Header */}
+          <View style={{ backgroundColor: typeColor, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="close" size={18} color="#fff" />
+                </View>
+              </Pressable>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }} numberOfLines={2}>
+                  {score.title}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', textTransform: 'capitalize' }}>{score.type}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Score circle + breakdown */}
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              <View style={{ width: 90, height: 90, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' }}>
+                <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900' }}>{pct}%</Text>
+              </View>
+              <View style={{ flex: 1, gap: 8 }}>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Score</Text>
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>{score.score} / {score.totalMarks}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingVertical: 10, alignItems: 'center' }}>
+                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900' }}>{score.grade || '—'}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: '600', marginTop: 2 }}>GRADE</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: score.isPassed ? 'rgba(22,163,74,0.35)' : 'rgba(220,38,38,0.35)', borderRadius: 12, paddingVertical: 10, alignItems: 'center' }}>
+                    <Ionicons name={score.isPassed ? 'checkmark-circle' : 'close-circle'} size={20} color="#fff" />
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700', marginTop: 2 }}>{score.isPassed ? 'PASSED' : 'FAILED'}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View style={{ padding: 16, gap: 14 }}>
+            {/* Answer breakdown */}
+            {score.questionsAnswered > 0 && (
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden' }}>
+                <View style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.7 }}>Answer Breakdown</Text>
+                </View>
+                <View style={{ flexDirection: 'row' }}>
+                  {[
+                    { label: 'Answered', value: String(score.questionsAnswered), color: '#4C3FC4' },
+                    { label: 'Correct', value: String(score.correctAnswers), color: '#16a34a' },
+                    { label: 'Incorrect', value: String(score.incorrectAnswers), color: '#dc2626' },
+                    { label: 'GPA', value: score.gradePoint != null ? Number(score.gradePoint).toFixed(1) : '—', color: '#7c3aed' },
+                  ].map((item, i) => (
+                    <View key={item.label} style={{ flex: 1, padding: 14, alignItems: 'center', borderRightWidth: i < 3 ? 1 : 0, borderRightColor: '#f1f5f9' }}>
+                      <Text style={{ fontSize: 20, fontWeight: '900', color: item.color }}>{item.value}</Text>
+                      <Text style={{ fontSize: 10, color: '#9ca3af', fontWeight: '600', marginTop: 3, textAlign: 'center' }}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={{ marginHorizontal: 14, marginBottom: 14, height: 8, borderRadius: 4, backgroundColor: '#f1f5f9', overflow: 'hidden', flexDirection: 'row' }}>
+                  <View style={{ flex: score.correctAnswers, backgroundColor: '#16a34a', borderRadius: 4 }} />
+                  <View style={{ flex: score.incorrectAnswers, backgroundColor: '#dc2626', borderRadius: 4 }} />
+                  <View style={{ flex: Math.max(0, score.questionsAnswered - score.correctAnswers - score.incorrectAnswers), backgroundColor: '#e2e8f0', borderRadius: 4 }} />
+                </View>
+              </View>
+            )}
+
+            {/* Remarks */}
+            {score.remarks ? (
+              <View style={{ backgroundColor: '#f0f9ff', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#0ea5e9' }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Teacher's Remarks</Text>
+                <Text style={{ fontSize: 13, color: '#1e293b', lineHeight: 20 }}>{score.remarks}</Text>
+              </View>
+            ) : (
+              <View style={{ backgroundColor: '#f8fafc', borderRadius: 14, padding: 14, alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, color: '#9ca3af' }}>No remarks provided</Text>
+              </View>
+            )}
+
+            {/* Graded date */}
+            {score.gradedAt && (
+              <Text style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>
+                Graded on {format(new Date(score.gradedAt), 'MMM d, yyyy')}
+              </Text>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
 
 function ScoreRing({ pct, passed }: { pct: number; passed: boolean }) {
   const color = passed ? '#10b981' : '#f87171';
@@ -26,7 +157,9 @@ function ScoreRing({ pct, passed }: { pct: number; passed: boolean }) {
 
 export default function MobileStudentDashboard({ schoolId, schoolName, firstName }: Props) {
   const { data, isLoading, refetch } = useStudentDashboard(schoolId);
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedScore, setSelectedScore] = useState<DashScore | null>(null);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refetch();
@@ -37,6 +170,7 @@ export default function MobileStudentDashboard({ schoolId, schoolName, firstName
   const d = data;
 
   return (
+    <>
     <ScrollView
       showsVerticalScrollIndicator={false}
       className="flex-1"
@@ -157,7 +291,12 @@ export default function MobileStudentDashboard({ schoolId, schoolName, firstName
             <SectionLabel>Recent Scores</SectionLabel>
             <Card>
               {d.recentScores.map((s, i) => (
-                <View key={s.id} className={`flex-row items-center gap-3 py-2.5 ${i < d.recentScores.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                <Pressable
+                  key={s.id}
+                  onPress={() => setSelectedScore(s)}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                  className={`flex-row items-center gap-3 py-2.5 ${i < d.recentScores.length - 1 ? 'border-b border-gray-50' : ''}`}
+                >
                   <ScoreRing pct={Number(s.percentage)} passed={s.passed} />
                   <View className="flex-1">
                     <Text className="text-xs font-semibold text-gray-800" numberOfLines={1}>{s.title}</Text>
@@ -171,7 +310,7 @@ export default function MobileStudentDashboard({ schoolId, schoolName, firstName
                       {s.grade || (s.passed ? 'P' : 'F')}
                     </Text>
                   </View>
-                </View>
+                </Pressable>
               ))}
             </Card>
           </>
@@ -204,5 +343,10 @@ export default function MobileStudentDashboard({ schoolId, schoolName, firstName
         <View style={{ height: 20 }} />
       </View>
     </ScrollView>
+
+    {selectedScore && (
+      <ScoreDetailModal score={selectedScore} onClose={() => setSelectedScore(null)} />
+    )}
+    </>
   );
 }
