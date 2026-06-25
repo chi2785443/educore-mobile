@@ -8,8 +8,8 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { useClassroomsBySchool, useMyTeacherClassrooms } from '@/hooks/useClassroom';
 import { useGenerateResults } from '@/hooks/useResults';
+import { useSchoolById } from '@/hooks/useSchool';
 import { UserRole } from '@/interface/user.interface';
-import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 
 /* ── Constants ─────────────────────────────────────────────────── */
 
@@ -27,14 +27,6 @@ const TERM_FULL: Record<string, string> = {
   FIRST_TERM: 'First Term', SECOND_TERM: 'Second Term', THIRD_TERM: 'Third Term',
   FIRST_SEMESTER: 'First Semester', SECOND_SEMESTER: 'Second Semester',
 };
-
-function buildYears(): { key: string; label: string }[] {
-  const y = new Date().getFullYear();
-  return Array.from({ length: 5 }, (_, i) => {
-    const yr = y - i;
-    return { key: `${yr}/${yr + 1}`, label: `${yr}/${yr + 1}` };
-  });
-}
 
 function mapTermToEnum(term: string | null | undefined): string {
   if (!term) return '';
@@ -173,16 +165,13 @@ export default function GenerateResultsScreen() {
   const isAdmin    = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin;
   const isStaff    = role === UserRole.STAFF;
 
-  // Default term/year from school settings
-  const defaultTerm = mapTermToEnum(primary?.school?.currentTerm) || TERMS[0].key;
-  const schoolYear  = primary?.school?.currentSession?.replace(/-/g, '/') ?? '';
-  const years       = useMemo(buildYears, []);
-  const defaultYear = schoolYear || years[0]?.key || '';
+  // Use fresh school data — auth store school object can be stale
+  const { data: freshSchool } = useSchoolById(schoolId);
+  const term         = mapTermToEnum(freshSchool?.currentTerm ?? primary?.school?.currentTerm) || TERMS[0].key;
+  const academicYear = (freshSchool?.currentSession ?? primary?.school?.currentSession ?? '').replace(/-/g, '/');
 
   /* Form state */
   const [classroomId,        setClassroomId]        = useState<string>('all');
-  const [term,               setTerm]               = useState(defaultTerm);
-  const [academicYear,       setAcademicYear]       = useState(defaultYear);
   const [showClassroomPicker, setShowClassroomPicker] = useState(false);
   const [done,               setDone]               = useState(false);
 
@@ -316,22 +305,26 @@ export default function GenerateResultsScreen() {
             )}
 
             <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
-              <Pressable onPress={resetForm} style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.8 : 1 })}>
-                <View style={{
-                  borderWidth: 1.5, borderColor: HEADER_BG,
-                  borderRadius: 14, paddingVertical: 14, alignItems: 'center',
-                }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: HEADER_BG }}>Generate Again</Text>
-                </View>
-              </Pressable>
-              <Pressable onPress={() => router.back()} style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.8 : 1 })}>
-                <View style={{
-                  backgroundColor: HEADER_BG, borderRadius: 14,
-                  paddingVertical: 14, alignItems: 'center',
-                }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Done</Text>
-                </View>
-              </Pressable>
+              <View style={{ flex: 1 }}>
+                <Pressable onPress={resetForm} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                  <View style={{
+                    borderWidth: 1.5, borderColor: HEADER_BG,
+                    borderRadius: 14, paddingVertical: 14, alignItems: 'center',
+                  }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: HEADER_BG }}>Generate Again</Text>
+                  </View>
+                </Pressable>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Pressable onPress={() => router.back()} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                  <View style={{
+                    backgroundColor: HEADER_BG, borderRadius: 14,
+                    paddingVertical: 14, alignItems: 'center',
+                  }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Done</Text>
+                  </View>
+                </Pressable>
+              </View>
             </View>
           </View>
         ) : (
@@ -424,35 +417,49 @@ export default function GenerateResultsScreen() {
                 {/* Divider */}
                 <View style={{ height: 1, backgroundColor: '#f1f5f9', marginHorizontal: -16 }} />
 
-                {/* Term selector */}
+                {/* Term — read-only, auto from school */}
                 <View style={{ gap: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Term / Semester</Text>
-                    <Text style={{ fontSize: 13, color: '#ef4444', fontWeight: '700' }}>*</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Term / Semester</Text>
+                  <View style={{
+                    backgroundColor: '#f8fafc', borderWidth: 1.5, borderColor: '#e5e7eb',
+                    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13,
+                    flexDirection: 'row', alignItems: 'center', gap: 8,
+                  }}>
+                    <Ionicons name="lock-closed-outline" size={14} color="#9ca3af" />
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>
+                      {TERMS.find(t => t.key === term)?.label ?? term}
+                    </Text>
+                    <View style={{
+                      marginLeft: 'auto', backgroundColor: '#F0EEFF',
+                      borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+                    }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#4C3FC4' }}>Current</Text>
+                    </View>
                   </View>
-                  <ClassroomDetailTabs
-                    tabs={TERMS}
-                    activeTab={term}
-                    onTabChange={setTerm}
-                    accentColor="#4C3FC4"
-                  />
                 </View>
 
                 {/* Divider */}
                 <View style={{ height: 1, backgroundColor: '#f1f5f9', marginHorizontal: -16 }} />
 
-                {/* Academic year selector */}
+                {/* Academic year — read-only, auto from school */}
                 <View style={{ gap: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Academic Year</Text>
-                    <Text style={{ fontSize: 13, color: '#ef4444', fontWeight: '700' }}>*</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Academic Year</Text>
+                  <View style={{
+                    backgroundColor: '#f8fafc', borderWidth: 1.5, borderColor: '#e5e7eb',
+                    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13,
+                    flexDirection: 'row', alignItems: 'center', gap: 8,
+                  }}>
+                    <Ionicons name="lock-closed-outline" size={14} color="#9ca3af" />
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>
+                      {academicYear || '—'}
+                    </Text>
+                    <View style={{
+                      marginLeft: 'auto', backgroundColor: '#F0EEFF',
+                      borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+                    }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#4C3FC4' }}>Current</Text>
+                    </View>
                   </View>
-                  <ClassroomDetailTabs
-                    tabs={years}
-                    activeTab={academicYear}
-                    onTabChange={setAcademicYear}
-                    accentColor="#0ea5e9"
-                  />
                 </View>
 
                 {/* Divider */}
