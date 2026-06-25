@@ -4,6 +4,7 @@ import {
   Dimensions, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import * as WebBrowser from 'expo-web-browser';
 import { toast } from '@/components/ui/Toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -108,9 +109,17 @@ export default function AssessmentDetailScreen() {
   const { data: questions = [], isLoading: loadingQuestions } = useAssessmentQuestions(
     isStaff && activeTab === 'questions' ? assessmentId : undefined,
   );
+  const bankFilter = useMemo(() => {
+    if (!assessment) return undefined;
+    const f: Record<string, string> = {};
+    if (assessment.subjectId) f.subjectId = assessment.subjectId;
+    if (assessment.questionType !== 'mixed') f.type = assessment.questionType;
+    return Object.keys(f).length ? f : undefined;
+  }, [assessment?.subjectId, assessment?.questionType]);
+
   const { data: bankQuestions = [], isLoading: loadingBank } = useQuestions(
     isStaff && pickerOpen ? schoolId : undefined,
-    assessment?.subjectId ? { subjectId: assessment.subjectId } : undefined,
+    bankFilter as import('@/interface/question.interface').QuestionFilters | undefined,
   );
   const addMutation = useAddAssessmentQuestions(assessmentId ?? '');
   const removeMutation = useRemoveAssessmentQuestion(assessmentId ?? '');
@@ -123,6 +132,10 @@ export default function AssessmentDetailScreen() {
   const { data: stats, isLoading: loadingStats } = useAssessmentStats(
     (isStaff || isAdmin) && activeTab === 'scores' ? assessmentId : undefined,
   );
+  const { data: releaseStats } = useAssessmentStats(
+    (isStaff || isAdmin) ? assessmentId : undefined,
+  );
+  const scoresReleased = (releaseStats?.releasedCount ?? 0) > 0;
   const { data: myScore, isLoading: loadingMyScore } = useMyScoreForAssessment(
     isStudent && activeTab === 'score' ? assessmentId : undefined,
   );
@@ -175,7 +188,7 @@ export default function AssessmentDetailScreen() {
     if (entries.length === 0) return;
     const missing = entries.some(([, marks]) => !marks);
     if (missing) {
-      toast.error('Enter marks for all selected questions');
+      Alert.alert('Missing Marks', 'Enter marks for all selected questions before adding.');
       return;
     }
     const nextOrder = questions.length + 1;
@@ -189,7 +202,7 @@ export default function AssessmentDetailScreen() {
       setPickerOpen(false);
       toast.success(`${entries.length} question${entries.length !== 1 ? 's' : ''} added`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add questions');
+      Alert.alert('Failed to Add Questions', err instanceof Error ? err.message : 'Failed to add questions');
     }
   };
 
@@ -325,6 +338,8 @@ export default function AssessmentDetailScreen() {
     setLocalMarks({});
     setLocalFeedback({});
     setOverallRemarks('');
+    setRecordingPlayerUrl(null);
+    setRecordingLoading(false);
   };
 
   const handleMarkAnswer = async (answer: TheoryAnswer) => {
@@ -404,11 +419,7 @@ export default function AssessmentDetailScreen() {
       <View style={{ backgroundColor: '#4C3FC4', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 22, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
           <Pressable
-            onPress={() => {
-              if (isStaff) router.replace('/assessments' as never);
-              else if (isStudent) router.replace('/my-assessments' as never);
-              else router.back();
-            }}
+            onPress={() => router.back()}
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           >
             <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
@@ -539,20 +550,22 @@ export default function AssessmentDetailScreen() {
                   </View>
                 </Pressable>
               )}
-              <Pressable
-                onPress={handleOpenEdit}
-                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-              >
-                <View style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 14, paddingVertical: 13,
-                  borderWidth: 1, borderColor: '#c7d2fe',
-                  flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
-                }}>
-                  <Ionicons name="create-outline" size={16} color="#4C3FC4" />
-                  <Text style={{ color: '#4C3FC4', fontSize: 14, fontWeight: '700' }}>Edit Assessment</Text>
-                </View>
-              </Pressable>
+              {!scoresReleased && (
+                <Pressable
+                  onPress={handleOpenEdit}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                >
+                  <View style={{
+                    backgroundColor: '#fff',
+                    borderRadius: 14, paddingVertical: 13,
+                    borderWidth: 1, borderColor: '#c7d2fe',
+                    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
+                  }}>
+                    <Ionicons name="create-outline" size={16} color="#4C3FC4" />
+                    <Text style={{ color: '#4C3FC4', fontSize: 14, fontWeight: '700' }}>Edit Assessment</Text>
+                  </View>
+                </Pressable>
+              )}
               <Pressable
                 onPress={handleDelete}
                 disabled={deleteMutation.isPending}
@@ -1273,54 +1286,46 @@ export default function AssessmentDetailScreen() {
 
                 {/* Recording */}
                 {markingDetails?.attempt?.recordingUrl && (
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    disabled={recordingLoading}
-                    onPress={async () => {
-                      try {
-                        setRecordingLoading(true);
-                        const url = await studentAttemptService.getSignedViewUrl(
-                          markingDetails.attempt.recordingUrl!,
-                        );
-                        setRecordingPlayerUrl(url);
-                      } catch {
-                        toast.error('Could not load recording');
-                      } finally {
-                        setRecordingLoading(false);
-                      }
-                    }}
-                    style={{
-                      backgroundColor: '#1e1b4b', borderRadius: 14, padding: 14,
-                      flexDirection: 'row', alignItems: 'center', gap: 12,
-                    }}
-                  >
-                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="videocam" size={20} color="#fff" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Proctoring Recording</Text>
-                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>Tap to watch the session recording</Text>
-                    </View>
-                    {recordingLoading
-                      ? <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" />
-                      : <Ionicons name="play-circle" size={28} color="rgba(255,255,255,0.7)" />}
-                  </TouchableOpacity>
-                )}
-
-                {/* In-app recording player modal */}
-                <Modal
-                  visible={!!recordingPlayerUrl}
-                  animationType="slide"
-                  onRequestClose={() => setRecordingPlayerUrl(null)}
-                  statusBarTranslucent
-                >
-                  {recordingPlayerUrl ? (
-                    <RecordingPlayerModal
+                  recordingPlayerUrl ? (
+                    <InlineRecordingPlayer
                       url={recordingPlayerUrl}
                       onClose={() => setRecordingPlayerUrl(null)}
                     />
-                  ) : null}
-                </Modal>
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      disabled={recordingLoading}
+                      onPress={async () => {
+                        try {
+                          setRecordingLoading(true);
+                          const url = await studentAttemptService.getSignedViewUrl(
+                            markingDetails.attempt.recordingUrl!,
+                          );
+                          setRecordingPlayerUrl(url);
+                        } catch {
+                          toast.error('Could not load recording');
+                        } finally {
+                          setRecordingLoading(false);
+                        }
+                      }}
+                      style={{
+                        backgroundColor: '#1e1b4b', borderRadius: 14, padding: 14,
+                        flexDirection: 'row', alignItems: 'center', gap: 12,
+                      }}
+                    >
+                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name="videocam" size={20} color="#fff" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Proctoring Recording</Text>
+                        <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>Tap to watch the session recording</Text>
+                      </View>
+                      {recordingLoading
+                        ? <ActivityIndicator size="small" color="rgba(255,255,255,0.7)" />
+                        : <Ionicons name="play-circle" size={28} color="rgba(255,255,255,0.7)" />}
+                    </TouchableOpacity>
+                  )
+                )}
 
                 {/* Theory answers */}
                 {(markingDetails?.answers ?? []).map((answer, idx) => {
@@ -1469,34 +1474,67 @@ export default function AssessmentDetailScreen() {
   );
 }
 
-function RecordingPlayerModal({ url, onClose }: { url: string; onClose: () => void }) {
+function InlineRecordingPlayer({ url, onClose }: { url: string; onClose: () => void }) {
+  const [playerError, setPlayerError] = React.useState(false);
+
   const player = useVideoPlayer(url, p => {
     p.play();
   });
 
-  return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="close" size={20} color="#fff" />
-          </TouchableOpacity>
-          <Text style={{ flex: 1, textAlign: 'center', color: '#fff', fontWeight: '800', fontSize: 15, marginHorizontal: 8 }}>
-            Proctoring Recording
-          </Text>
-          <View style={{ width: 36 }} />
-        </View>
+  React.useEffect(() => {
+    const sub = player.addListener('statusChange', (payload) => {
+      if (payload.status === 'error') setPlayerError(true);
+    });
+    return () => sub.remove();
+  }, [player]);
 
-        {/* Player */}
-        <VideoView
-          player={player}
-          style={{ flex: 1 }}
-          contentFit="contain"
-          nativeControls
-        />
-      </SafeAreaView>
+  if (playerError) {
+    return (
+      <View style={{ borderRadius: 16, backgroundColor: '#1e1b4b', padding: 20, alignItems: 'center', gap: 12 }}>
+        <Ionicons name="warning-outline" size={32} color="#ef4444" />
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14, textAlign: 'center' }}>
+          Could not play this recording
+        </Text>
+        <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+          This recording was captured before a system update and cannot be decoded. New recordings will play automatically. You can try the browser, but older recordings may not play there either.
+        </Text>
+        <Pressable
+          onPress={() => WebBrowser.openBrowserAsync(url)}
+          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+        >
+          <View style={{ backgroundColor: '#4C3FC4', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="globe-outline" size={18} color="#fff" />
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>Try in browser</Text>
+          </View>
+        </Pressable>
+        <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontWeight: '600', fontSize: 12 }}>Dismiss</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    // No overflow:hidden — silently clips native views (VideoView) on iOS.
+    <View style={{ borderRadius: 16, backgroundColor: '#000' }}>
+      <VideoView
+        player={player}
+        style={{ width: '100%', height: 320, borderRadius: 16 }}
+        contentFit="contain"
+        nativeControls
+        fullscreenOptions={{ enable: true }}
+        // textureView is required on Android when VideoView is inside a ScrollView or Modal —
+        // the default surfaceView does not render in overlapping/scrollable containers.
+        surfaceType="textureView"
+      />
+      <Pressable
+        onPress={onClose}
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, position: 'absolute', top: 10, right: 10 })}
+      >
+        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="close" size={18} color="#fff" />
+        </View>
+      </Pressable>
     </View>
   );
 }
