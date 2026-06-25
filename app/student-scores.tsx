@@ -39,7 +39,7 @@ function pctBg(pct: number): string {
 
 /* ── Score Detail Modal ──────────────────────────────────────────── */
 function ScoreDetailModal({ score, onClose }: { score: StudentScore; onClose: () => void }) {
-  const pct = Math.round(score.percentage);
+  const pct = Math.round(Number(score.percentage));
   const color = pctColor(pct);
   const bg = pctBg(pct);
   const typeColor = TYPE_COLOR[score.assessment?.type ?? ''] ?? '#4C3FC4';
@@ -187,9 +187,37 @@ function ScoreDetailModal({ score, onClose }: { score: StudentScore; onClose: ()
   );
 }
 
+/* ── Under Review card ───────────────────────────────────────────── */
+function UnderReviewCard({ score }: { score: StudentScore }) {
+  const typeColor = TYPE_COLOR[score.assessment?.type ?? ''] ?? '#4C3FC4';
+  const typeBg = TYPE_BG[score.assessment?.type ?? ''] ?? '#F0EEFF';
+  return (
+    <View style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: 0.75 }}>
+      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: typeBg, alignItems: 'center', justifyContent: 'center' }}>
+        <Ionicons
+          name={score.assessment?.type === 'exam' ? 'document-text' : score.assessment?.type === 'quiz' ? 'help-circle' : score.assessment?.type === 'assignment' ? 'create' : 'clipboard'}
+          size={20}
+          color={typeColor}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 13, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>
+          {score.assessment?.title ?? 'Assessment'}
+        </Text>
+        {score.assessment?.subject?.name && (
+          <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{score.assessment.subject.name}</Text>
+        )}
+      </View>
+      <View style={{ backgroundColor: '#eff6ff', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: '#bfdbfe' }}>
+        <Text style={{ fontSize: 11, fontWeight: '700', color: '#1d4ed8' }}>Under Review</Text>
+      </View>
+    </View>
+  );
+}
+
 /* ── Score card (list item) ──────────────────────────────────────── */
 function ScoreCard({ score, onPress }: { score: StudentScore; onPress: () => void }) {
-  const pct = Math.round(score.percentage);
+  const pct = Math.round(Number(score.percentage));
   const color = pctColor(pct);
   const bg = pctBg(pct);
   const typeColor = TYPE_COLOR[score.assessment?.type ?? ''] ?? '#4C3FC4';
@@ -310,7 +338,7 @@ export default function StudentScoresScreen() {
 
   /* ── Summary stats ───────────────────────────────────────────── */
   const avgPct = filtered.length
-    ? Math.round(filtered.reduce((a, s) => a + s.percentage, 0) / filtered.length)
+    ? Math.round(filtered.reduce((a, s) => a + Number(s.percentage), 0) / filtered.length)
     : 0;
   const passCount = filtered.filter(s => s.isPassed).length;
 
@@ -442,9 +470,11 @@ export default function StudentScoresScreen() {
             </View>
           ) : (
             <View style={{ paddingHorizontal: 16, paddingTop: 4, gap: 10 }}>
-              {filtered.map(score => (
-                <ScoreCard key={score.id} score={score} onPress={() => setSelected(score)} />
-              ))}
+              {filtered.map(score =>
+                score.isReleased
+                  ? <ScoreCard key={score.id} score={score} onPress={() => setSelected(score)} />
+                  : <UnderReviewCard key={score.id} score={score} />
+              )}
             </View>
           )}
         </ScrollView>
