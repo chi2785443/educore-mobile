@@ -21,6 +21,11 @@ export const studentScoreService = {
     return Array.isArray(d) ? d : [];
   },
 
+  releaseScores: async (assessmentId: string): Promise<{ released: number }> => {
+    const res = await apiClient.patch(`/student-scores/assessment/${assessmentId}/release`);
+    return (res.data?.data ?? res.data) as { released: number };
+  },
+
   getMyScoreForAssessment: async (assessmentId: string): Promise<StudentScore | null> => {
     try {
       // Mirror web: use the bulk my-scores endpoint (returns all scores including

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentScoreService } from '@/services/student-score.service';
 
 const STALE = 60_000;
@@ -34,3 +34,14 @@ export const useMyScoreForAssessment = (assessmentId: string | undefined) =>
     enabled: !!assessmentId,
     staleTime: STALE,
   });
+
+export const useReleaseScores = (assessmentId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => studentScoreService.releaseScores(assessmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['scores', 'assessment', assessmentId, 'stats'] });
+      qc.invalidateQueries({ queryKey: ['scores', 'assessment', assessmentId] });
+    },
+  });
+};

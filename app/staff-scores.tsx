@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,9 +7,9 @@ import { format } from 'date-fns';
 import { useAuthStore } from '@/store/authStore';
 import { useMyTeacherClassrooms } from '@/hooks/useClassroom';
 import { useClassroomAssessments } from '@/hooks/useAssessment';
-import { useScoresForAssessment, useAssessmentStats } from '@/hooks/useStudentScore';
+import { useScoresForAssessment, useAssessmentStats, useReleaseScores } from '@/hooks/useStudentScore';
 import { Assessment, AssessmentType } from '@/interface/assessment.interface';
-import { StudentScore } from '@/interface/attempt.interface';
+import { StudentScore, ClassStats } from '@/interface/attempt.interface';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
@@ -28,6 +28,11 @@ function ScoreDetailModal({
 }: { assessment: Assessment; onClose: () => void }) {
   const { data: scores = [], isLoading: loadingScores } = useScoresForAssessment(assessment.id);
   const { data: stats, isLoading: loadingStats } = useAssessmentStats(assessment.id);
+  const { mutate: release, isPending: releasing } = useReleaseScores(assessment.id);
+
+  const s = stats as ClassStats | undefined;
+  const allReleased = !!s && s.totalStudents > 0 && s.releasedCount >= s.totalStudents;
+  const hasScores = !!s && s.totalStudents > 0;
 
   const sorted = useMemo(
     () => [...scores].sort((a, b) => b.percentage - a.percentage),
@@ -35,6 +40,16 @@ function ScoreDetailModal({
   );
 
   const typeColor = TYPE_COLOR[assessment.type] ?? '#4C3FC4';
+
+  const handleRelease = () => {
+    release(undefined, {
+      onSuccess: (data) => {
+        if (data.released === 0) Alert.alert('Already Released', 'All scores are already visible to students.');
+        else Alert.alert('Scores Released', `${data.released} score(s) are now visible to students.`);
+      },
+      onError: (err: Error) => Alert.alert('Error', err.message),
+    });
+  };
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -51,6 +66,24 @@ function ScoreDetailModal({
               <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }} numberOfLines={2}>{assessment.title}</Text>
               <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 1, textTransform: 'capitalize' }}>{assessment.type}</Text>
             </View>
+            {/* Release button */}
+            {hasScores && (
+              allReleased ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 }}>
+                  <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Released</Text>
+                </View>
+              ) : (
+                <Pressable onPress={handleRelease} disabled={releasing} style={({ pressed }) => ({ opacity: pressed || releasing ? 0.7 : 1 })}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 }}>
+                    {releasing
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Ionicons name="send" size={13} color="#fff" />}
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Release</Text>
+                  </View>
+                </Pressable>
+              )
+            )}
           </View>
 
           {stats && (
