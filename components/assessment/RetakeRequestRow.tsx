@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RetakeRequest } from '@/interface/attempt.interface';
 import { useRespondToRetake } from '@/hooks/useRetakeRequest';
@@ -41,8 +41,7 @@ export default function RetakeRequestRow({ request, assessmentId }: Props) {
       borderWidth: 1,
       borderColor: '#f1f5f9',
       marginBottom: 10,
-      padding: 14,
-      gap: 10,
+      overflow: 'hidden',
       shadowColor: '#000',
       shadowOpacity: 0.04,
       shadowOffset: { width: 0, height: 2 },
@@ -50,7 +49,7 @@ export default function RetakeRequestRow({ request, assessmentId }: Props) {
       elevation: 2,
     }}>
       {/* Top row */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingTop: 14, paddingBottom: request.status === 'pending' ? 10 : 14 }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 14, fontWeight: '800', color: '#1e293b' }}>{studentName}</Text>
           <Text style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
@@ -63,14 +62,14 @@ export default function RetakeRequestRow({ request, assessmentId }: Props) {
       </View>
 
       {/* Reason */}
-      <View style={{ backgroundColor: '#f8fafc', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#f1f5f9' }}>
+      <View style={{ backgroundColor: '#f8fafc', marginHorizontal: 14, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 10 }}>
         <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', marginBottom: 3 }}>Reason</Text>
         <Text style={{ fontSize: 13, color: '#374151', lineHeight: 18 }}>{request.reason}</Text>
       </View>
 
       {/* Response note if already responded */}
       {request.responseNote && (
-        <View style={{ backgroundColor: '#f0fdf4', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#bbf7d0' }}>
+        <View style={{ backgroundColor: '#f0fdf4', marginHorizontal: 14, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#bbf7d0', marginBottom: 14 }}>
           <Text style={{ fontSize: 12, fontWeight: '700', color: '#16a34a', marginBottom: 3 }}>Your Response</Text>
           <Text style={{ fontSize: 13, color: '#374151', lineHeight: 18 }}>{request.responseNote}</Text>
         </View>
@@ -78,7 +77,7 @@ export default function RetakeRequestRow({ request, assessmentId }: Props) {
 
       {/* Actions (pending only) */}
       {request.status === 'pending' && (
-        <View style={{ gap: 8 }}>
+        <View>
           {showNote && (
             <TextInput
               value={noteText}
@@ -90,10 +89,9 @@ export default function RetakeRequestRow({ request, assessmentId }: Props) {
               textAlignVertical="top"
               style={{
                 backgroundColor: '#f8fafc',
-                borderWidth: 1,
+                borderTopWidth: 1,
                 borderColor: '#e5e7eb',
-                borderRadius: 10,
-                padding: 10,
+                padding: 12,
                 fontSize: 13,
                 color: '#1e293b',
                 minHeight: 70,
@@ -101,41 +99,60 @@ export default function RetakeRequestRow({ request, assessmentId }: Props) {
             />
           )}
 
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pressable
+          <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
+            <TouchableOpacity
               onPress={() => setShowNote(v => !v)}
-              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#f8fafc' }}
+              activeOpacity={0.7}
+              style={{
+                width: 48, paddingVertical: 13,
+                alignItems: 'center', justifyContent: 'center',
+                backgroundColor: showNote ? '#f1f5f9' : '#fff',
+                borderRightWidth: 1, borderRightColor: '#f1f5f9',
+              }}
             >
-              <Ionicons name="chatbubble-outline" size={14} color="#6b7280" />
-            </Pressable>
+              <Ionicons name={showNote ? 'chatbubble' : 'chatbubble-outline'} size={16} color="#6b7280" />
+            </TouchableOpacity>
 
-            <Pressable
+            <TouchableOpacity
               onPress={() => handleRespond('denied')}
               disabled={respondMutation.isPending}
-              style={({ pressed }) => ({ flex: 1, opacity: pressed || respondMutation.isPending ? 0.7 : 1 })}
+              activeOpacity={0.7}
+              style={{
+                flex: 1, paddingVertical: 13,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                backgroundColor: '#fff5f5',
+                borderRightWidth: 1, borderRightColor: '#f1f5f9',
+              }}
             >
-              <View style={{ paddingVertical: 8, borderRadius: 10, backgroundColor: '#fee2e2', alignItems: 'center' }}>
-                {respondMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#dc2626" />
-                ) : (
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#dc2626' }}>Deny</Text>
-                )}
-              </View>
-            </Pressable>
+              {respondMutation.isPending ? (
+                <ActivityIndicator size="small" color="#dc2626" />
+              ) : (
+                <>
+                  <Ionicons name="close-circle" size={15} color="#dc2626" />
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#dc2626' }}>Deny</Text>
+                </>
+              )}
+            </TouchableOpacity>
 
-            <Pressable
+            <TouchableOpacity
               onPress={() => handleRespond('approved')}
               disabled={respondMutation.isPending}
-              style={({ pressed }) => ({ flex: 1, opacity: pressed || respondMutation.isPending ? 0.7 : 1 })}
+              activeOpacity={0.7}
+              style={{
+                flex: 1, paddingVertical: 13,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                backgroundColor: '#f0fdf4',
+              }}
             >
-              <View style={{ paddingVertical: 8, borderRadius: 10, backgroundColor: '#dcfce7', alignItems: 'center' }}>
-                {respondMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#16a34a" />
-                ) : (
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#16a34a' }}>Approve</Text>
-                )}
-              </View>
-            </Pressable>
+              {respondMutation.isPending ? (
+                <ActivityIndicator size="small" color="#16a34a" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={15} color="#16a34a" />
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#16a34a' }}>Approve</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       )}

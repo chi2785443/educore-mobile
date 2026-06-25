@@ -185,7 +185,7 @@ export default function TakeAssessmentScreen() {
     try {
       await submitAttemptMutation.mutateAsync({ attemptId: attemptId ?? '', timeRemaining: 0 });
     } catch { /* best-effort */ }
-    router.replace('/features');
+    router.back();
   }, [submitting, attemptId, submitAttemptMutation, router, stopAndUploadRecording]);
 
   useEffect(() => {
@@ -240,7 +240,7 @@ export default function TakeAssessmentScreen() {
             stopAndUploadRecording();
             try {
               await submitAttemptMutation.mutateAsync({ attemptId: attemptId ?? '', timeRemaining });
-              router.replace('/features');
+              router.back();
             } catch (err) {
               setSubmitting(false);
               toast.error(err instanceof Error ? err.message : 'Failed to submit. Please try again.');

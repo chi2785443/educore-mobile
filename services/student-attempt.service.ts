@@ -75,15 +75,28 @@ export const studentAttemptService = {
   },
 
   uploadRecording: async (attemptId: string, videoUri: string): Promise<void> => {
+    // iOS records as .mov (video/quicktime); Android records as .mp4 (video/mp4).
+    // Use the real extension so R2 stores the correct ContentType and the player can decode it.
+    const ext = videoUri.split('.').pop()?.toLowerCase() ?? 'mp4';
+    const mimeType = ext === 'mov' ? 'video/quicktime' : 'video/mp4';
+
     const formData = new FormData();
-    formData.append('file', {
+    formData.append('recording', {
       uri: videoUri,
-      type: 'video/mp4',
-      name: `proctor_${attemptId}.mp4`,
+      type: mimeType,
+      name: `proctor_${attemptId}.${ext}`,
     } as unknown as Blob);
+    // 'multipart/form-data' without boundary lets the native XHR layer attach the boundary.
+    // timeout: 0 disables the 15 s default — videos can be large and slow to upload.
     await apiClient.post(`/student-attempts/${attemptId}/recording`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
     });
+  },
+
+  getSignedViewUrl: async (fileUrl: string): Promise<string> => {
+    const res = await apiClient.get('/files/view-url', { params: { fileUrl } });
+    return res.data?.url ?? res.data;
   },
 
   getAttemptsForAssessment: async (assessmentId: string): Promise<StudentAttempt[]> => {

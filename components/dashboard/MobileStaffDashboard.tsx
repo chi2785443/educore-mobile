@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
 import { useStaffDashboard } from '@/hooks/useDashboardRole';
 import {
@@ -12,6 +13,7 @@ interface Props { schoolId: string; schoolName: string; firstName: string }
 
 export default function MobileStaffDashboard({ schoolId, schoolName, firstName }: Props) {
   const { data, isLoading, refetch } = useStaffDashboard(schoolId);
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -112,7 +114,12 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
                 const colorPairs = [['#4C3FC4','#F0EEFF'],['#059669','#E8F5EE'],['#F5486A','#FFF0F0'],['#f59e0b','#fef3c7']];
                 const [fg, bg] = colorPairs[i % colorPairs.length];
                 return (
-                  <View key={c.id} className={`flex-row items-center gap-3 py-2.5 ${i < d.myClassrooms.length - 1 && i < 3 ? 'border-b border-gray-50' : ''}`}>
+                  <Pressable
+                    key={c.id}
+                    onPress={() => router.push(`/features/${c.id}` as never)}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    className={`flex-row items-center gap-3 py-2.5 ${i < d.myClassrooms.length - 1 && i < 3 ? 'border-b border-gray-50' : ''}`}
+                  >
                     <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
                       <Text style={{ color: fg, fontWeight: '900', fontSize: 14 }}>{c.name[0]}</Text>
                     </View>
@@ -121,7 +128,7 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
                       <Text className="text-[10px] text-gray-400">{[c.grade, c.section].filter(Boolean).join(' · ')}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={14} color="#d1d5db" />
-                  </View>
+                  </Pressable>
                 );
               })}
             </Card>
@@ -134,7 +141,12 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
             <SectionLabel>Recent Assessments</SectionLabel>
             <Card>
               {d.recentAssessments.map((a, i) => (
-                <View key={a.id} className={`flex-row items-center gap-3 py-2.5 ${i < d.recentAssessments.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                <Pressable
+                  key={a.id}
+                  onPress={() => router.push(`/features/${a.classroomId}/assessment/${a.id}` as never)}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                  className={`flex-row items-center gap-3 py-2.5 ${i < d.recentAssessments.length - 1 ? 'border-b border-gray-50' : ''}`}
+                >
                   <View className="w-8 h-8 rounded-lg bg-[#F0EEFF] items-center justify-center shrink-0">
                     <Ionicons name="document-outline" size={14} color="#4C3FC4" />
                   </View>
@@ -150,7 +162,7 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
                       {a.status}
                     </Text>
                   </View>
-                </View>
+                </Pressable>
               ))}
             </Card>
           </>

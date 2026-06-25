@@ -12,6 +12,7 @@ import {
 import { toast } from '@/components/ui/Toast';
 import { useCreateAssessment, useSubjects, useGradeConfigs } from '@/hooks/useAssessment';
 import { useSchoolById } from '@/hooks/useSchool';
+import { useAuthStore } from '@/store/authStore';
 import { AssessmentType, QuestionType } from '@/interface/assessment.interface';
 
 interface Classroom { id: string; name: string; grade?: string; section?: string }
@@ -387,13 +388,23 @@ function TimePickerModal({ visible, value, label, onSelect, onClose }: {
 export default function CreateAssessmentSheet({ visible, onClose, classrooms, schoolId }: Props) {
   const { data: subjects = [] } = useSubjects(visible ? schoolId : undefined);
   const { data: gradeConfigs = [] } = useGradeConfigs(visible ? schoolId : undefined);
-  const { data: schoolDetail } = useSchoolById(visible ? schoolId : undefined);
+  const { data: schoolDetail, refetch: refetchSchool } = useSchoolById(schoolId);
+
+  // Auth store school — immediately available from login response (may be slightly stale)
+  const user = useAuthStore(s => s.user);
+  const storeSchool = user?.schools?.find(m => m.schoolId === schoolId)?.school;
+
   const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(null);
   const [showClassroomPicker, setShowClassroomPicker] = useState(false);
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+
+  // Force fresh school data every time the sheet opens to pick up changes made on the website
+  useEffect(() => {
+    if (visible) refetchSchool();
+  }, [visible]);
 
   // Allowed assessment types from the latest grade configuration
   const allowedTypes = useMemo(() => {
@@ -405,9 +416,15 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
     return ALL_TYPES;
   }, [gradeConfigs]);
 
-  // Term and academic year — fetched fresh from GET /schools/:id
-  const currentTerm = schoolDetail?.currentTerm ?? '';
-  const currentSession = schoolDetail?.currentSession ?? '';
+  // Academic year: Grade Config is the authoritative source (set via Grade Config tab on website).
+  // Term: comes from the School entity (set via Settings tab on website).
+  // Both fall back through auth store data (immediate) then empty string.
+  const currentSession =
+    gradeConfigs[0]?.academicYear ||
+    schoolDetail?.currentSession ||
+    storeSchool?.currentSession ||
+    '';
+  const currentTerm = schoolDetail?.currentTerm ?? storeSchool?.currentTerm ?? '';
 
   const createMutation = useCreateAssessment(selectedClassroom?.id ?? '');
 

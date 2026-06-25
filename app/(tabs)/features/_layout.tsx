@@ -1,6 +1,22 @@
-import { Stack } from 'expo-router';
+import { Stack, useNavigation } from 'expo-router';
+import { useEffect } from 'react';
+import { StackActions } from '@react-navigation/native';
 
 export default function ClassroomStackLayout() {
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const parent = navigation.getParent();
+    return parent?.addListener('tabPress', (e) => {
+      // Only reset when the features tab itself was pressed (not any other tab)
+      const state = parent.getState();
+      const featuresRoute = state?.routes.find((r: { name: string }) => r.name === 'features');
+      if (featuresRoute?.key === e.target && navigation.canGoBack()) {
+        navigation.dispatch(StackActions.popToTop());
+      }
+    });
+  }, [navigation]);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />

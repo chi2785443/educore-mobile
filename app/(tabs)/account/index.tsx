@@ -367,6 +367,7 @@ export default function AccountTab() {
   const isSuperAdmin = role === UserRole.SUPER_ADMIN || !!user?.isAdmin;
   const isStudent = role === UserRole.STUDENT;
   const isParent = role === UserRole.PARENT;
+  const isStaff = role === UserRole.STAFF;
 
   const heroBg = ROLE_HERO_BG[role] ?? '#4C3FC4';
   const accent = ROLE_ACCENT[role] ?? '#F5486A';
@@ -564,7 +565,7 @@ export default function AccountTab() {
                 onPress={() => router.push('/my-jobs' as never)}
               />
             )}
-            {!isParent && (
+            {!(isParent || isStaff) && (
               <SettingsRow
                 icon="document-text-outline" iconBg="#d1fae5" iconColor="#059669"
                 label="Enrollment" value="School enrollment applications"

@@ -304,21 +304,11 @@ export default function StudentScoresScreen() {
     return ['All', ...order.filter(t => s.has(t))];
   }, [allScores]);
 
-  const subjects = useMemo(() => {
-    const seen = new Map<string, { id: string; name: string; color: string }>();
-    allScores.forEach(s => {
-      const sub = s.assessment?.subject;
-      if (sub) seen.set(sub.id, sub);
-    });
-    return [null, ...Array.from(seen.values())];
-  }, [allScores]);
-
   const types = ['all', 'exam', 'test', 'quiz', 'assignment'] as const;
   type TypeFilter = typeof types[number];
 
   const [activeYear, setActiveYear] = useState('All');
   const [activeTerm, setActiveTerm] = useState('All');
-  const [activeSubject, setActiveSubject] = useState<string | null>(null); // null = all
   const [activeType, setActiveType] = useState<TypeFilter>('all');
 
   /* ── Filter ──────────────────────────────────────────────────── */
@@ -326,7 +316,6 @@ export default function StudentScoresScreen() {
     return allScores.filter(s => {
       if (activeYear !== 'All' && s.assessment?.academicYear !== activeYear) return false;
       if (activeTerm !== 'All' && s.assessment?.term !== activeTerm) return false;
-      if (activeSubject !== null && s.assessment?.subject?.id !== activeSubject) return false;
       if (activeType !== 'all' && s.assessment?.type !== activeType) return false;
       return true;
     }).sort((a, b) => {
@@ -403,7 +392,6 @@ export default function StudentScoresScreen() {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7c3aed" colors={['#7c3aed']} />}
         >
           {/* Year filter */}
@@ -436,45 +424,46 @@ export default function StudentScoresScreen() {
             accentColor="#7c3aed"
           />
 
-          {/* Subject pills */}
-          {subjects.length > 2 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
-            >
-              {subjects.map(sub => {
-                const isActive = sub === null ? activeSubject === null : activeSubject === sub.id;
-                return (
-                  <Pressable
-                    key={sub?.id ?? 'all'}
-                    onPress={() => setActiveSubject(sub === null ? null : sub.id)}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: isActive ? '#7c3aed' : '#e2e8f0', backgroundColor: isActive ? '#f5f3ff' : '#fff' }}>
-                      {sub?.color && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: sub.color }} />}
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#7c3aed' : '#6b7280' }}>
-                        {sub === null ? 'All Subjects' : sub.name}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          )}
-
-          {/* Score list */}
+          {/* Scores grouped by subject */}
           {filtered.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 40, gap: 10 }}>
               <Ionicons name="search-outline" size={36} color="#d1d5db" />
               <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151' }}>No scores match filters</Text>
             </View>
           ) : (
-            <View style={{ paddingHorizontal: 16, paddingTop: 4, gap: 10 }}>
-              {filtered.map(score =>
-                score.isReleased
-                  ? <ScoreCard key={score.id} score={score} onPress={() => setSelected(score)} />
-                  : <UnderReviewCard key={score.id} score={score} />
-              )}
+            <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40, gap: 20 }}>
+              {(() => {
+                const map = new Map<string, { subjectName: string; subjectColor: string; items: typeof filtered }>();
+                for (const s of filtered) {
+                  const key = s.assessment?.subject?.id ?? '__no_subject';
+                  if (!map.has(key)) {
+                    map.set(key, {
+                      subjectName: s.assessment?.subject?.name ?? 'General',
+                      subjectColor: s.assessment?.subject?.color ?? '#7c3aed',
+                      items: [],
+                    });
+                  }
+                  map.get(key)!.items.push(s);
+                }
+                return Array.from(map.entries())
+                  .sort((a, b) => a[1].subjectName.localeCompare(b[1].subjectName))
+                  .map(([key, { subjectName, subjectColor, items }]) => (
+                    <View key={key} style={{ gap: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: subjectColor }} />
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.8, flex: 1 }}>
+                          {subjectName}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#9ca3af' }}>{items.length}</Text>
+                      </View>
+                      {items.map(score =>
+                        score.isReleased
+                          ? <ScoreCard key={score.id} score={score} onPress={() => setSelected(score)} />
+                          : <UnderReviewCard key={score.id} score={score} />
+                      )}
+                    </View>
+                  ));
+              })()}
             </View>
           )}
         </ScrollView>

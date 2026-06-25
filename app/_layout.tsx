@@ -92,6 +92,7 @@ export default function RootLayout() {
             <Stack.Screen name="results" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="my-assessments" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="assessments" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="assessment/[classroomId]/[assessmentId]" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="question-bank" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="my-children" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="my-children-reports" options={{ animation: 'slide_from_right' }} />

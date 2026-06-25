@@ -70,6 +70,24 @@ export default function AssessmentsScreen() {
     [assessments, statusFilter],
   );
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, { subjectName: string; subjectColor: string; items: Assessment[] }>();
+    for (const a of filtered) {
+      const key = a.subjectId ?? '__no_subject';
+      if (!map.has(key)) {
+        map.set(key, {
+          subjectName: a.subject?.name ?? 'General',
+          subjectColor: a.subject?.color ?? '#4C3FC4',
+          items: [],
+        });
+      }
+      map.get(key)!.items.push(a);
+    }
+    return Array.from(map.entries()).sort((a, b) =>
+      a[1].subjectName.localeCompare(b[1].subjectName)
+    );
+  }, [filtered]);
+
   const statusTabs: { key: StatusFilter; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'draft', label: 'Draft' },
@@ -122,18 +140,29 @@ export default function AssessmentsScreen() {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 36 }}
+          contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 36 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
         >
-          {filtered.map(a => (
-            <AssessmentCard
-              key={a.id}
-              assessment={a}
-              onPress={() => a.classroomId
-                ? router.push(`/features/${a.classroomId}/assessment/${a.id}`)
-                : undefined
-              }
-            />
+          {grouped.map(([subjectKey, { subjectName, subjectColor, items }]) => (
+            <View key={subjectKey} style={{ gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: subjectColor }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.8, flex: 1 }}>
+                  {subjectName}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#9ca3af' }}>{items.length}</Text>
+              </View>
+              {items.map(a => (
+                <AssessmentCard
+                  key={a.id}
+                  assessment={a}
+                  onPress={() => a.classroomId
+                    ? router.push(`/assessment/${a.classroomId}/${a.id}`)
+                    : undefined
+                  }
+                />
+              ))}
+            </View>
           ))}
         </ScrollView>
       )}

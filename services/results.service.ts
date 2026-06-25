@@ -55,7 +55,30 @@ export const resultsService = {
 
   getClassroomResults: async (classroomId: string, term: string, academicYear: string): Promise<TermResult[]> => {
     const res = await apiClient.get(`/results/classroom/${classroomId}`, { params: { term, academicYear } });
-    return exList<TermResult>(res.data);
+    // Backend returns { classroomId, ..., results: [...] } (possibly wrapped in { data: ... })
+    const raw = res.data as { data?: { results?: unknown[] }; results?: unknown[] } | { results?: unknown[] };
+    const payload = ('data' in raw && raw.data ? raw.data : raw) as { results?: unknown[] };
+    const items: unknown[] = Array.isArray(payload.results) ? payload.results : [];
+    return items.map((r: unknown) => {
+      const item = r as Record<string, unknown>;
+      return {
+        ...item,
+        // Backend sends `position`, interface expects `classPosition`
+        classPosition: (item.classPosition ?? item.position ?? null) as number | null,
+        // Backend sends `grade`, interface expects `overallGrade`
+        overallGrade: (item.overallGrade ?? item.grade ?? null) as string | null,
+        // Backend sends flat `studentName`/`studentPicture`, reconstruct `student` object
+        student: item.student ?? (item.studentName
+          ? {
+              id: item.studentId as string,
+              firstName: (item.studentName as string).split(' ')[0] ?? '',
+              lastName: (item.studentName as string).split(' ').slice(1).join(' ') ?? '',
+              email: (item.studentEmail as string | undefined) ?? undefined,
+              profilePicture: (item.studentPicture as string | null) ?? null,
+            }
+          : undefined),
+      } as TermResult;
+    });
   },
 
   getStudentReportCard: async (studentId: string, term: string, academicYear: string): Promise<ReportCard> => {

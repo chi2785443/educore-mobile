@@ -90,17 +90,23 @@ export default function MyAssessmentsScreen() {
     return visible.filter(a => a.status === 'completed');
   }, [visible, statusFilter]);
 
-  /* Group by classroom */
+  /* Group by subject */
   const grouped = useMemo(() => {
-    const map = new Map<string, { classroomName: string; items: Assessment[] }>();
+    const map = new Map<string, { subjectName: string; subjectColor: string; items: Assessment[] }>();
     for (const a of filtered) {
-      const key = a.classroomId ?? '__no_class';
+      const key = a.subjectId ?? '__no_subject';
       if (!map.has(key)) {
-        map.set(key, { classroomName: a.classroom?.name ?? 'General', items: [] });
+        map.set(key, {
+          subjectName: a.subject?.name ?? 'General',
+          subjectColor: a.subject?.color ?? '#6366f1',
+          items: [],
+        });
       }
       map.get(key)!.items.push(a);
     }
-    return Array.from(map.entries());
+    return Array.from(map.entries()).sort((a, b) =>
+      a[1].subjectName.localeCompare(b[1].subjectName)
+    );
   }, [filtered]);
 
   const statusTabs: { key: StatusFilter; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
@@ -171,13 +177,13 @@ export default function MyAssessmentsScreen() {
           contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 36 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
         >
-          {grouped.map(([cId, { classroomName, items }]) => (
-            <View key={cId} style={{ gap: 10 }}>
-              {/* Classroom section header */}
+          {grouped.map(([subjectKey, { subjectName, subjectColor, items }]) => (
+            <View key={subjectKey} style={{ gap: 10 }}>
+              {/* Subject section header */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#6366f1' }} />
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: subjectColor }} />
                 <Text style={{ fontSize: 13, fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.8, flex: 1 }}>
-                  {classroomName}
+                  {subjectName}
                 </Text>
                 <Text style={{ fontSize: 11, color: '#9ca3af' }}>{items.length}</Text>
               </View>
@@ -186,7 +192,7 @@ export default function MyAssessmentsScreen() {
                   key={a.id}
                   assessment={a}
                   onPress={() => a.classroomId
-                    ? router.push(`/features/${a.classroomId}/assessment/${a.id}`)
+                    ? router.push(`/assessment/${a.classroomId}/${a.id}`)
                     : undefined
                   }
                 />

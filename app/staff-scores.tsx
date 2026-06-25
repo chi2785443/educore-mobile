@@ -186,6 +186,24 @@ function ClassroomScores({ classroomId, schoolId }: { classroomId: string; schoo
     return typeFilter === 'all' ? list : list.filter(a => a.type === typeFilter);
   }, [assessments, typeFilter]);
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, { subjectName: string; subjectColor: string; items: Assessment[] }>();
+    for (const a of filtered) {
+      const key = a.subjectId ?? '__no_subject';
+      if (!map.has(key)) {
+        map.set(key, {
+          subjectName: a.subject?.name ?? 'General',
+          subjectColor: a.subject?.color ?? '#4C3FC4',
+          items: [],
+        });
+      }
+      map.get(key)!.items.push(a);
+    }
+    return Array.from(map.entries()).sort((x, y) =>
+      x[1].subjectName.localeCompare(y[1].subjectName)
+    );
+  }, [filtered]);
+
   if (isLoading) return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color="#4C3FC4" />
@@ -205,33 +223,44 @@ function ClassroomScores({ classroomId, schoolId }: { classroomId: string; schoo
           </Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
-          {filtered.map(a => {
-            const color = TYPE_COLOR[a.type] ?? '#4C3FC4';
-            const bg = TYPE_BG[a.type] ?? '#F0EEFF';
-            return (
-              <Pressable key={a.id} onPress={() => setSelected(a)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-                <View style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Ionicons name="bar-chart-outline" size={20} color={color} />
-                  </View>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>{a.title}</Text>
-                    <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                      <View style={{ backgroundColor: bg, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color, textTransform: 'capitalize' }}>{a.type}</Text>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 40 }}>
+          {grouped.map(([subjectKey, { subjectName, subjectColor, items }]) => (
+            <View key={subjectKey} style={{ gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: subjectColor }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.8, flex: 1 }}>
+                  {subjectName}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#9ca3af' }}>{items.length}</Text>
+              </View>
+              {items.map(a => {
+                const color = TYPE_COLOR[a.type] ?? '#4C3FC4';
+                const bg = TYPE_BG[a.type] ?? '#F0EEFF';
+                return (
+                  <Pressable key={a.id} onPress={() => setSelected(a)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+                    <View style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Ionicons name="bar-chart-outline" size={20} color={color} />
                       </View>
-                      <Text style={{ fontSize: 11, color: '#94a3b8' }}>{a.totalMarks} marks</Text>
-                      {a.scheduledDate && (
-                        <Text style={{ fontSize: 11, color: '#94a3b8' }}>· {format(new Date(a.scheduledDate), 'd MMM')}</Text>
-                      )}
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }} numberOfLines={1}>{a.title}</Text>
+                        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                          <View style={{ backgroundColor: bg, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color, textTransform: 'capitalize' }}>{a.type}</Text>
+                          </View>
+                          <Text style={{ fontSize: 11, color: '#94a3b8' }}>{a.totalMarks} marks</Text>
+                          {a.scheduledDate && (
+                            <Text style={{ fontSize: 11, color: '#94a3b8' }}>· {format(new Date(a.scheduledDate), 'd MMM')}</Text>
+                          )}
+                        </View>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color="#cbd5e1" />
                     </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color="#cbd5e1" />
-                </View>
-              </Pressable>
-            );
-          })}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
         </ScrollView>
       )}
 

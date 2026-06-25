@@ -190,11 +190,11 @@ export default function FeaturesTab() {
       subtitle: isAdmin ? 'Post jobs & review candidates' : 'Browse & track applications',
       route: '/my-jobs',
     }] : []),
-    {
+    ...(!isStaff ? [{
       icon: 'school-outline' as const, iconColor: '#059669', iconBg: '#d1fae5',
       title: 'Enrollments', subtitle: 'School enrollment applications',
       route: '/my-enrollments',
-    },
+    }] : []),
     ...(isAdmin ? [
       {
         icon: 'people-circle-outline' as const, iconColor: '#059669', iconBg: '#E8F5EE',

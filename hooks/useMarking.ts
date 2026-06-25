@@ -28,6 +28,7 @@ export const useMarkTheoryAnswer = (assessmentId: string) => {
       markingService.markTheoryAnswer(payload),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['marking-pending', assessmentId] });
+      qc.invalidateQueries({ queryKey: ['marking-details'] });
     },
   });
 };

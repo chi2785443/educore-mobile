@@ -51,6 +51,7 @@ export interface AttemptMarkingDetails {
     pendingMarking: number;
     markedCount: number;
     isFullyMarked: boolean;
+    objectiveQuestions: number;
   };
 }
 
@@ -58,7 +59,31 @@ export const markingService = {
   getPendingByAssessment: async (assessmentId: string): Promise<PendingAttempt[]> => {
     const res = await apiClient.get(`/marking/pending/assessment/${assessmentId}`);
     const d = res.data?.data ?? res.data;
-    return Array.isArray(d) ? d : [];
+    if (!Array.isArray(d)) return [];
+    return d.map((item: {
+      attempt: {
+        id: string;
+        studentId: string;
+        attemptNumber: number;
+        submittedAt: string;
+        student?: { firstName?: string; lastName?: string };
+        recordingUrl?: string | null;
+      };
+      totalTheoryQuestions: number;
+      pendingQuestions: number;
+    }): PendingAttempt => ({
+      attemptId: item.attempt.id,
+      studentId: item.attempt.studentId,
+      studentName: item.attempt.student
+        ? `${item.attempt.student.firstName ?? ''} ${item.attempt.student.lastName ?? ''}`.trim()
+        : 'Unknown Student',
+      attemptNumber: item.attempt.attemptNumber,
+      submittedAt: item.attempt.submittedAt,
+      pendingCount: item.pendingQuestions,
+      totalTheory: item.totalTheoryQuestions,
+      isFullyMarked: item.pendingQuestions === 0,
+      recordingUrl: item.attempt.recordingUrl,
+    }));
   },
 
   getAttemptMarkingDetails: async (attemptId: string): Promise<AttemptMarkingDetails> => {

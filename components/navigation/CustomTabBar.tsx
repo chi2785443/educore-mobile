@@ -10,6 +10,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useConversations } from '@/hooks/useMessages';
 
 interface TabConfig {
   name: string;
@@ -38,12 +39,14 @@ function TabButton({
   onPress,
   onLongPress,
   isAction,
+  badge,
 }: {
   config: TabConfig;
   focused: boolean;
   onPress: () => void;
   onLongPress: () => void;
   isAction: boolean;
+  badge?: number;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -101,11 +104,33 @@ function TabButton({
             backgroundColor: ACTIVE, borderRadius: 2,
           }} />
         )}
-        <Ionicons
-          name={focused ? config.iconActive : config.icon}
-          size={22}
-          color={focused ? ACTIVE : INACTIVE}
-        />
+        <View style={{ position: 'relative' }}>
+          <Ionicons
+            name={focused ? config.iconActive : config.icon}
+            size={22}
+            color={focused ? ACTIVE : INACTIVE}
+          />
+          {!!badge && badge > 0 && (
+            <View style={{
+              position: 'absolute',
+              top: -4,
+              right: -6,
+              minWidth: 16,
+              height: 16,
+              borderRadius: 8,
+              backgroundColor: '#F5486A',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 3,
+              borderWidth: 1.5,
+              borderColor: '#FFFFFF',
+            }}>
+              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700', lineHeight: 12 }}>
+                {badge > 99 ? '99+' : badge}
+              </Text>
+            </View>
+          )}
+        </View>
         <Text style={{
           fontSize: 10, fontWeight: '600',
           color: focused ? ACTIVE : INACTIVE,
@@ -122,6 +147,11 @@ const TAB_NAMES = new Set(TABS.map(t => t.name));
 
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { data: conversations } = useConversations();
+  const totalUnread = (conversations ?? []).reduce(
+    (sum, c) => sum + (c.unreadCount ?? 0),
+    0,
+  );
 
   // Only render the 5 visible tabs — hidden screens (href: null) must not appear
   const visibleRoutes = state.routes.filter(r => TAB_NAMES.has(r.name));
@@ -170,6 +200,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
             onPress={onPress}
             onLongPress={onLongPress}
             isAction={isAction}
+            badge={route.name === 'chat' ? totalUnread : undefined}
           />
         );
       })}

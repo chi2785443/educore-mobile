@@ -3,6 +3,7 @@ import {
   View, Text, Pressable, Modal, ScrollView, Animated,
   Dimensions, TextInput, ActivityIndicator, Linking, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { toast } from '@/components/ui/Toast';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -22,6 +23,7 @@ import {
   useCreateReport, useSubmitReport,
   useSchoolReports, useApproveReport, useRejectReport,
 } from '@/hooks/useReports';
+import { useSubjects } from '@/hooks/useAssessment';
 import {
   AnnouncementType, Priority,
 } from '@/interface/announcement.interface';
@@ -39,20 +41,13 @@ type LocationResult =
 
 async function getCurrentLocation(): Promise<LocationResult> {
   try {
-    // Check if location services are enabled on the device
     const enabled = await Location.hasServicesEnabledAsync();
-    if (!enabled) {
-      return { ok: false, reason: 'services_disabled' };
-    }
+    if (!enabled) return { ok: false, reason: 'services_disabled' };
 
     const existing = await Location.getForegroundPermissionsAsync();
-
-    // If permanently denied (can no longer ask), user must go to Settings
     if (existing.status === 'denied' && !existing.canAskAgain) {
       return { ok: false, reason: 'settings_required' };
     }
-
-    // Ask for permission if not granted yet
     if (existing.status !== 'granted') {
       const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -60,9 +55,30 @@ async function getCurrentLocation(): Promise<LocationResult> {
       }
     }
 
-    const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
+    // Android emulator often lacks GPS — use Low accuracy (network-based) on Android,
+    // Balanced on iOS. Race against a 10 s timeout to avoid hanging on emulator.
+    const accuracy = Platform.OS === 'android' ? Location.Accuracy.Low : Location.Accuracy.Balanced;
+    const timeout = new Promise<null>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 10_000),
+    );
+
+    let loc: Location.LocationObject | null = null;
+    try {
+      loc = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy }),
+        timeout,
+      ]) as Location.LocationObject;
+    } catch {
+      // Timed out or failed — try last known position (up to 1 hour old), then any cached
+      const last =
+        await Location.getLastKnownPositionAsync({ maxAge: 60 * 60_000 }) ??
+        await Location.getLastKnownPositionAsync();
+      if (last) {
+        return { ok: true, latitude: last.coords.latitude, longitude: last.coords.longitude };
+      }
+      return { ok: false, reason: 'error' };
+    }
+
     return { ok: true, latitude: loc.coords.latitude, longitude: loc.coords.longitude };
   } catch {
     return { ok: false, reason: 'error' };
@@ -126,32 +142,15 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-/* ── Attendance Card — two-step flow matching frontend dialog ─────── */
+/* ── Attendance Card — silent background location, blocking modal on failure ── */
 function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) {
   const { data: today, isLoading: loadingToday } = useTodayAttendance(schoolId);
   const { data: settings } = useAttendanceSettings(schoolId);
   const clockMutation = useClockAttendance(schoolId);
 
-  // Step states: idle → confirming (dialog open) → submitting
-  const [confirming, setConfirming] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [locationResult, setLocationResult] = useState<LocationResult | null>(null);
+  const [blocker, setBlocker] = useState<{ msg: string; canOpenSettings: boolean } | null>(null);
   const [qrToken, setQrToken] = useState('');
-
-  const location = locationResult?.ok ? locationResult : null;
-  const locationError: { msg: string; canOpenSettings: boolean } | null = (() => {
-    if (!locationResult || locationResult.ok) return null;
-    switch (locationResult.reason) {
-      case 'services_disabled':
-        return { msg: 'Location services are disabled on your device. Enable them in Settings.', canOpenSettings: true };
-      case 'settings_required':
-        return { msg: 'Location permission was denied. Open Settings to allow it.', canOpenSettings: true };
-      case 'denied':
-        return { msg: 'Location permission denied. Please allow it when prompted.', canOpenSettings: false };
-      default:
-        return { msg: 'Could not get your location. Please try again.', canOpenSettings: false };
-    }
-  })();
 
   const isAdminRole = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN;
   const shouldTrack =
@@ -163,47 +162,63 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
 
   if (!shouldTrack && settings) return null;
 
+  // Location is required when the school has tracking on for this role
+  const locationRequired =
+    !isAdminRole &&
+    !!settings?.trackAttendance &&
+    ((role === UserRole.STAFF && !!settings.trackStaff) ||
+      (role === UserRole.STUDENT && !!settings.trackStudents));
+
   const clockedIn = today?.clockedIn ?? false;
   const clockedOut = today?.clockedOut ?? false;
   const finished = clockedIn && clockedOut;
-  const actionType = clockedIn && !clockedOut ? 'clock_out' : 'clock_in';
+  const actionType: 'clock_in' | 'clock_out' = clockedIn && !clockedOut ? 'clock_out' : 'clock_in';
   const actionColor = actionType === 'clock_in' ? '#10b981' : '#e11d48';
+  const isBusy = locating || clockMutation.isPending;
 
-  const getLocation = async () => {
-    setLocating(true);
-    setLocationResult(null);
-    const result = await getCurrentLocation();
-    setLocationResult(result);
-    setLocating(false);
-  };
-
-  const handleOpenDialog = () => {
-    setConfirming(true);
-    setLocationResult(null);
-    setQrToken('');
-    getLocation();
-  };
-
-  const handleSubmit = async () => {
+  const doSubmit = async (locResult: LocationResult) => {
     try {
       await clockMutation.mutateAsync({
         type: actionType,
         method: settings?.useQRCode ? 'qr_code' : 'manual',
-        latitude: locationResult?.ok ? locationResult.latitude : undefined,
-        longitude: locationResult?.ok ? locationResult.longitude : undefined,
+        latitude: locResult.ok ? locResult.latitude : undefined,
+        longitude: locResult.ok ? locResult.longitude : undefined,
         qrToken: settings?.useQRCode ? qrToken.trim() || undefined : undefined,
       });
-      setConfirming(false);
       setQrToken('');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to record attendance');
     }
   };
 
-  const submitDisabled =
-    clockMutation.isPending ||
-    locating ||
-    (settings?.useQRCode && !qrToken.trim());
+  const handleClock = async () => {
+    if (isBusy) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    setLocating(true);
+    const locResult = await getCurrentLocation();
+    setLocating(false);
+
+    if (!locResult.ok && locationRequired) {
+      const msg = (() => {
+        switch (locResult.reason) {
+          case 'services_disabled': return { msg: 'Location services are disabled on your device. Enable them in Settings to clock in/out.', canOpenSettings: true };
+          case 'settings_required': return { msg: 'Location permission was denied. Open Settings to allow it for this app.', canOpenSettings: true };
+          case 'denied':            return { msg: 'Location permission is required to clock in/out at this school. Please allow it when prompted.', canOpenSettings: false };
+          default:                  return { msg: 'Unable to get your location. Please check your connection and try again.', canOpenSettings: false };
+        }
+      })();
+      setBlocker(msg);
+      return;
+    }
+
+    await doSubmit(locResult);
+  };
+
+  const retryFromBlocker = async () => {
+    setBlocker(null);
+    await handleClock();
+  };
 
   return (
     <View style={{
@@ -237,173 +252,88 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
         </View>
       </View>
 
+      {/* QR token input — shown inline when school requires QR */}
+      {!finished && settings?.useQRCode && (
+        <View style={{ gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="qr-code-outline" size={13} color="rgba(255,255,255,0.5)" />
+            <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>QR Token</Text>
+          </View>
+          <TextInput
+            value={qrToken}
+            onChangeText={setQrToken}
+            placeholder="Paste QR token here…"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.15)', borderRadius: 12,
+              paddingHorizontal: 14, paddingVertical: 10,
+              fontSize: 13, color: '#fff',
+            }}
+          />
+        </View>
+      )}
+
       {finished ? (
         <View style={{ backgroundColor: '#064e3b', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Ionicons name="checkmark-circle" size={18} color="#4ade80" />
           <Text style={{ color: '#4ade80', fontSize: 13, fontWeight: '700' }}>Attendance recorded for today</Text>
         </View>
       ) : (
-        <Pressable onPress={handleOpenDialog} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+        <Pressable
+          onPress={handleClock}
+          disabled={isBusy || (!!settings?.useQRCode && !qrToken.trim())}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+        >
           <View style={{
-            backgroundColor: actionColor, borderRadius: 14, paddingVertical: 13,
+            backgroundColor: (isBusy || (!!settings?.useQRCode && !qrToken.trim())) ? 'rgba(255,255,255,0.2)' : actionColor,
+            borderRadius: 14, paddingVertical: 13,
             flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
             shadowColor: actionColor, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4,
           }}>
-            <Ionicons name={actionType === 'clock_in' ? 'log-in-outline' : 'log-out-outline'} size={18} color="#fff" />
+            {isBusy
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name={actionType === 'clock_in' ? 'log-in-outline' : 'log-out-outline'} size={18} color="#fff" />}
             <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900' }}>
-              {actionType === 'clock_in' ? 'Clock In' : 'Clock Out'}
+              {locating ? 'Getting location…' : clockMutation.isPending ? 'Submitting…' : actionType === 'clock_in' ? 'Clock In' : 'Clock Out'}
             </Text>
           </View>
         </Pressable>
       )}
 
-      {/* ── Confirmation dialog (Modal inside card) ── */}
-      <Modal visible={confirming} transparent animationType="fade" onRequestClose={() => setConfirming(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 }} onPress={() => setConfirming(false)}>
-          <Pressable onPress={e => e.stopPropagation?.()}>
-            <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 24, width: 320, gap: 16 }}>
-              {/* Dialog title */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: actionColor + '18', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name={actionType === 'clock_in' ? 'log-in-outline' : 'log-out-outline'} size={18} color={actionColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a' }}>
-                    {actionType === 'clock_in' ? 'Clock In' : 'Clock Out'}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>
-                    {actionType === 'clock_in' ? 'Record your arrival' : 'Record your departure'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Location status */}
-              <View style={{
-                borderRadius: 14, padding: 14, gap: 10,
-                backgroundColor: locationError ? '#fff7ed' : locationResult?.ok ? '#f0fdf4' : '#f8fafc',
-                borderWidth: 1,
-                borderColor: locationError ? '#fed7aa' : locationResult?.ok ? '#bbf7d0' : '#e2e8f0',
-              }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons
-                    name="location-outline" size={14}
-                    color={locationError ? '#ea580c' : locationResult?.ok ? '#16a34a' : '#64748b'}
-                  />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: locationError ? '#9a3412' : locationResult?.ok ? '#15803d' : '#374151' }}>
-                    Location
-                  </Text>
-                </View>
-
-                {/* Acquiring */}
-                {locating && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <ActivityIndicator size="small" color="#4C3FC4" />
-                    <Text style={{ fontSize: 12, color: '#6b7280' }}>Detecting your location…</Text>
-                  </View>
-                )}
-
-                {/* Success */}
-                {!locating && locationResult?.ok && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="checkmark-circle" size={15} color="#16a34a" />
-                    <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '700' }}>Location captured</Text>
-                    <Text style={{ fontSize: 11, color: '#4ade80', marginLeft: 2 }}>
-                      {locationResult.latitude.toFixed(4)}, {locationResult.longitude.toFixed(4)}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Error states */}
-                {!locating && locationError && (
-                  <View style={{ gap: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
-                      <Ionicons name="warning-outline" size={15} color="#ea580c" style={{ marginTop: 1 }} />
-                      <Text style={{ fontSize: 12, color: '#9a3412', flex: 1, lineHeight: 18 }}>
-                        {locationError.msg}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <Pressable
-                        onPress={getLocation}
-                        style={({ pressed }) => ({
-                          flex: 1, paddingVertical: 8, borderRadius: 10,
-                          backgroundColor: pressed ? '#e0e7ff' : '#eef2ff',
-                          alignItems: 'center',
-                        })}
-                      >
-                        <Text style={{ fontSize: 12, color: '#4f46e5', fontWeight: '800' }}>Retry</Text>
-                      </Pressable>
-                      {locationError.canOpenSettings && (
-                        <Pressable
-                          onPress={openAppSettings}
-                          style={({ pressed }) => ({
-                            flex: 1, paddingVertical: 8, borderRadius: 10,
-                            backgroundColor: pressed ? '#fed7aa' : '#fff7ed',
-                            alignItems: 'center', flexDirection: 'row',
-                            justifyContent: 'center', gap: 4,
-                          })}
-                        >
-                          <Ionicons name="settings-outline" size={12} color="#ea580c" />
-                          <Text style={{ fontSize: 12, color: '#ea580c', fontWeight: '800' }}>Open Settings</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  </View>
-                )}
-
-                {/* Initial state before result comes back */}
-                {!locating && !locationResult && !locationError && (
-                  <Text style={{ fontSize: 12, color: '#94a3b8' }}>Waiting for GPS…</Text>
-                )}
-              </View>
-
-              {/* QR token (only if school requires it) */}
-              {settings?.useQRCode && (
-                <View style={{ gap: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="qr-code-outline" size={14} color="#64748b" />
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>QR Token</Text>
-                  </View>
-                  <TextInput
-                    value={qrToken}
-                    onChangeText={setQrToken}
-                    placeholder="Paste the QR token here"
-                    placeholderTextColor="#9ca3af"
-                    style={{
-                      backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e5e7eb',
-                      borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
-                      fontSize: 13, color: '#1e293b',
-                    }}
-                  />
-                  <Text style={{ fontSize: 11, color: '#9ca3af' }}>
-                    Scan the QR code displayed in your school and paste the token
-                  </Text>
-                </View>
-              )}
-
-              {/* Actions */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Pressable onPress={() => setConfirming(false)} style={{ flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#6b7280' }}>Cancel</Text>
-                </Pressable>
-                <Pressable onPress={handleSubmit} disabled={submitDisabled} style={{ flex: 1 }}>
-                  <View style={{
-                    backgroundColor: submitDisabled ? '#d1d5db' : actionColor,
-                    borderRadius: 12, paddingVertical: 12, alignItems: 'center',
-                    flexDirection: 'row', justifyContent: 'center', gap: 6,
-                  }}>
-                    {clockMutation.isPending
-                      ? <ActivityIndicator color="#fff" size="small" />
-                      : <Ionicons name={actionType === 'clock_in' ? 'log-in-outline' : 'log-out-outline'} size={15} color="#fff" />}
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>
-                      {clockMutation.isPending ? 'Submitting…' : actionType === 'clock_in' ? 'Clock In' : 'Clock Out'}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
+      {/* Blocking location error modal — shown only when location is required and fails */}
+      <Modal visible={!!blocker} transparent animationType="fade" onRequestClose={() => setBlocker(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 24, width: 320, gap: 16 }}>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' }}>
+              <Ionicons name="location-outline" size={26} color="#e11d48" />
             </View>
-          </Pressable>
-        </Pressable>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: '#0f172a', textAlign: 'center' }}>Location Required</Text>
+            <Text style={{ fontSize: 14, color: '#475569', textAlign: 'center', lineHeight: 21 }}>
+              {blocker?.msg}
+            </Text>
+            <View style={{ gap: 10 }}>
+              {blocker?.canOpenSettings && (
+                <Pressable onPress={openAppSettings} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                  <View style={{ backgroundColor: '#4C3FC4', borderRadius: 14, paddingVertical: 13, alignItems: 'center' }}>
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Open Settings</Text>
+                  </View>
+                </Pressable>
+              )}
+              <Pressable onPress={retryFromBlocker} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                <View style={{ borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 14, paddingVertical: 13, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+                  <Ionicons name="refresh-outline" size={16} color="#374151" />
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151' }}>Try Again</Text>
+                </View>
+              </Pressable>
+              <Pressable onPress={() => setBlocker(null)} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#94a3b8' }}>Dismiss</Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -537,6 +467,8 @@ function EventFormContent({ schoolId, onDone }: { schoolId: string; onDone: () =
 function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () => void }) {
   const [classroomId, setClassroomId] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [showClassroomPicker, setShowClassroomPicker] = useState(false);
+  const [showStudentPicker, setShowStudentPicker] = useState(false);
   const [reportType, setReportType] = useState<ReportType>('weekly');
   const [weekNumber, setWeekNumber] = useState('');
   const [monthName, setMonthName] = useState('');
@@ -554,6 +486,8 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
   const { data: classrooms = [] } = useMyTeacherClassrooms(schoolId);
   const { data: students = [] } = useClassroomStudents(classroomId || undefined);
   const { data: schoolData } = useSchoolById(schoolId);
+  const { data: subjects = [] } = useSubjects(schoolId);
+  const [subjectPickerKey, setSubjectPickerKey] = useState<number | null>(null);
   const createMutation = useCreateReport(schoolId);
   const submitMutation = useSubmitReport(schoolId);
   const isPending = createMutation.isPending || submitMutation.isPending;
@@ -571,6 +505,7 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
     setWeekNumber(''); setMonthName(''); setTerm('FIRST_TERM'); setTitle('');
     setRemarks(''); setBehaviorRating(3); setBehaviorNotes(''); setCharacterNotes('');
     setStrengths(['']); setImprovements(['']); setSubjectEntries([]); setShowSubjects(false);
+    setShowClassroomPicker(false); setShowStudentPicker(false); setSubjectPickerKey(null);
   };
 
   const handleSubmit = async () => {
@@ -623,45 +558,105 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
       {/* ── Report Info ── */}
       <SectionCard title="Report Info">
         <Field label="Classroom" required>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {rawClassrooms.map(c => {
-                const active = classroomId === c.id;
-                return (
-                  <Pressable key={c.id} onPress={() => { setClassroomId(c.id); setStudentId(''); }}>
-                    <View style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? '#4C3FC4' : '#f3f4f6', borderWidth: 1, borderColor: active ? '#4C3FC4' : '#e5e7eb' }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#6b7280' }}>{c.name}</Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
+          <Pressable onPress={() => setShowClassroomPicker(true)} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
+            <View style={{ backgroundColor: '#f8fafc', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 14, fontWeight: rawClassrooms.find(c => c.id === classroomId) ? '600' : '400', color: rawClassrooms.find(c => c.id === classroomId) ? '#0f172a' : '#9ca3af' }}>
+                {rawClassrooms.find(c => c.id === classroomId)?.name ?? 'Select classroom'}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color="#9ca3af" />
             </View>
-          </ScrollView>
+          </Pressable>
         </Field>
 
-        {classroomId ? (
-          <Field label="Student" required>
-            <ScrollView style={{ maxHeight: 140 }} contentContainerStyle={{ gap: 6 }}>
+        <Field label="Student" required>
+          <Pressable
+            onPress={() => { if (!classroomId) { toast.error('Select a classroom first'); return; } setShowStudentPicker(true); }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+          >
+            <View style={{ backgroundColor: '#f8fafc', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              {(() => {
+                const typedStudents = students as { id: string; firstName?: string; lastName?: string }[];
+                const sel = typedStudents.find(s => s.id === studentId);
+                return (
+                  <Text style={{ fontSize: 14, fontWeight: sel ? '600' : '400', color: sel ? '#0f172a' : '#9ca3af' }}>
+                    {sel ? `${sel.firstName ?? ''} ${sel.lastName ?? ''}`.trim() : classroomId ? 'Select student' : 'Select classroom first'}
+                  </Text>
+                );
+              })()}
+              <Ionicons name="chevron-down" size={16} color="#9ca3af" />
+            </View>
+          </Pressable>
+        </Field>
+
+        {/* Classroom picker modal */}
+        <Modal visible={showClassroomPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowClassroomPicker(false)}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a' }}>Select Classroom</Text>
+              <Pressable onPress={() => setShowClassroomPicker(false)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="close" size={18} color="#374151" />
+                </View>
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+              {rawClassrooms.map(c => (
+                <Pressable key={c.id} onPress={() => { setClassroomId(c.id); setStudentId(''); setShowClassroomPicker(false); }} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f8fafc', backgroundColor: classroomId === c.id ? '#F0EEFF' : '#fff' }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '900', color: '#4C3FC4' }}>{c.name[0]?.toUpperCase() ?? '?'}</Text>
+                    </View>
+                    <Text style={{ flex: 1, fontSize: 14, fontWeight: classroomId === c.id ? '700' : '500', color: classroomId === c.id ? '#4C3FC4' : '#0f172a' }}>{c.name}</Text>
+                    {classroomId === c.id && <Ionicons name="checkmark-circle" size={20} color="#4C3FC4" />}
+                  </View>
+                </Pressable>
+              ))}
+              {rawClassrooms.length === 0 && (
+                <View style={{ alignItems: 'center', paddingVertical: 56, gap: 10 }}>
+                  <Ionicons name="school-outline" size={40} color="#d1d5db" />
+                  <Text style={{ fontSize: 14, color: '#9ca3af' }}>No classrooms found</Text>
+                </View>
+              )}
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+
+        {/* Student picker modal */}
+        <Modal visible={showStudentPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowStudentPicker(false)}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a' }}>Select Student</Text>
+              <Pressable onPress={() => setShowStudentPicker(false)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="close" size={18} color="#374151" />
+                </View>
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
               {(students as { id: string; firstName?: string; lastName?: string }[]).map(s => {
                 const fn = s.firstName ?? ''; const ln = s.lastName ?? '';
                 const active = studentId === s.id;
                 return (
-                  <Pressable key={s.id} onPress={() => setStudentId(s.id)}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: active ? '#eff6ff' : '#f8fafc', borderWidth: 1, borderColor: active ? '#6366f1' : '#f1f5f9' }}>
-                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: active ? '#6366f1' : '#e5e7eb', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: active ? '#fff' : '#6b7280' }}>{fn[0] ?? ''}{ln[0] ?? ''}</Text>
+                  <Pressable key={s.id} onPress={() => { setStudentId(s.id); setShowStudentPicker(false); }} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: '#f8fafc', backgroundColor: active ? '#F0EEFF' : '#fff' }}>
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: active ? '#4C3FC4' : '#e5e7eb', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: active ? '#fff' : '#6b7280' }}>{fn[0] ?? ''}{ln[0] ?? ''}</Text>
                       </View>
-                      <Text style={{ fontSize: 13, color: active ? '#1e40af' : '#374151' }}>{fn} {ln}</Text>
-                      {active && <Ionicons name="checkmark-circle" size={16} color="#6366f1" style={{ marginLeft: 'auto' }} />}
+                      <Text style={{ flex: 1, fontSize: 14, fontWeight: active ? '700' : '500', color: active ? '#4C3FC4' : '#0f172a' }}>{fn} {ln}</Text>
+                      {active && <Ionicons name="checkmark-circle" size={20} color="#4C3FC4" />}
                     </View>
                   </Pressable>
                 );
               })}
+              {(students as { id: string }[]).length === 0 && (
+                <View style={{ alignItems: 'center', paddingVertical: 56, gap: 10 }}>
+                  <Ionicons name="people-outline" size={40} color="#d1d5db" />
+                  <Text style={{ fontSize: 14, color: '#9ca3af' }}>No students in this classroom</Text>
+                </View>
+              )}
             </ScrollView>
-          </Field>
-        ) : (
-          <Text style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Select a classroom to see students</Text>
-        )}
+          </SafeAreaView>
+        </Modal>
 
         <Field label="Report Type" required>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -846,7 +841,14 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
                     <Ionicons name="close-circle" size={18} color="#dc2626" />
                   </Pressable>
                 </View>
-                <TextInput value={entry.subjectName} onChangeText={v => updateEntry(entry.key, { subjectName: v })} placeholder="e.g. Mathematics" placeholderTextColor="#9ca3af" style={inputStyle} />
+                <Pressable onPress={() => setSubjectPickerKey(entry.key)} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
+                  <View style={{ backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 13, fontWeight: entry.subjectName ? '600' : '400', color: entry.subjectName ? '#0f172a' : '#9ca3af' }}>
+                      {entry.subjectName || 'Select subject'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={14} color="#9ca3af" />
+                  </View>
+                </Pressable>
                 <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>Performance Note</Text>
                 <TextInput value={entry.performance} onChangeText={v => updateEntry(entry.key, { performance: v })} placeholder="e.g. Excellent understanding" placeholderTextColor="#9ca3af" style={inputStyle} />
                 <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>Grade</Text>
@@ -862,6 +864,46 @@ function ReportFormContent({ schoolId, onDone }: { schoolId: string; onDone: () 
           </View>
         )}
       </View>
+
+      {/* Subject picker modal */}
+      <Modal visible={subjectPickerKey !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSubjectPickerKey(null)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top', 'bottom']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+            <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a' }}>Select Subject</Text>
+            <Pressable onPress={() => setSubjectPickerKey(null)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="close" size={18} color="#374151" />
+              </View>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+            {(subjects as { id: string; name: string }[]).map(sub => {
+              const active = subjectPickerKey !== null && subjectEntries.find(e => e.key === subjectPickerKey)?.subjectName === sub.name;
+              return (
+                <Pressable
+                  key={sub.id}
+                  onPress={() => {
+                    if (subjectPickerKey !== null) updateEntry(subjectPickerKey, { subjectName: sub.name });
+                    setSubjectPickerKey(null);
+                  }}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f8fafc', backgroundColor: active ? '#F0EEFF' : '#fff' }}>
+                    <Text style={{ flex: 1, fontSize: 14, fontWeight: active ? '700' : '500', color: active ? '#4C3FC4' : '#0f172a' }}>{sub.name}</Text>
+                    {active && <Ionicons name="checkmark-circle" size={20} color="#4C3FC4" />}
+                  </View>
+                </Pressable>
+              );
+            })}
+            {(subjects as { id: string }[]).length === 0 && (
+              <View style={{ alignItems: 'center', paddingVertical: 56, gap: 10 }}>
+                <Ionicons name="book-outline" size={40} color="#d1d5db" />
+                <Text style={{ fontSize: 14, color: '#9ca3af' }}>No subjects found</Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       <Pressable onPress={handleSubmit} disabled={isPending} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
         <View style={{ backgroundColor: isPending ? '#3b32a0' : '#4C3FC4', borderRadius: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
