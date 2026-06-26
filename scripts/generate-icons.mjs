@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /**
  * Generates all EduCore app icons and splash assets from SVG sources.
  * Run: node scripts/generate-icons.mjs

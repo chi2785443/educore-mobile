@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { BasicInfoStep } from '@/components/auth/BasicInfoStep';
 import { OtpStep } from '@/components/auth/OtpStep';

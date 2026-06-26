@@ -478,13 +478,13 @@ function ReportCardModal({ result, onClose }: { result: TermResult; onClose: () 
                   <View style={{ gap: 10 }}>
                     {rc?.termResult.teacherRemarks && (
                       <View style={{ backgroundColor: '#eff6ff', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#3b82f6' }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Class Teacher's Remarks</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{"Class Teacher's Remarks"}</Text>
                         <Text style={{ fontSize: 13, color: '#1e3a8a', lineHeight: 20 }}>{rc.termResult.teacherRemarks}</Text>
                       </View>
                     )}
                     {rc?.termResult.principalRemarks && (
                       <View style={{ backgroundColor: '#faf5ff', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#7c3aed' }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Principal's Remarks</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{"Principal's Remarks"}</Text>
                         <Text style={{ fontSize: 13, color: '#4c1d95', lineHeight: 20 }}>{rc.termResult.principalRemarks}</Text>
                       </View>
                     )}

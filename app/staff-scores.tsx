@@ -111,7 +111,7 @@ function ScoreDetailModal({
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
             <Ionicons name="bar-chart-outline" size={40} color="#d1d5db" />
             <Text style={{ fontSize: 15, fontWeight: '700', color: '#374151' }}>No scores yet</Text>
-            <Text style={{ fontSize: 13, color: '#9ca3af' }}>Students haven't been graded yet.</Text>
+            <Text style={{ fontSize: 13, color: '#9ca3af' }}>{"Students haven't been graded yet."}</Text>
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -129,7 +129,6 @@ function ScoreDetailModal({
               const initials = s.student
                 ? `${s.student.firstName[0] ?? ''}${s.student.lastName[0] ?? ''}`.toUpperCase()
                 : '?';
-              const pct = Math.round(s.percentage);
               const passed = s.isPassed;
 
               return (

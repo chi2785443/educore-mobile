@@ -137,7 +137,7 @@ export function StudentEnrollmentStep({ onBack }: Props) {
         <View className="items-center gap-1">
           <Text className="text-xl font-bold text-gray-900">Application Submitted!</Text>
           <Text className="text-sm text-gray-500 text-center">
-            Your enrollment application has been submitted to {selectedSchool?.name}. You'll be notified of updates.
+            Your enrollment application has been submitted to {selectedSchool?.name}. {"You'll be notified of updates."}
           </Text>
         </View>
         <Button fullWidth onPress={() => router.replace('/(tabs)/' as never)}>

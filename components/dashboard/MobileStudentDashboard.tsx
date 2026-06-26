@@ -2,11 +2,10 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useStudentDashboard } from '@/hooks/useDashboardRole';
 import {
-  DashLoader, GradCard, Card, CardHeader,
+  DashLoader, GradCard, Card,
   AnnouncementRow, EventRow, PeriodRow, SectionLabel,
 } from './DashboardPrimitives';
 import { StudentDashboardData } from '@/services/dashboard-role.service';
@@ -23,26 +22,8 @@ type DashScore = StudentDashboardData['recentScores'][number];
 const TYPE_COLOR: Record<string, string> = {
   exam: '#F5486A', test: '#4C3FC4', quiz: '#0ea5e9', assignment: '#10b981',
 };
-const TYPE_BG: Record<string, string> = {
-  exam: '#fff0f3', test: '#F0EEFF', quiz: '#f0f9ff', assignment: '#f0fdf4',
-};
-
-function pctColor(pct: number) {
-  if (pct >= 75) return '#16a34a';
-  if (pct >= 60) return '#0284c7';
-  if (pct >= 45) return '#d97706';
-  return '#dc2626';
-}
-function pctBg(pct: number) {
-  if (pct >= 75) return '#dcfce7';
-  if (pct >= 60) return '#dbeafe';
-  if (pct >= 45) return '#fef3c7';
-  return '#fee2e2';
-}
-
 function ScoreDetailModal({ score, onClose }: { score: DashScore; onClose: () => void }) {
   const pct = Math.round(score.percentage);
-  const color = pctColor(pct);
   const typeColor = TYPE_COLOR[score.type] ?? '#4C3FC4';
 
   return (
@@ -124,7 +105,7 @@ function ScoreDetailModal({ score, onClose }: { score: DashScore; onClose: () =>
             {/* Remarks */}
             {score.remarks ? (
               <View style={{ backgroundColor: '#f0f9ff', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#0ea5e9' }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Teacher's Remarks</Text>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{"Teacher's Remarks"}</Text>
                 <Text style={{ fontSize: 13, color: '#1e293b', lineHeight: 20 }}>{score.remarks}</Text>
               </View>
             ) : (
@@ -157,7 +138,6 @@ function ScoreRing({ pct, passed }: { pct: number; passed: boolean }) {
 
 export default function MobileStudentDashboard({ schoolId, schoolName, firstName }: Props) {
   const { data, isLoading, refetch } = useStudentDashboard(schoolId);
-  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedScore, setSelectedScore] = useState<DashScore | null>(null);
   const onRefresh = useCallback(async () => {
@@ -265,7 +245,7 @@ export default function MobileStudentDashboard({ schoolId, schoolName, firstName
         )}
 
         {/* ── Today's classes ──────────────────────────────── */}
-        <SectionLabel>Today's Classes</SectionLabel>
+        <SectionLabel>{"Today's Classes"}</SectionLabel>
         <Card>
           {d.todayTimetable.length === 0 ? (
             <View className="items-center py-6 gap-2">

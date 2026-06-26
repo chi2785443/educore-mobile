@@ -75,7 +75,7 @@ export function SignInForm() {
       </Button>
 
       <View className="flex-row justify-center items-center gap-1">
-        <Text className="text-sm text-gray-500">Don't have an account?</Text>
+        <Text className="text-sm text-gray-500">{"Don't have an account?"}</Text>
         <Link href="/(auth)/sign-up" asChild>
           <Pressable>
             <Text className="text-sm text-[#4C3FC4] font-semibold">Sign Up</Text>

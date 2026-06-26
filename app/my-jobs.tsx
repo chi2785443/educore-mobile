@@ -22,7 +22,7 @@ import {
 import {
   Job, MyApplication, MyInterview,
   JobPosting, JobApplication, JobInterview,
-  ApplyJobPayload, CreateJobPosting, UpdateApplicationStatus, ScheduleInterviewPayload,
+  CreateJobPosting, UpdateApplicationStatus,
   JobStatus, ApplicationStatus, EmploymentType, ExperienceLevel, SchoolJobRole, InterviewType,
 } from '@/interface/job.interface';
 
@@ -1802,7 +1802,7 @@ function StaffJobsScreen() {
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
             <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
             <Text style={{ fontSize: 16, fontWeight: '800', color: '#374151', textAlign: 'center' }}>No interviews scheduled</Text>
-            <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 }}>When a school schedules an interview, it'll appear here.</Text>
+            <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 }}>{"When a school schedules an interview, it'll appear here."}</Text>
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}>
@@ -1832,7 +1832,6 @@ export default function JobsScreen() {
   const membership = memberships.find(m => m.schoolId === selectedSchoolId) ?? memberships[0];
   const role = membership?.role ?? '';
   const isAdmin = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin;
-  const isStaff = role === UserRole.STAFF;
 
   if (isAdmin && membership?.schoolId) {
     return (

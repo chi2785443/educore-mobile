@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useAdminDashboard } from '@/hooks/useDashboardRole';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -49,7 +48,7 @@ export default function MobileAdminDashboard({ schoolId, schoolName, firstName }
           Hello, {firstName}!
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 4 }}>
-          Here's your school at a glance.
+          {"Here's your school at a glance."}
         </Text>
 
         {/* Finance strip */}

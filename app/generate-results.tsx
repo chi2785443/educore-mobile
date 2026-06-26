@@ -141,7 +141,7 @@ function ClassroomPickerModal({
               <Ionicons name="school-outline" size={40} color="#d1d5db" />
               <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151' }}>No classrooms found</Text>
               <Text style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 32, lineHeight: 18 }}>
-                You haven't been assigned to any classrooms yet.
+                {"You haven't been assigned to any classrooms yet."}
               </Text>
             </View>
           )}

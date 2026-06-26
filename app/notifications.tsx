@@ -203,7 +203,7 @@ export default function NotificationsScreen() {
             {notifTab === 'unread' ? 'No unread notifications' : 'No notifications yet'}
           </Text>
           <Text style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', lineHeight: 20 }}>
-            You're all caught up! Notifications about assessments, announcements, and more will appear here.
+            {"You're all caught up! Notifications about assessments, announcements, and more will appear here."}
           </Text>
         </View>
       ) : (

@@ -6,7 +6,7 @@ import {
 import { Image } from 'expo-image';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { toast } from '@/components/ui/Toast';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAssessment, useAssessmentQuestions } from '@/hooks/useAssessment';
@@ -201,9 +201,10 @@ export default function TakeAssessmentScreen() {
 
   /* Stop recording on unmount (safety net) */
   useEffect(() => {
+    const camera = cameraRef.current;
     return () => {
-      if (isRecordingRef.current && cameraRef.current) {
-        cameraRef.current.stopRecording();
+      if (isRecordingRef.current && camera) {
+        camera.stopRecording();
         isRecordingRef.current = false;
       }
       if (theoryDebounceRef.current) clearTimeout(theoryDebounceRef.current);

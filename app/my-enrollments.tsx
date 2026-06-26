@@ -694,7 +694,7 @@ function UserDetailView({ enrollment, onBack }: { enrollment: Enrollment; onBack
               <Text style={{ fontSize: 13, fontWeight: '800', color: '#5b21b6' }}>What happens next?</Text>
             </View>
             <Text style={{ fontSize: 13, color: '#6d28d9', lineHeight: 20 }}>
-              The school is reviewing your application. You'll be notified when a decision has been made.
+              {"The school is reviewing your application. You'll be notified when a decision has been made."}
             </Text>
           </View>
         )}

@@ -30,6 +30,7 @@ export default function LoadingScreen({ message = 'Loading...', color = '#F5486A
         Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ]),
     ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const spin = rotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
@@ -109,6 +110,7 @@ function DotTrail({ color }: { color: string }) {
       ),
     );
     Animated.parallel(animations).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

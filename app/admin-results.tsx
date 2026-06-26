@@ -49,6 +49,7 @@ export default function AdminResultsScreen() {
       if (!selectedTerm && filters.terms.length > 0) setSelectedTerm(filters.terms[0]);
       if (!selectedYear && filters.academicYears.length > 0) setSelectedYear(filters.academicYears[0]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const { data: results, isLoading: loadingResults } = useSchoolResults(schoolId, selectedTerm, selectedYear);

@@ -27,35 +27,35 @@ export interface AdminDashboardData {
   attendance: { presentToday: number; absentToday: number; flaggedRecords: number };
   recentAnnouncements: DashboardAnnouncement[];
   upcomingEvents: DashboardEvent[];
-  recentEnrollments: Array<{ id: string; status: string; createdAt: string; trainingInterest: string }>;
+  recentEnrollments: { id: string; status: string; createdAt: string; trainingInterest: string }[];
 }
 
 export interface StaffDashboardData {
-  myClassrooms: Array<{ id: string; name: string; grade?: string; section?: string; capacity?: number }>;
+  myClassrooms: { id: string; name: string; grade?: string; section?: string; capacity?: number }[];
   counts: { totalClassrooms: number; totalStudents: number; totalAssessments: number; publishedAssessments: number; draftAssessments: number; myReports: number; pendingReports: number };
-  todayTimetable: Array<{ id: string; startTime: string; endTime: string; subject: string; classroom: string; room?: string }>;
+  todayTimetable: { id: string; startTime: string; endTime: string; subject: string; classroom: string; room?: string }[];
   myAttendanceToday: { clockedIn: boolean; time: string | null; flagged: boolean };
-  recentAssessments: Array<{ id: string; classroomId: string; title: string; status: string; createdAt: string; totalMarks: number; type: string }>;
+  recentAssessments: { id: string; classroomId: string; title: string; status: string; createdAt: string; totalMarks: number; type: string }[];
   recentAnnouncements: DashboardAnnouncement[];
   upcomingEvents: DashboardEvent[];
 }
 
 export interface StudentDashboardData {
-  myClassrooms: Array<{ id: string; name: string; grade?: string; section?: string }>;
+  myClassrooms: { id: string; name: string; grade?: string; section?: string }[];
   counts: { totalClassrooms: number; totalScored: number; passedCount: number; avgScore: number; daysAttendedThisMonth: number; outstandingFees: number };
-  todayTimetable: Array<{ id: string; startTime: string; endTime: string; subject: string; classroom: string; room?: string }>;
+  todayTimetable: { id: string; startTime: string; endTime: string; subject: string; classroom: string; room?: string }[];
   clockedInToday: boolean;
   latestResult: { id: string; term: string; academicYear: string; overallPercentage: number; overallGrade: string; classPosition: number; totalStudents: number } | null;
-  recentScores: Array<{ id: string; assessmentId: string | null; classroomId: string | null; score: number; totalMarks: number; percentage: number; passed: boolean; isPassed: boolean; grade: string; gradePoint: number | null; remarks: string | null; gradedAt: string | null; questionsAnswered: number; correctAnswers: number; incorrectAnswers: number; title: string; type: string; createdAt: string }>;
-  upcomingAssessments: Array<{ id: string; title: string; assessmentType: string; totalMarks: number; createdAt: string; status: string }>;
+  recentScores: { id: string; assessmentId: string | null; classroomId: string | null; score: number; totalMarks: number; percentage: number; passed: boolean; isPassed: boolean; grade: string; gradePoint: number | null; remarks: string | null; gradedAt: string | null; questionsAnswered: number; correctAnswers: number; incorrectAnswers: number; title: string; type: string; createdAt: string }[];
+  upcomingAssessments: { id: string; title: string; assessmentType: string; totalMarks: number; createdAt: string; status: string }[];
   recentAnnouncements: DashboardAnnouncement[];
   upcomingEvents: DashboardEvent[];
 }
 
 export interface ParentDashboardData {
   enquiries: { total: number; open: number; replied: number; closed: number };
-  recentEnquiries: Array<{ id: string; subject: string; status: string; createdAt: string; repliedAt: string | null }>;
-  linkedStudents: Array<{ userId: string; firstName: string; lastName: string; profilePicture?: string }>;
+  recentEnquiries: { id: string; subject: string; status: string; createdAt: string; repliedAt: string | null }[];
+  linkedStudents: { userId: string; firstName: string; lastName: string; profilePicture?: string }[];
   recentAnnouncements: DashboardAnnouncement[];
   upcomingEvents: DashboardEvent[];
 }

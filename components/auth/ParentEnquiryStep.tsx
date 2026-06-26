@@ -97,7 +97,7 @@ export function ParentEnquiryStep({ onBack }: Props) {
             {selectedSchool
               ? `Your enquiry has been sent to ${selectedSchool.name}.`
               : 'Your enquiry has been submitted.'}
-            {' '}You'll be notified when they respond.
+            {" You'll be notified when they respond."}
           </Text>
         </View>
         <Button fullWidth onPress={() => router.replace('/(tabs)/' as never)}>

@@ -372,7 +372,6 @@ export default function AccountTab() {
   const heroBg = ROLE_HERO_BG[role] ?? '#4C3FC4';
   const accent = ROLE_ACCENT[role] ?? '#F5486A';
 
-  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || '?';
   const roleInfo = ROLE_CONFIG[role] ?? { label: 'Member', color: '#6b7280', bg: '#f3f4f6' };
 
   const TAB_BAR_HEIGHT = 60 + insets.bottom;

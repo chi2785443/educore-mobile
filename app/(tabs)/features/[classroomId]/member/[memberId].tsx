@@ -56,7 +56,6 @@ export default function MemberDetailScreen() {
   const router = useRouter();
   const {
     memberId,
-    classroomId,
     firstName,
     lastName,
     email,

@@ -19,10 +19,6 @@ const TERM_LABELS: Record<string, string> = {
   FIRST_SEMESTER: 'First Semester', SECOND_SEMESTER: 'Second Semester',
   first_term: 'First Term', second_term: 'Second Term', third_term: 'Third Term',
 };
-const TERM_SHORT: Record<string, string> = {
-  FIRST_TERM: '1st Term', SECOND_TERM: '2nd Term', THIRD_TERM: '3rd Term',
-  first_term: '1st Term', second_term: '2nd Term', third_term: '3rd Term',
-};
 
 function gradeColor(pct: number) {
   if (pct >= 75) return '#16a34a';
@@ -397,13 +393,13 @@ function ReportCardModal({
                   <View style={{ gap: 10 }}>
                     {tr?.teacherRemarks && (
                       <View style={{ backgroundColor: '#eff6ff', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#3b82f6' }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Class Teacher's Remarks</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{"Class Teacher's Remarks"}</Text>
                         <Text style={{ fontSize: 13, color: '#1e3a8a', lineHeight: 20 }}>{tr.teacherRemarks}</Text>
                       </View>
                     )}
                     {tr?.principalRemarks && (
                       <View style={{ backgroundColor: '#faf5ff', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#7c3aed' }}>
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Principal's Remarks</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{"Principal's Remarks"}</Text>
                         <Text style={{ fontSize: 13, color: '#4c1d95', lineHeight: 20 }}>{tr.principalRemarks}</Text>
                       </View>
                     )}
@@ -512,7 +508,7 @@ export default function StaffResultsScreen() {
           <Ionicons name="school-outline" size={40} color="#d1d5db" />
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#374151', textAlign: 'center' }}>No classrooms assigned</Text>
           <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', lineHeight: 20 }}>
-            You haven't been assigned to any classrooms yet.
+            {"You haven't been assigned to any classrooms yet."}
           </Text>
         </View>
       ) : (

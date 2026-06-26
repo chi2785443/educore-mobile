@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, Pressable, ActivityIndicator,
   Modal, TextInput, RefreshControl, Image, Alert, StyleSheet,
@@ -130,7 +130,7 @@ function CreateModal({
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: 'images',
       allowsEditing: true,
       quality: 0.8,
     });

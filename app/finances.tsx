@@ -48,7 +48,6 @@ export default function FinancesScreen() {
   const primary = memberships.find(m => m.schoolId === selectedSchoolId) ?? memberships[0];
   const role = primary?.role;
   const isStudent = role === UserRole.STUDENT;
-  const schoolId = primary?.schoolId ?? '';
 
   const { data: salary, isLoading: loadingSalary, refetch: refetchSalary } = useSalaryStructure(!isStudent ? user?.id : undefined);
   const { data: fees = [], isLoading: loadingFees, refetch: refetchFees } = useMyStudentFees(isStudent ? user?.id : undefined);
@@ -160,7 +159,7 @@ export default function FinancesScreen() {
             <View style={{ alignItems: 'center', paddingVertical: 60, gap: 10 }}>
               <Ionicons name="cash-outline" size={40} color="#d1d5db" />
               <Text style={{ fontSize: 15, fontWeight: '700', color: '#374151' }}>No salary structure</Text>
-              <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center' }}>Your salary structure hasn't been configured yet. Contact your admin.</Text>
+              <Text style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center' }}>{"Your salary structure hasn't been configured yet. Contact your admin."}</Text>
             </View>
           ) : (
             <>

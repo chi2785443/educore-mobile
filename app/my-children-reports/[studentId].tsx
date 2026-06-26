@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -228,7 +228,7 @@ export default function ChildReportsScreen() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }} numberOfLines={1}>
-              {studentName}'s Reports
+              {studentName}&apos;s Reports
             </Text>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
               Approved school reports · most recent first

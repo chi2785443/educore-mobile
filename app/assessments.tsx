@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl,
+  View, Text, ScrollView, Pressable, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,16 +9,12 @@ import { useAuthStore } from '@/store/authStore';
 import { UserRole } from '@/interface/user.interface';
 import { useMyAssessments, useSchoolAssessments } from '@/hooks/useAssessment';
 import { useMyTeacherClassrooms, useClassroomsBySchool } from '@/hooks/useClassroom';
-import { useSchoolSettings } from '@/hooks/useSchool';
-import { Assessment, AssessmentStatus, AssessmentType } from '@/interface/assessment.interface';
+import { Assessment, AssessmentStatus } from '@/interface/assessment.interface';
 import AssessmentCard from '@/components/assessment/AssessmentCard';
 import CreateAssessmentSheet from '@/components/assessment/CreateAssessmentSheet';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
-const TYPE_COLOR: Record<AssessmentType, string> = {
-  exam: '#e11d48', test: '#7c3aed', quiz: '#0ea5e9', assignment: '#10b981',
-};
 
 type StatusFilter = 'all' | AssessmentStatus;
 

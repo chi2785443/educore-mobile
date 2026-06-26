@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, Pressable, TouchableOpacity, Alert, ActivityIndicator, TextInput, Modal,
-  Dimensions, KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as WebBrowser from 'expo-web-browser';
@@ -29,7 +29,6 @@ import ScoreCard from '@/components/assessment/ScoreCard';
 import RetakeRequestRow from '@/components/assessment/RetakeRequestRow';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
-const SCREEN_H = Dimensions.get('window').height;
 
 /* ── Color maps ─────────────────────────────────────────────────── */
 const TYPE_COLORS: Record<AssessmentType, string> = {
@@ -115,6 +114,7 @@ export default function AssessmentDetailScreen() {
     if (assessment.subjectId) f.subjectId = assessment.subjectId;
     if (assessment.questionType !== 'mixed') f.type = assessment.questionType;
     return Object.keys(f).length ? f : undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessment?.subjectId, assessment?.questionType]);
 
   const { data: bankQuestions = [], isLoading: loadingBank } = useQuestions(
@@ -1357,7 +1357,7 @@ export default function AssessmentDetailScreen() {
                       <View style={{ padding: 14, gap: 12 }}>
                         {/* Student answer */}
                         <View style={{ backgroundColor: '#f8fafc', borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: typeColor }}>
-                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', marginBottom: 5 }}>Student's Answer</Text>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', marginBottom: 5 }}>{"Student's Answer"}</Text>
                           <Text style={{ fontSize: 13, color: '#1e293b', lineHeight: 20 }}>
                             {answer.answer?.trim() || <Text style={{ color: '#9ca3af', fontStyle: 'italic' }}>No answer provided</Text>}
                           </Text>

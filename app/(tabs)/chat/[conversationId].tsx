@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, Pressable, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -206,6 +206,7 @@ export default function ChatRoomScreen() {
         onReact={(emoji) => handleReact(item.id, emoji)}
       />
     );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allMessages, user?.id, handleDelete, handleReact]);
 
   /* Header data */

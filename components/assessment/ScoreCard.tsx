@@ -67,7 +67,7 @@ function PendingGradingCard() {
             Awaiting Grading
           </Text>
           <Text style={{ fontSize: 13, color: '#b45309', textAlign: 'center', lineHeight: 20 }}>
-            Your submission was received.{'\n'}Your teacher hasn't marked it yet.
+            Your submission was received.{'\n'}{"Your teacher hasn't marked it yet."}
           </Text>
         </View>
       </View>
@@ -114,7 +114,7 @@ function UnderReviewCard() {
         <View style={{ alignItems: 'center', gap: 6 }}>
           <Text style={{ fontSize: 20, fontWeight: '900', color: '#1e3a8a', letterSpacing: -0.3 }}>Under Review</Text>
           <Text style={{ fontSize: 13, color: '#3b82f6', textAlign: 'center', lineHeight: 20 }}>
-            Your assessment has been marked.{'\n'}Your teacher hasn't released the scores yet.
+            Your assessment has been marked.{'\n'}{"Your teacher hasn't released the scores yet."}
           </Text>
         </View>
       </View>
@@ -295,7 +295,7 @@ export default function ScoreCard({ score, compact = false, pending = false, und
         <View style={{ backgroundColor: '#f0f9ff', padding: 14, borderTopWidth: 1, borderTopColor: '#e0f2fe', gap: 5 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="chatbubble-ellipses-outline" size={14} color="#0284c7" />
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5 }}>Teacher's Remarks</Text>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5 }}>{"Teacher's Remarks"}</Text>
           </View>
           <Text style={{ fontSize: 13, color: '#1e293b', lineHeight: 20 }}>{score.remarks}</Text>
         </View>

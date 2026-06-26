@@ -148,7 +148,7 @@ export default function ChildDocumentsScreen() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }} numberOfLines={1}>
-              {memberName}'s Documents
+              {memberName}&apos;s Documents
             </Text>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
               School documents & files

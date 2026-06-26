@@ -74,7 +74,6 @@ export default function FeaturesTab() {
   const isStaff = role === UserRole.STAFF;
   const isStudent = role === UserRole.STUDENT;
   const isParent = role === UserRole.PARENT;
-  const isSuperAdmin = role === UserRole.SUPER_ADMIN || !!user?.isAdmin;
 
   const classLabel = isAdmin ? 'All Classrooms' : isStaff ? 'My Classrooms' : 'My Classes';
   const classSubtitle = isAdmin

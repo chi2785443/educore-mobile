@@ -10,8 +10,8 @@ import Animated, {
   FadeIn, FadeInUp, FadeInDown,
 } from 'react-native-reanimated';
 import Svg, {
-  Circle, Path, Rect, G, Ellipse, Polygon, Line,
-  Defs, LinearGradient as SvgLinearGradient, Stop, ClipPath,
+  Circle, Path, Rect, Ellipse, Polygon, Line,
+  Defs, LinearGradient as SvgLinearGradient, Stop,
 } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -72,6 +72,7 @@ function WelcomeIllustration() {
     s2Y.value      = withRepeat(withDelay(400, withTiming(-10, { duration: 1700 })), -1, true);
     s3Y.value      = withRepeat(withDelay(700, withTiming(-16, { duration: 2400 })), -1, true);
     rotPencil.value = withRepeat(withTiming(8, { duration: 2000, easing: Easing.inOut(Easing.quad) }), -1, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const capSt    = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
@@ -161,6 +162,7 @@ function SchoolIllustration() {
     floatY.value = withRepeat(withTiming(-14, FLOAT), -1, true);
     barS.value   = withRepeat(withTiming(1.0, { duration: 1800, easing: Easing.inOut(Easing.quad) }), -1, true);
     cloudY.value = withRepeat(withDelay(300, withTiming(-10, { duration: 2500 })), -1, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const buildSt = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
@@ -250,6 +252,7 @@ function LearnersIllustration() {
     iconY2.value = withRepeat(withDelay(350,  withTiming(-10, { duration: 1800 })), -1, true);
     iconY3.value = withRepeat(withDelay(650,  withTiming(-14, { duration: 2300 })), -1, true);
     iconY4.value = withRepeat(withDelay(900,  withTiming(-8,  { duration: 1600 })), -1, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const figSt = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
@@ -394,6 +397,7 @@ function ConnectedIllustration() {
     b2Y.value    = withRepeat(withDelay(500, withTiming(-10, { duration: 2300 })), -1, true);
     heartS.value = withRepeat(withTiming(1.3, { duration: 900, easing: Easing.inOut(Easing.quad) }), -1, true);
     ringS.value  = withRepeat(withTiming(1.6, { duration: 1600, easing: Easing.out(Easing.quad) }), -1, false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const phoneSt = useAnimatedStyle(() => ({ transform: [{ translateY: floatY.value }] }));
@@ -541,12 +545,14 @@ export default function OnboardingScreen() {
       completeOnboarding();
       router.replace(isAuthenticated ? '/(tabs)/' : '/(auth)/sign-in');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, isAuthenticated]);
 
   const handleSkip = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     completeOnboarding();
     router.replace(isAuthenticated ? '/(tabs)/' : '/(auth)/sign-in');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {

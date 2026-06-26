@@ -101,7 +101,7 @@ export default function MyChildrenReportsScreen() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>
-              Children's Reports
+              {"Children's Reports"}
             </Text>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
               Select a child to view their reports

@@ -38,7 +38,7 @@ export default function ForgotPasswordScreen() {
 
             <View style={{ gap: 6, marginTop: 8 }}>
               <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.5 }}>Forgot password?</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }}>We'll send a reset link to your email</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }}>{"We'll send a reset link to your email"}</Text>
             </View>
           </View>
 

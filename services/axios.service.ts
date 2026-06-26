@@ -61,7 +61,7 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
 });
 
 let isRefreshing = false;
-let pendingQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
+let pendingQueue: { resolve: (token: string) => void; reject: (err: unknown) => void }[] = [];
 
 function processQueue(error: unknown, token: string | null) {
   pendingQueue.forEach(({ resolve, reject }) => {

@@ -40,8 +40,6 @@ function pctBg(pct: number): string {
 /* ── Score Detail Modal ──────────────────────────────────────────── */
 function ScoreDetailModal({ score, onClose }: { score: StudentScore; onClose: () => void }) {
   const pct = Math.round(Number(score.percentage));
-  const color = pctColor(pct);
-  const bg = pctBg(pct);
   const typeColor = TYPE_COLOR[score.assessment?.type ?? ''] ?? '#4C3FC4';
   const typeBg = TYPE_BG[score.assessment?.type ?? ''] ?? '#F0EEFF';
   const termLabel = TERM_LABELS[score.assessment?.term ?? ''] ?? (score.assessment?.term ?? '');
@@ -169,7 +167,7 @@ function ScoreDetailModal({ score, onClose }: { score: StudentScore; onClose: ()
             {/* Remarks */}
             {score.remarks && (
               <View style={{ backgroundColor: '#f0f9ff', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#0ea5e9' }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Teacher's Remarks</Text>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{"Teacher's Remarks"}</Text>
                 <Text style={{ fontSize: 13, color: '#1e293b', lineHeight: 20 }}>{score.remarks}</Text>
               </View>
             )}
@@ -304,8 +302,7 @@ export default function StudentScoresScreen() {
     return ['All', ...order.filter(t => s.has(t))];
   }, [allScores]);
 
-  const types = ['all', 'exam', 'test', 'quiz', 'assignment'] as const;
-  type TypeFilter = typeof types[number];
+  type TypeFilter = 'all' | 'exam' | 'test' | 'quiz' | 'assignment';
 
   const [activeYear, setActiveYear] = useState('All');
   const [activeTerm, setActiveTerm] = useState('All');
@@ -323,7 +320,7 @@ export default function StudentScoresScreen() {
       const db = b.gradedAt ? new Date(b.gradedAt).getTime() : 0;
       return db - da;
     });
-  }, [allScores, activeYear, activeTerm, activeSubject, activeType]);
+  }, [allScores, activeYear, activeTerm, activeType]);
 
   /* ── Summary stats ───────────────────────────────────────────── */
   const avgPct = filtered.length

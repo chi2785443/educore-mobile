@@ -57,7 +57,7 @@ export function ForgotPasswordForm() {
     <View className="gap-5">
       <View className="rounded-xl bg-amber-50 border border-amber-100 p-4">
         <Text className="text-sm text-amber-700">
-          Enter the email address linked to your account and we'll send you a reset link.
+          {"Enter the email address linked to your account and we'll send you a reset link."}
         </Text>
       </View>
 

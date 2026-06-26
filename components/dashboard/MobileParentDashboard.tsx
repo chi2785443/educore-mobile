@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { useParentDashboard } from '@/hooks/useDashboardRole';
 import {
-  DashLoader, GradCard, Card, CardHeader,
+  DashLoader, GradCard, Card,
   AnnouncementRow, EventRow, SectionLabel,
 } from './DashboardPrimitives';
 
@@ -49,7 +49,7 @@ export default function MobileParentDashboard({ schoolId, schoolName, firstName 
           Hello, {firstName}!
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 4 }}>
-          Stay connected with your child's school.
+          {"Stay connected with your child's school."}
         </Text>
 
         {/* Quick resource chips */}

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Pressable,
-  Platform,
   Animated,
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';

@@ -404,6 +404,7 @@ export default function CreateAssessmentSheet({ visible, onClose, classrooms, sc
   // Force fresh school data every time the sheet opens to pick up changes made on the website
   useEffect(() => {
     if (visible) refetchSchool();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   // Allowed assessment types from the latest grade configuration

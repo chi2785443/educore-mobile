@@ -30,10 +30,10 @@ import {
 import { CalendarEventType } from '@/interface/calendar.interface';
 import { ReportType, ReportTerm } from '@/interface/report.interface';
 
-const { height: SCREEN_H } = Dimensions.get('window');
-
 /* ── Geolocation ─────────────────────────────────────────────────── */
 import * as Location from 'expo-location';
+
+const { height: SCREEN_H } = Dimensions.get('window');
 
 type LocationResult =
   | { ok: true; latitude: number; longitude: number }
@@ -1089,6 +1089,7 @@ function ActionSheet({ visible, onClose, schoolId, role, isAdmin, isStaff, isStu
         Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]).start();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const nav = useCallback((path: string) => {

@@ -45,7 +45,7 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
           Hello, {firstName}!
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 4 }}>
-          Here's an overview of your activities today.
+          {"Here's an overview of your activities today."}
         </Text>
 
         {/* Clock-in status pill */}
@@ -83,7 +83,7 @@ export default function MobileStaffDashboard({ schoolId, schoolName, firstName }
         </View>
 
         {/* ── Today's schedule ─────────────────────────────── */}
-        <SectionLabel>Today's Schedule</SectionLabel>
+        <SectionLabel>{"Today's Schedule"}</SectionLabel>
         <Card>
           <CardHeader icon="time" iconColor="#14b8a6" title={`${new Date().toLocaleDateString('en', { weekday: 'long' })}'s Classes`} />
           {d.todayTimetable.length === 0 ? (

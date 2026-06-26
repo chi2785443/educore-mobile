@@ -217,7 +217,7 @@ function DetailView({
         {/* Parent's message */}
         <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#e5e7eb' }}>
           <Text style={{ fontSize: 12, fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 }}>
-            Parent's Message
+            {"Parent's Message"}
           </Text>
           <Text style={{ fontSize: 14, color: '#374151', lineHeight: 22 }}>{enquiry.message}</Text>
         </View>

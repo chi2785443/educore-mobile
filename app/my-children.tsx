@@ -216,7 +216,7 @@ export default function MyChildrenScreen() {
               fontSize: 12, color: '#9ca3af', marginTop: 6,
               textAlign: 'center', maxWidth: 240, lineHeight: 18,
             }}>
-              Ask your school administrator to link your account to your child's student profile.
+              {"Ask your school administrator to link your account to your child's student profile."}
             </Text>
           </View>
         ) : (
