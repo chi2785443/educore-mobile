@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, ScrollView, Pressable, TextInput, RefreshControl,
+  View, Text, SectionList, Pressable, TextInput, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,7 +54,8 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 /* ── Conversation row ──────────────────────────────────────────── */
-function ConvItem({ conv, currentUserId, onPress }: { conv: Conversation; currentUserId?: string; onPress: () => void }) {
+const ConvItem = React.memo(function ConvItem({ conv, currentUserId }: { conv: Conversation; currentUserId?: string }) {
+  const router = useRouter();
   const name = convDisplayName(conv);
   const initials = getInitials(name);
   const bg = avatarColor(name);
@@ -62,14 +63,17 @@ function ConvItem({ conv, currentUserId, onPress }: { conv: Conversation; curren
   const preview = conv.lastMessage ?? 'No messages yet';
   const time = timeLabel(conv.lastMessageAt);
 
-  // For direct chats, show the other participant's profile picture if available
   const otherParticipant = conv.type === 'direct' && conv.participants
     ? conv.participants.find(p => p.userId !== currentUserId)
     : undefined;
   const profilePicture = otherParticipant?.profilePicture ?? null;
 
+  const handlePress = useCallback(() => {
+    router.push(`/chat/${conv.id}`);
+  }, [router, conv.id]);
+
   return (
-    <Pressable onPress={onPress}>
+    <Pressable onPress={handlePress}>
       {({ pressed }) => (
         <View style={{
           flexDirection: 'row',
@@ -174,7 +178,7 @@ function ConvItem({ conv, currentUserId, onPress }: { conv: Conversation; curren
       )}
     </Pressable>
   );
-}
+});
 
 /* ── Main screen ───────────────────────────────────────────────── */
 export default function ChatTab() {
@@ -205,17 +209,18 @@ export default function ChatTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolId]);
 
-  const filtered = conversations.filter(c => {
+  const filtered = useMemo(() => conversations.filter(c => {
     if (c.type === 'team' && !isAdmin) return false;
     if (!search) return true;
     return convDisplayName(c).toLowerCase().includes(search.toLowerCase());
-  });
+  }), [conversations, isAdmin, search]);
 
-  const grouped = SECTION_ORDER.reduce<Record<string, Conversation[]>>((acc, type) => {
-    const items = filtered.filter(c => c.type === type);
-    if (items.length > 0) acc[type] = items;
-    return acc;
-  }, {});
+  const sections = useMemo(() =>
+    SECTION_ORDER
+      .map(type => ({ type, data: filtered.filter(c => c.type === type) }))
+      .filter(s => s.data.length > 0),
+    [filtered],
+  );
 
   const handleConvCreated = (conv: Conversation) => {
     setShowPicker(false);
@@ -288,39 +293,26 @@ export default function ChatTab() {
           </Text>
         </View>
       ) : (
-        <ScrollView
+        <SectionList
+          sections={sections}
+          keyExtractor={(conv) => conv.id}
+          renderItem={({ item }) => <ConvItem conv={item} currentUserId={user?.id} />}
+          renderSectionHeader={({ section: { type } }) => (
+            <Text style={{
+              fontSize: 12, fontWeight: '600', color: '#9ca3af',
+              paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6,
+              letterSpacing: 0.5, textTransform: 'uppercase',
+            }}>
+              {SECTION_LABELS[type]}
+            </Text>
+          )}
+          ItemSeparatorComponent={() => (
+            <View style={{ height: 0.5, backgroundColor: '#e5e7eb', marginLeft: 80 }} />
+          )}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 32 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
-        >
-          {Object.entries(grouped).map(([type, convs]) => (
-            <View key={type}>
-              {/* Section label */}
-              <Text style={{
-                fontSize: 12,
-                fontWeight: '600',
-                color: '#9ca3af',
-                paddingHorizontal: 16,
-                paddingTop: 18,
-                paddingBottom: 6,
-                letterSpacing: 0.5,
-                textTransform: 'uppercase',
-              }}>
-                {SECTION_LABELS[type]}
-              </Text>
-
-              {/* Rows with hairline separator */}
-              {convs.map((conv, i) => (
-                <View key={conv.id}>
-                  <ConvItem conv={conv} currentUserId={user?.id} onPress={() => router.push(`/chat/${conv.id}`)} />
-                  {i < convs.length - 1 && (
-                    <View style={{ height: 0.5, backgroundColor: '#e5e7eb', marginLeft: 80 }} />
-                  )}
-                </View>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
+        />
       )}
 
       <PeoplePickerSheet

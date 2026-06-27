@@ -35,7 +35,7 @@ function formatTime(dateStr: string | undefined | null): string {
   }
 }
 
-export default function ChatBubble({ message, isOwn, showSender, onLongPress, onReact }: Props) {
+function ChatBubble({ message, isOwn, showSender, onLongPress, onReact }: Props) {
   const hasSender = !!message.sender?.firstName;
   const senderName = hasSender
     ? `${message.sender!.firstName} ${message.sender!.lastName}`
@@ -163,3 +163,5 @@ export default function ChatBubble({ message, isOwn, showSender, onLongPress, on
     </View>
   );
 }
+
+export default React.memo(ChatBubble);

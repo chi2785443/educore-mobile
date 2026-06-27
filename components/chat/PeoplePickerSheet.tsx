@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  Modal, View, Text, Pressable, TextInput, ScrollView,
+  Modal, View, Text, Pressable, TextInput, ScrollView, FlatList,
   ActivityIndicator, KeyboardAvoidingView, Platform,
   useWindowDimensions,
 } from 'react-native';
@@ -40,6 +40,84 @@ function avatarColor(id: string) {
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
 }
 
+interface MemberRowProps {
+  member: MessageableUser;
+  mode: Mode;
+  isSelected: boolean;
+  isOpening: boolean;
+  onDmTap: (member: MessageableUser) => void;
+  onToggle: (member: MessageableUser) => void;
+}
+
+const MemberRow = React.memo(function MemberRow({ member, mode, isSelected, isOpening, onDmTap, onToggle }: MemberRowProps) {
+  const color = avatarColor(member.userId);
+  const initials = `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`.toUpperCase();
+  const roleStyle = ROLE_COLORS[member.role] ?? { bg: '#f3f4f6', text: '#6b7280' };
+  const roleLabel = ROLE_LABELS[member.role] ?? member.role;
+
+  const handlePress = useCallback(() => {
+    if (mode === 'dm') onDmTap(member);
+    else onToggle(member);
+  }, [mode, member, onDmTap, onToggle]);
+
+  return (
+    <Pressable onPress={handlePress} disabled={isOpening}>
+      {({ pressed }) => (
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', gap: 12,
+          paddingVertical: 11, paddingHorizontal: 16,
+          backgroundColor: pressed ? '#f8fafc' : isSelected ? '#f5f3ff' : '#fff',
+        }}>
+          {mode === 'group' && (
+            <View style={{
+              width: 22, height: 22, borderRadius: 11,
+              backgroundColor: isSelected ? '#6366f1' : '#fff',
+              borderWidth: isSelected ? 0 : 1.5, borderColor: '#cbd5e1',
+              alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              {isSelected && <Ionicons name="checkmark" size={13} color="#fff" />}
+            </View>
+          )}
+          {member.profilePicture ? (
+            <Image
+              source={{ uri: member.profilePicture }}
+              style={{ width: 46, height: 46, borderRadius: 23, flexShrink: 0 }}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={{
+              width: 46, height: 46, borderRadius: 23,
+              backgroundColor: color, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>{initials}</Text>
+            </View>
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', flexShrink: 1 }} numberOfLines={1}>
+                {member.firstName} {member.lastName}
+              </Text>
+              <View style={{ backgroundColor: roleStyle.bg, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, flexShrink: 0 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: roleStyle.text }}>{roleLabel}</Text>
+              </View>
+            </View>
+            {member.jobTitle && (
+              <Text style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }} numberOfLines={1}>
+                {member.jobTitle}
+              </Text>
+            )}
+          </View>
+          {mode === 'dm' && (
+            isOpening
+              ? <ActivityIndicator size="small" color="#6366f1" />
+              : <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+          )}
+        </View>
+      )}
+    </Pressable>
+  );
+});
+
 export default function PeoplePickerSheet({
   visible, onClose, schoolId, conversations, onConversationCreated,
 }: Props) {
@@ -75,14 +153,13 @@ export default function PeoplePickerSheet({
     });
   }, [members, search, user?.id]);
 
-  const handleDmTap = async (member: MessageableUser) => {
+  const handleDmTap = useCallback(async (member: MessageableUser) => {
     setOpeningDm(member.userId);
     try {
       const existing = conversations.find(
         c => c.type === 'direct' && c.participantIds.includes(member.userId),
       );
       if (existing) { onConversationCreated(existing); return; }
-      // Include BOTH users: the current user and the selected member
       const participants = [member.userId];
       if (user?.id && !participants.includes(user.id)) participants.push(user.id);
       const conv = await createMutation.mutateAsync({
@@ -94,13 +171,15 @@ export default function PeoplePickerSheet({
     } finally {
       setOpeningDm(null);
     }
-  };
+  }, [conversations, schoolId, user?.id, createMutation, onConversationCreated]);
 
-  const toggleGroupSelect = (member: MessageableUser) => {
-    const idx = selected.findIndex(s => s.userId === member.userId);
-    if (idx >= 0) setSelected(prev => prev.filter((_, i) => i !== idx));
-    else setSelected(prev => [...prev, member]);
-  };
+  const toggleGroupSelect = useCallback((member: MessageableUser) => {
+    setSelected(prev => {
+      const idx = prev.findIndex(s => s.userId === member.userId);
+      if (idx >= 0) return prev.filter((_, i) => i !== idx);
+      return [...prev, member];
+    });
+  }, []);
 
   const canCreateGroup = selected.length >= 2 && groupName.trim().length >= 1;
 
@@ -311,125 +390,36 @@ export default function PeoplePickerSheet({
                 <Text style={{ color: '#94a3b8', fontSize: 13 }}>Loading members…</Text>
               </View>
             ) : (
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                style={{ height: memberListHeight }}
-              >
-                {filtered.length === 0 ? (
+              <FlatList
+                data={filtered}
+                keyExtractor={(m) => m.userId}
+                renderItem={({ item }) => (
+                  <MemberRow
+                    member={item}
+                    mode={mode}
+                    isSelected={selected.some(s => s.userId === item.userId)}
+                    isOpening={openingDm === item.userId}
+                    onDmTap={handleDmTap}
+                    onToggle={toggleGroupSelect}
+                  />
+                )}
+                ItemSeparatorComponent={() => (
+                  <View style={{ height: 0.5, backgroundColor: '#f1f5f9', marginLeft: mode === 'group' ? 90 : 74 }} />
+                )}
+                ListEmptyComponent={
                   <View style={{ alignItems: 'center', paddingVertical: 36, gap: 8 }}>
                     <Ionicons name="search-outline" size={28} color="#cbd5e1" />
                     <Text style={{ color: '#94a3b8', fontSize: 13 }}>
                       {search ? `No results for "${search}"` : 'No members found'}
                     </Text>
                   </View>
-                ) : (
-                  filtered.map((member, idx) => {
-                    const isSelectedGroup = selected.some(s => s.userId === member.userId);
-                    const color = avatarColor(member.userId);
-                    const initials = `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`.toUpperCase();
-                    const roleStyle = ROLE_COLORS[member.role] ?? { bg: '#f3f4f6', text: '#6b7280' };
-                    const roleLabel = ROLE_LABELS[member.role] ?? member.role;
-                    const isOpening = openingDm === member.userId;
-
-                    return (
-                      <View key={member.userId}>
-                        <Pressable
-                          onPress={() => mode === 'dm' ? handleDmTap(member) : toggleGroupSelect(member)}
-                          disabled={isOpening}
-                        >
-                          {({ pressed }) => (
-                            <View style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 12,
-                              paddingVertical: 11,
-                              paddingHorizontal: 16,
-                              backgroundColor:
-                                pressed ? '#f8fafc'
-                                : isSelectedGroup ? '#f5f3ff'
-                                : '#fff',
-                            }}>
-                              {/* Group checkbox */}
-                              {mode === 'group' && (
-                                <View style={{
-                                  width: 22, height: 22, borderRadius: 11,
-                                  backgroundColor: isSelectedGroup ? '#6366f1' : '#fff',
-                                  borderWidth: isSelectedGroup ? 0 : 1.5,
-                                  borderColor: '#cbd5e1',
-                                  alignItems: 'center', justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                  {isSelectedGroup && (
-                                    <Ionicons name="checkmark" size={13} color="#fff" />
-                                  )}
-                                </View>
-                              )}
-
-                              {/* Avatar */}
-                              {member.profilePicture ? (
-                                <Image
-                                  source={{ uri: member.profilePicture }}
-                                  style={{ width: 46, height: 46, borderRadius: 23, flexShrink: 0 }}
-                                  contentFit="cover"
-                                />
-                              ) : (
-                                <View style={{
-                                  width: 46, height: 46, borderRadius: 23,
-                                  backgroundColor: color,
-                                  alignItems: 'center', justifyContent: 'center',
-                                  flexShrink: 0,
-                                }}>
-                                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
-                                    {initials}
-                                  </Text>
-                                </View>
-                              )}
-
-                              {/* Name + role badge + job title */}
-                              <View style={{ flex: 1, minWidth: 0 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                  <Text
-                                    style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', flexShrink: 1 }}
-                                    numberOfLines={1}
-                                  >
-                                    {member.firstName} {member.lastName}
-                                  </Text>
-                                  <View style={{
-                                    backgroundColor: roleStyle.bg,
-                                    borderRadius: 6,
-                                    paddingHorizontal: 7, paddingVertical: 2,
-                                    flexShrink: 0,
-                                  }}>
-                                    <Text style={{ fontSize: 10, fontWeight: '700', color: roleStyle.text }}>
-                                      {roleLabel}
-                                    </Text>
-                                  </View>
-                                </View>
-                                {member.jobTitle && (
-                                  <Text style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }} numberOfLines={1}>
-                                    {member.jobTitle}
-                                  </Text>
-                                )}
-                              </View>
-
-                              {/* DM: spinner or chevron */}
-                              {mode === 'dm' && (
-                                isOpening
-                                  ? <ActivityIndicator size="small" color="#6366f1" />
-                                  : <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
-                              )}
-                            </View>
-                          )}
-                        </Pressable>
-                        {idx < filtered.length - 1 && (
-                          <View style={{ height: 0.5, backgroundColor: '#f1f5f9', marginLeft: mode === 'group' ? 90 : 74 }} />
-                        )}
-                      </View>
-                    );
-                  })
-                )}
-              </ScrollView>
+                }
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                style={{ height: memberListHeight }}
+                windowSize={10}
+                maxToRenderPerBatch={15}
+              />
             )}
 
             {/* Group create button */}

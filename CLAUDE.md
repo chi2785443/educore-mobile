@@ -1,4 +1,4 @@
-# EduCore Mobile — React Native (Expo)
+# Cakale EDU Mobile — React Native (Expo)
 
 - **Framework:** Expo SDK 54 + Expo Router 6 | **Runtime:** React Native 0.81
 - **Dev:** `pnpm start` | **Package manager:** pnpm | **New Architecture:** enabled
@@ -174,6 +174,21 @@
 - `useLogout()` returns an async function — call directly: `const logout = useLogout(); logout()`
 - Error handling: always `err.message` in `onError`
 - Replace all full-screen `ActivityIndicator` with `components/ui/LoadingScreen.tsx`
+
+---
+
+## Location (Attendance)
+
+- Android uses `Location.Accuracy.Low` (network-based); iOS uses `Balanced`.
+- `getCurrentPositionAsync` races against a 10 s timeout. On timeout/failure, falls back to `getLastKnownPositionAsync` (up to 1 h old, then any cached).
+- Attendance card shows a blocking modal on location failure — no two-step confirm dialog.
+
+---
+
+## Results Service
+
+- `getClassroomResults`: backend may return `{ data: { results: [] } }` or `{ results: [] }`. Unwrap both layers.
+- Field remapping: `position → classPosition`, `grade → overallGrade`, flat `studentName/studentPicture → student` object.
 
 ---
 

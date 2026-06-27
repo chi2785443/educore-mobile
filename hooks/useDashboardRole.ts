@@ -14,6 +14,7 @@ export const useAdminDashboard = (schoolId: string | undefined) =>
     queryFn: () => getAdminDashboard(schoolId!),
     enabled: !!schoolId,
     staleTime: STALE,
+    refetchOnWindowFocus: false,
   });
 
 export const useStaffDashboard = (schoolId: string | undefined) =>
@@ -22,6 +23,7 @@ export const useStaffDashboard = (schoolId: string | undefined) =>
     queryFn: () => getStaffDashboard(schoolId!),
     enabled: !!schoolId,
     staleTime: STALE,
+    refetchOnWindowFocus: false,
   });
 
 export const useStudentDashboard = (schoolId: string | undefined) =>
@@ -30,6 +32,7 @@ export const useStudentDashboard = (schoolId: string | undefined) =>
     queryFn: () => getStudentDashboard(schoolId!),
     enabled: !!schoolId,
     staleTime: STALE,
+    refetchOnWindowFocus: false,
   });
 
 export const useParentDashboard = (schoolId: string | undefined) =>
@@ -38,4 +41,5 @@ export const useParentDashboard = (schoolId: string | undefined) =>
     queryFn: () => getParentDashboard(schoolId!),
     enabled: !!schoolId,
     staleTime: STALE,
+    refetchOnWindowFocus: false,
   });

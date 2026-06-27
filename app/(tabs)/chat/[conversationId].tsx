@@ -152,7 +152,7 @@ export default function ChatRoomScreen() {
   }, [conversationId, user?.id, sendMutation, refetchMessages, qc]);
 
   /* Delete */
-  const handleDelete = (messageId: string) => {
+  const handleDelete = useCallback((messageId: string) => {
     Alert.alert('Delete message', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -168,7 +168,7 @@ export default function ChatRoomScreen() {
         },
       },
     ]);
-  };
+  }, [deleteMutation]);
 
   /* React */
   const handleReact = useCallback((messageId: string, emoji: string) => {
@@ -271,6 +271,9 @@ export default function ChatRoomScreen() {
           inverted
           contentContainerStyle={{ paddingVertical: 12 }}
           showsVerticalScrollIndicator={false}
+          windowSize={15}
+          maxToRenderPerBatch={15}
+          updateCellsBatchingPeriod={50}
           ListFooterComponent={
             allMessages.length > 0 ? (
               <LoadOlderButton onPress={handleLoadOlder} loading={loadingOlder} />

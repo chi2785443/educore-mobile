@@ -28,8 +28,8 @@ export const useMessages = (conversationId: string | undefined, limit = 30) =>
     queryKey: ['messages', conversationId],
     queryFn: () => messageService.getMessages(conversationId!, limit),
     enabled: !!conversationId,
-    staleTime: 10_000,
-    refetchInterval: 10_000,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
   });
 
 export const useMessageableUsers = (schoolId: string | undefined) =>

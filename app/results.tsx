@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, ScrollView, Pressable, ActivityIndicator,
+  View, Text, ScrollView, FlatList, Pressable, ActivityIndicator,
   RefreshControl, Modal, Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -513,7 +513,7 @@ function ReportCardModal({ result, onClose }: { result: TermResult; onClose: () 
 }
 
 /* ── Subject table row ───────────────────────────────────────────── */
-function SubjectTableRow({ sub, index }: { sub: SubjectResult; index: number }) {
+const SubjectTableRow = React.memo(function SubjectTableRow({ sub, index }: { sub: SubjectResult; index: number }) {
   const gc = gradeColorHex(sub.grade);
   return (
     <View style={{ flexDirection: 'row', backgroundColor: index % 2 === 0 ? '#fff' : '#f9fafb', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
@@ -529,10 +529,10 @@ function SubjectTableRow({ sub, index }: { sub: SubjectResult; index: number }) 
       <Text style={{ flex: 1, fontSize: 12, fontWeight: '800', color: gc, textAlign: 'center', paddingVertical: 10 }}>{sub.grade ?? '—'}</Text>
     </View>
   );
-}
+});
 
 /* ── Summary card (list) ─────────────────────────────────────────── */
-function ResultSummaryCard({ result, onPress, isLatest }: {
+const ResultSummaryCard = React.memo(function ResultSummaryCard({ result, onPress, isLatest }: {
   result: TermResult; onPress: () => void; isLatest: boolean;
 }) {
   const pct = Math.round(result.overallPercentage);
@@ -586,7 +586,7 @@ function ResultSummaryCard({ result, onPress, isLatest }: {
       </View>
     </Pressable>
   );
-}
+});
 
 /* ── Main screen ─────────────────────────────────────────────────── */
 export default function ResultsScreen() {
@@ -600,14 +600,14 @@ export default function ResultsScreen() {
     setRefreshing(false);
   }, [refetch]);
 
-  const sorted = [...results].sort((a, b) => {
+  const sorted = useMemo(() => [...results].sort((a, b) => {
     if (a.academicYear !== b.academicYear) return b.academicYear.localeCompare(a.academicYear);
     return a.term.localeCompare(b.term);
-  });
+  }), [results]);
 
-  const avgPct = sorted.length
+  const avgPct = useMemo(() => sorted.length
     ? Math.round(sorted.reduce((a, r) => a + r.overallPercentage, 0) / sorted.length)
-    : 0;
+    : 0, [sorted]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }} edges={['top']}>
@@ -653,20 +653,21 @@ export default function ResultsScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
-        >
-          {sorted.map((result, i) => (
+        <FlatList
+          data={sorted}
+          keyExtractor={(result) => result.id}
+          renderItem={({ item, index }) => (
             <ResultSummaryCard
-              key={result.id}
-              result={result}
-              isLatest={i === 0}
-              onPress={() => setSelected(result)}
+              result={item}
+              isLatest={index === 0}
+              onPress={() => setSelected(item)}
             />
-          ))}
-        </ScrollView>
+          )}
+          ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" colors={['#6366f1']} />}
+        />
       )}
 
       {selected && <ReportCardModal result={selected} onClose={() => setSelected(null)} />}

@@ -63,7 +63,7 @@ const STEPS = [
   { num: '3', label: 'Explore',  active: false },
 ];
 
-function SectionDivider({ label }: { label: string }) {
+const SectionDivider = React.memo(function SectionDivider({ label }: { label: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
@@ -73,9 +73,9 @@ function SectionDivider({ label }: { label: string }) {
       <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
     </View>
   );
-}
+});
 
-function NoSchoolState({ firstName }: { firstName: string }) {
+const NoSchoolState = React.memo(function NoSchoolState({ firstName }: { firstName: string }) {
   const router = useRouter();
 
   return (
@@ -297,7 +297,7 @@ function NoSchoolState({ firstName }: { firstName: string }) {
       </View>
     </ScrollView>
   );
-}
+});
 
 export default function DashboardTab() {
   const user = useAuthStore(s => s.user);

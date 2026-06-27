@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, ScrollView, Pressable, TextInput, RefreshControl, Modal, ActivityIndicator,
+  View, Text, ScrollView, FlatList, Pressable, TextInput, RefreshControl, Modal, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,7 +37,7 @@ interface Classroom {
   roomNumber?: string;
 }
 
-function ClassroomCard({ classroom }: { classroom: Classroom }) {
+const ClassroomCard = React.memo(function ClassroomCard({ classroom }: { classroom: Classroom }) {
   const router = useRouter();
   const pal = getPalette(classroom.grade);
   const initials = classroom.name.slice(0, 2).toUpperCase();
@@ -120,7 +120,7 @@ function ClassroomCard({ classroom }: { classroom: Classroom }) {
       </View>
     </Pressable>
   );
-}
+});
 
 const GRADES = ['JSS1','JSS2','JSS3','SS1','SS2','SS3'];
 const SECTIONS = ['A','B','C','D','E'];
@@ -353,13 +353,16 @@ export default function ClassroomListScreen() {
           )}
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={filtered}
+          keyExtractor={(c) => c.id}
+          renderItem={({ item }) => <ClassroomCard classroom={item} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 36 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4C3FC4" colors={['#4C3FC4']} />}
-        >
-          {filtered.map(c => <ClassroomCard key={c.id} classroom={c} />)}
-        </ScrollView>
+          windowSize={10}
+          maxToRenderPerBatch={10}
+        />
       )}
 
       {/* FAB — admin only */}
