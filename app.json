@@ -11,14 +11,14 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cakaledu.app",
+      "bundleIdentifier": "com.cakale.edu.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Cakale EDU needs your location to record attendance and verify you are clocking in from the correct site.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Cakale EDU needs your location to record attendance and verify you are clocking in from the correct site."
       }
     },
     "android": {
-      "package": "com.cakaledu.app",
+      "package": "com.cakale.edu.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
