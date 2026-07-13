@@ -11,6 +11,7 @@ import { ACCESS_TOKEN_KEY } from "@/services/axios.service";
 import { authService } from "@/services/auth.service";
 import { UserType } from "@/interface/user.interface";
 import { ToastProvider } from "@/components/ui/Toast";
+import { UpdateWallModal } from "@/components/update/UpdateWallModal";
 import {
   useFonts,
   Poppins_400Regular,
@@ -72,6 +73,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthInitializer onReady={handleReady} />
+        <UpdateWallModal />
         <StatusBar style="light" />
         {ready && fontsLoaded && (
           <Stack screenOptions={{ headerShown: false }}>

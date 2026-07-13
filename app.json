@@ -2,6 +2,7 @@
   "expo": {
     "name": "Cakale EDU",
     "slug": "cakale-edu",
+    "owner": "cakale",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -72,6 +73,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ec70cce6-f498-4205-b1c9-5244f5d52cfd"
+      }
     }
   }
 }

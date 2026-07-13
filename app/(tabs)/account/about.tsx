@@ -4,8 +4,9 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Application from 'expo-application';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = Application.nativeApplicationVersion ?? '1.0.0';
 
 const FEATURES = [
   { icon: 'people-outline' as const,        color: '#4C3FC4', bg: '#F0EEFF', label: 'Multi-role Access',    desc: 'Admins, staff, students and parents each get a tailored experience.' },

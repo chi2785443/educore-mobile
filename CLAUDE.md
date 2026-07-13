@@ -141,8 +141,16 @@
 ## Account Screens
 
 - `account/help-support.tsx` — FAQ accordion + contact cards (Email/WhatsApp/Help Centre). Linked from Support settings group.
-- `account/about.tsx` — app version, mission, feature list, legal links. Linked from Support settings group.
+- `account/about.tsx` — app version (`Application.nativeApplicationVersion` via `expo-application`, falls back to `'1.0.0'`), mission, feature list, legal links. Linked from Support settings group.
 - Both use the standard purple hero header pattern.
+
+## In-App Update Wall
+
+- `components/update/UpdateWallModal.tsx`, mounted as a root-level sibling in `app/_layout.tsx` (outside the `Stack`, not nested in any other `Modal` — per the "Modal outside Modal is invisible" rule above).
+- Gates on `AppRelease.versionCode` (int) vs `Application.nativeBuildVersion` — **never** compare the semver `version` string for gating logic (string comparison of `"1.10.0" > "1.9.0"` is wrong).
+- `useAppUpdateCheck()` (`hooks/useAppUpdateCheck.ts`) polls `GET /app-releases/latest?platform=android` via `refetchInterval: 10 * 60_000` — same convention as `useNotifications.ts`, no `AppState` foreground-listener exists in this app.
+- `updateType: 'critical'` → unskippable full block, no dismiss, hardware back does nothing. `'optional'` → dismissible; skip is persisted per-versionCode in `store/updateStore.ts` (Zustand + AsyncStorage, same shape as `authStore.ts`) so it re-prompts automatically on any newer release.
+- "Update Now" opens `release.fileUrl` (public R2 URL) via `Linking.openURL` — same backend release the frontend landing page and admin panel manage (see `backend/CLAUDE.md` → "App Releases").
 
 ---
 
