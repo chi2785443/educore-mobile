@@ -36,6 +36,10 @@ yarn-error.*
 # maestro e2e local overrides
 e2e/maestro/.env
 
+# detox e2e artifacts (screenshots/logs from local test runs)
+/artifacts
+*.apk
+
 # typescript
 *.tsbuildinfo
 

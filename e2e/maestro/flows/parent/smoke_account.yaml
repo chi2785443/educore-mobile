@@ -6,7 +6,7 @@ appId: com.cakale.edu.app
       EMAIL: "chinwe.eze.parent@mail.cakale.com"
       PASSWORD: "Demo@2026!"
 - tapOn: "Account"
-- assertVisible:
-    text: "Sign Out"
+- extendedWaitUntil:
+    visible: "Sign Out"
     timeout: 15000
 - runFlow: ../shared/logout.yaml

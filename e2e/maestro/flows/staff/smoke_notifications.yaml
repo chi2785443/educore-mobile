@@ -7,8 +7,8 @@ appId: com.cakale.edu.app
       EMAIL: "ifeoma.chukwu@mail.cakale.com"
       PASSWORD: "Demo@2026!"
 - openLink: "cakale-edu://notifications"
-- assertVisible:
-    text: "Notifications"
+- extendedWaitUntil:
+    visible: "Notifications"
     timeout: 15000
 - back
 - runFlow: ../shared/logout.yaml

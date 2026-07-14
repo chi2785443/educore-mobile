@@ -5,15 +5,21 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "test:e2e": "maestro test e2e/maestro/flows",
     "test:e2e:admin": "maestro test e2e/maestro/flows/admin",
     "test:e2e:staff": "maestro test e2e/maestro/flows/staff",
     "test:e2e:student": "maestro test e2e/maestro/flows/student",
-    "test:e2e:parent": "maestro test e2e/maestro/flows/parent"
+    "test:e2e:parent": "maestro test e2e/maestro/flows/parent",
+    "test:e2e:detox:build": "detox build -c android.emu.debug",
+    "test:e2e:detox": "detox test -c android.emu.debug",
+    "test:e2e:detox:admin": "detox test -c android.emu.debug e2e/detox/admin",
+    "test:e2e:detox:staff": "detox test -c android.emu.debug e2e/detox/staff",
+    "test:e2e:detox:student": "detox test -c android.emu.debug e2e/detox/student",
+    "test:e2e:detox:parent": "detox test -c android.emu.debug e2e/detox/parent"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",
@@ -65,12 +71,18 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@expo/config-plugins": "^57.0.3",
     "@resvg/resvg-js": "^2.6.2",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
     "babel-preset-expo": "^54.0.10",
+    "detox": "^20.51.4",
     "eas-cli": "^20.5.1",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "jest": "^30.4.2",
+    "jest-circus": "^30.4.2",
+    "jest-environment-node": "30.4.1",
     "prettier-plugin-tailwindcss": "0.5.11",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.2"

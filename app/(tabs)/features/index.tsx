@@ -234,6 +234,7 @@ export default function FeaturesTab() {
       </View>
 
       <ScrollView
+        testID="features-scroll-view"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >

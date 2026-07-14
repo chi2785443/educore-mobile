@@ -6,7 +6,7 @@ appId: com.cakale.edu.app
       EMAIL: "ifeoma.chukwu@mail.cakale.com"
       PASSWORD: "Demo@2026!"
 - tapOn: "Chat"
-- assertVisible:
-    text: "Chat"
+- extendedWaitUntil:
+    visible: "Chat"
     timeout: 15000
 - runFlow: ../shared/logout.yaml

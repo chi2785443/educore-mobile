@@ -379,6 +379,7 @@ export default function AccountTab() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: heroBg }} edges={['top']}>
       <ScrollView
+        testID="account-scroll-view"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 16 }}
         style={{ backgroundColor: '#f8fafc' }}

@@ -9,11 +9,11 @@ appId: com.cakale.edu.app
       PASSWORD: "Demo@2026!"
 - tapOn: "Features"
 - tapOn: "Attendance"
-- assertVisible:
-    text: "My Attendance"
+- extendedWaitUntil:
+    visible: "My Attendance"
     timeout: 15000
 - tapOn: "Clock In"
-- assertVisible:
-    text: "Clocked In"
+- extendedWaitUntil:
+    visible: "Clocked In"
     timeout: 20000
 - runFlow: ../shared/logout.yaml

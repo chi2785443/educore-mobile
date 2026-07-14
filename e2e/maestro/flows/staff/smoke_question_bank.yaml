@@ -7,8 +7,8 @@ appId: com.cakale.edu.app
       PASSWORD: "Demo@2026!"
 - tapOn: "Features"
 - tapOn: "Question Bank"
-- assertVisible:
-    text: "Question Bank"
+- extendedWaitUntil:
+    visible: "Question Bank"
     timeout: 15000
 - back
 - runFlow: ../shared/logout.yaml

@@ -1,5 +1,6 @@
 allowBuilds:
-  dtrace-provider: set this to true or false
+  detox: true
+  dtrace-provider: true
   unrs-resolver: true
 onlyBuiltDependencies:
   - unrs-resolver

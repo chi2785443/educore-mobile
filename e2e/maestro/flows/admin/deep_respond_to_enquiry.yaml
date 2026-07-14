@@ -5,12 +5,12 @@ appId: com.cakale.edu.app
 - runFlow:
     file: ../shared/login.yaml
     env:
-      EMAIL: "e2etest@mail.cakale.com"
+      EMAIL: "test@mail.cakale.com"
       PASSWORD: "Demo@2026!"
 - tapOn: "Features"
 - tapOn: "Enquiries"
-- assertVisible:
-    text: "School Enquiries"
+- extendedWaitUntil:
+    visible: "School Enquiries"
     timeout: 15000
 - tapOn:
     index: 0
@@ -25,7 +25,7 @@ appId: com.cakale.edu.app
     optional: true
 - inputText: "Thank you for reaching out — our admissions team will follow up shortly."
 - tapOn: "Send"
-- assertVisible:
-    text: "Thank you for reaching out"
+- extendedWaitUntil:
+    visible: "Thank you for reaching out"
     timeout: 15000
 - runFlow: ../shared/logout.yaml

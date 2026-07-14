@@ -1,6 +1,7 @@
 import "../global.css";
 
 import React, { useEffect } from "react";
+import { LogBox } from "react-native";
 import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
@@ -21,6 +22,10 @@ import {
 } from "@expo-google-fonts/poppins";
 
 SplashScreen.preventAutoHideAsync();
+
+// This dev-only warning's LogBox notification banner overlaps the bottom tab bar
+// (blocking taps on "Account"/"Chat") on emulators/devices with reduced motion enabled.
+LogBox.ignoreLogs(["Reduced motion setting is enabled"]);
 
 const queryClient = new QueryClient({
   defaultOptions: {

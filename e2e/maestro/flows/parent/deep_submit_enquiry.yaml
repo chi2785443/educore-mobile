@@ -9,8 +9,8 @@ appId: com.cakale.edu.app
       PASSWORD: "Demo@2026!"
 - tapOn: "Features"
 - tapOn: "Enquiries"
-- assertVisible:
-    text: "My Enquiries"
+- extendedWaitUntil:
+    visible: "My Enquiries"
     timeout: 15000
 - tapOn:
     id: "new-enquiry-fab"
@@ -22,7 +22,7 @@ appId: com.cakale.edu.app
     id: "enquiry-message-input"
 - inputText: "E2E test enquiry: what time does the school gate open?"
 - tapOn: "Send"
-- assertVisible:
-    text: "E2E test enquiry"
+- extendedWaitUntil:
+    visible: "E2E test enquiry"
     timeout: 15000
 - runFlow: ../shared/logout.yaml

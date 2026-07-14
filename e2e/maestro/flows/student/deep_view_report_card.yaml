@@ -9,16 +9,16 @@ appId: com.cakale.edu.app
       PASSWORD: "Demo@2026!"
 - tapOn: "Features"
 - tapOn: "My Results"
-- assertVisible:
-    text: "My Results"
+- extendedWaitUntil:
+    visible: "My Results"
     timeout: 15000
 - tapOn:
     index: 0
     point: "50%,25%"
-- assertVisible:
-    text: "First Term"
+- extendedWaitUntil:
+    visible: "First Term"
     timeout: 15000
-- assertVisible:
-    text: "Mathematics"
+- extendedWaitUntil:
+    visible: "Mathematics"
     timeout: 10000
 - runFlow: ../shared/logout.yaml

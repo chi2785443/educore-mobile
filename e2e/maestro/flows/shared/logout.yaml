@@ -2,7 +2,12 @@ appId: com.cakale.edu.app
 ---
 # Reusable logout subflow. Call via `runFlow` after a smoke/deep flow finishes.
 - tapOn: "Account"
+- scrollUntilVisible:
+    element:
+      text: "Sign Out"
+    direction: DOWN
 - tapOn: "Sign Out"
-- assertVisible:
-    id: "email-input"
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
     timeout: 15000

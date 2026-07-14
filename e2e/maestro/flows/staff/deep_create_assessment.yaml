@@ -10,8 +10,8 @@ appId: com.cakale.edu.app
       PASSWORD: "Demo@2026!"
 - tapOn: "Features"
 - tapOn: "Assessments"
-- assertVisible:
-    text: "Assessments"
+- extendedWaitUntil:
+    visible: "Assessments"
     timeout: 15000
 - tapOn:
     id: "create-assessment-fab"
@@ -26,7 +26,7 @@ appId: com.cakale.edu.app
 - inputText: "E2E Smoke Test"
 - tapOn: "Test"
 - tapOn: "Save"
-- assertVisible:
-    text: "E2E Smoke Test"
+- extendedWaitUntil:
+    visible: "E2E Smoke Test"
     timeout: 15000
 - runFlow: ../shared/logout.yaml

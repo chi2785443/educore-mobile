@@ -8,18 +8,35 @@ appId: com.cakale.edu.app
       camera: allow
       microphone: allow
       notifications: allow
-- assertVisible:
-    id: "email-input"
+- extendedWaitUntil:
+    visible: "Skip"
+    timeout: 30000
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "email-input"
     timeout: 15000
 - tapOn:
     id: "email-input"
-- inputText: "${EMAIL}"
+# Typed in halves: on a CPU-constrained emulator, inputText's per-keystroke
+# simulation can be slow enough that a full email/password blows past
+# Maestro's 120s per-call deadline. Splitting keeps each call comfortably short.
+- evalScript: ${output.emailPart1 = EMAIL.substring(0, Math.ceil(EMAIL.length / 2))}
+- evalScript: ${output.emailPart2 = EMAIL.substring(Math.ceil(EMAIL.length / 2))}
+- inputText: "${output.emailPart1}"
+- inputText: "${output.emailPart2}"
 - tapOn:
     id: "password-input"
-- inputText: "${PASSWORD}"
+- evalScript: ${output.passwordPart1 = PASSWORD.substring(0, Math.ceil(PASSWORD.length / 2))}
+- evalScript: ${output.passwordPart2 = PASSWORD.substring(Math.ceil(PASSWORD.length / 2))}
+- inputText: "${output.passwordPart1}"
+- inputText: "${output.passwordPart2}"
 - hideKeyboard
 - tapOn:
     id: "sign-in-button"
-- assertVisible:
-    text: "Features"
+- extendedWaitUntil:
+    visible: "Features"
     timeout: 20000

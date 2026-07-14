@@ -11,22 +11,22 @@ appId: com.cakale.edu.app
       PASSWORD: "Demo@2026!"
 - tapOn: "Features"
 - tapOn: "My Assessments"
-- assertVisible:
-    text: "My Assessments"
+- extendedWaitUntil:
+    visible: "My Assessments"
     timeout: 15000
 - tapOn:
     index: 0
     point: "50%,20%"
 - tapOn: "Start"
-- assertVisible:
-    text: "Question 1"
+- extendedWaitUntil:
+    visible: "Question 1"
     timeout: 20000
 - tapOn:
     index: 0
     point: "20%,45%"
 - tapOn: "Next"
-- assertVisible:
-    text: "Submit"
+- extendedWaitUntil:
+    visible: "Submit"
     timeout: 15000
     optional: true
 - tapOn:
@@ -35,7 +35,7 @@ appId: com.cakale.edu.app
 - tapOn:
     text: "Confirm"
     optional: true
-- assertVisible:
-    text: "Submitted"
+- extendedWaitUntil:
+    visible: "Submitted"
     timeout: 20000
 - runFlow: ../shared/logout.yaml
