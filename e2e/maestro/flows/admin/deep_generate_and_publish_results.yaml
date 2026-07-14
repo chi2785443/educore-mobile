@@ -1,0 +1,39 @@
+appId: com.cakale.edu.app
+---
+# Admin: compile term results for a classroom then publish them.
+# First-draft flow — button labels below are best-effort guesses from generate-results.tsx
+# conventions documented in mobile/CLAUDE.md; adjust selectors after a first live run.
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "e2etest@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn: "Features"
+- tapOn: "Generate Results"
+- assertVisible:
+    text: "Generate Results"
+    timeout: 15000
+- tapOn: "JSS 1A"
+- scrollUntilVisible:
+    element:
+      text: "Generate"
+    direction: DOWN
+- tapOn: "Generate"
+- assertVisible:
+    text: "success"
+    timeout: 20000
+- back
+- openLink: "cakale-edu://admin-results"
+- assertVisible:
+    text: "Results Overview"
+    timeout: 15000
+- tapOn: "JSS 1A"
+- scrollUntilVisible:
+    element:
+      text: "Publish"
+    direction: DOWN
+- tapOn: "Publish"
+- assertVisible:
+    text: "Published"
+    timeout: 20000
+- runFlow: ../shared/logout.yaml

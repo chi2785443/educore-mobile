@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# maestro e2e local overrides
+e2e/maestro/.env
+
 # typescript
 *.tsbuildinfo
 

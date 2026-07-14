@@ -1,0 +1,41 @@
+appId: com.cakale.edu.app
+---
+# Student: take a seeded, published assessment end-to-end, including the proctoring
+# flow (take.tsx auto-requests camera+mic, per mobile/CLAUDE.md — pre-granted by
+# shared/login.yaml's launchApp permissions so it does not block on a system dialog).
+# First-draft flow — refine selectors after a live run.
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "chioma.eze@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn: "Features"
+- tapOn: "My Assessments"
+- assertVisible:
+    text: "My Assessments"
+    timeout: 15000
+- tapOn:
+    index: 0
+    point: "50%,20%"
+- tapOn: "Start"
+- assertVisible:
+    text: "Question 1"
+    timeout: 20000
+- tapOn:
+    index: 0
+    point: "20%,45%"
+- tapOn: "Next"
+- assertVisible:
+    text: "Submit"
+    timeout: 15000
+    optional: true
+- tapOn:
+    text: "Submit"
+    optional: true
+- tapOn:
+    text: "Confirm"
+    optional: true
+- assertVisible:
+    text: "Submitted"
+    timeout: 20000
+- runFlow: ../shared/logout.yaml

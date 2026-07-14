@@ -1,0 +1,19 @@
+appId: com.cakale.edu.app
+---
+# Staff (class teacher of JSS1A): clock in for attendance. Location permission is
+# pre-granted by shared/login.yaml's launchApp so no OS dialog interrupts the flow.
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "ifeoma.chukwu@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn: "Features"
+- tapOn: "Attendance"
+- assertVisible:
+    text: "My Attendance"
+    timeout: 15000
+- tapOn: "Clock In"
+- assertVisible:
+    text: "Clocked In"
+    timeout: 20000
+- runFlow: ../shared/logout.yaml

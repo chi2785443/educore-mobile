@@ -1,0 +1,31 @@
+appId: com.cakale.edu.app
+---
+# Admin: open the first parent enquiry and send a response.
+# First-draft flow — refine selectors after a live run.
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "e2etest@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn: "Features"
+- tapOn: "Enquiries"
+- assertVisible:
+    text: "School Enquiries"
+    timeout: 15000
+- tapOn:
+    index: 0
+    point: "50%,25%"
+- scrollUntilVisible:
+    element:
+      id: "reply-input"
+    direction: DOWN
+    optional: true
+- tapOn:
+    id: "reply-input"
+    optional: true
+- inputText: "Thank you for reaching out — our admissions team will follow up shortly."
+- tapOn: "Send"
+- assertVisible:
+    text: "Thank you for reaching out"
+    timeout: 15000
+- runFlow: ../shared/logout.yaml

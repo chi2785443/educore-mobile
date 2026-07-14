@@ -1,0 +1,28 @@
+appId: com.cakale.edu.app
+---
+# Parent: submit a new enquiry to the school via /my-enquiries.
+# First-draft flow — refine selectors after a live run.
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "chinwe.eze.parent@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn: "Features"
+- tapOn: "Enquiries"
+- assertVisible:
+    text: "My Enquiries"
+    timeout: 15000
+- tapOn:
+    id: "new-enquiry-fab"
+    optional: true
+- tapOn:
+    text: "+"
+    optional: true
+- tapOn:
+    id: "enquiry-message-input"
+- inputText: "E2E test enquiry: what time does the school gate open?"
+- tapOn: "Send"
+- assertVisible:
+    text: "E2E test enquiry"
+    timeout: 15000
+- runFlow: ../shared/logout.yaml

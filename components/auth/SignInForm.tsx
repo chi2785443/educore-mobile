@@ -34,6 +34,7 @@ export function SignInForm() {
         name="email"
         render={({ field: { onChange, value, onBlur } }) => (
           <Input
+            testID="email-input"
             label="Email address"
             placeholder="you@example.com"
             keyboardType="email-address"
@@ -52,6 +53,7 @@ export function SignInForm() {
         name="password"
         render={({ field: { onChange, value, onBlur } }) => (
           <Input
+            testID="password-input"
             label="Password"
             placeholder="Enter your password"
             secureTextEntry
@@ -70,7 +72,7 @@ export function SignInForm() {
         </Pressable>
       </Link>
 
-      <Button fullWidth loading={isPending} onPress={handleSubmit(onSubmit)}>
+      <Button testID="sign-in-button" fullWidth loading={isPending} onPress={handleSubmit(onSubmit)}>
         Sign In
       </Button>
 

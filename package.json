@@ -8,7 +8,12 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:e2e": "maestro test e2e/maestro/flows",
+    "test:e2e:admin": "maestro test e2e/maestro/flows/admin",
+    "test:e2e:staff": "maestro test e2e/maestro/flows/staff",
+    "test:e2e:student": "maestro test e2e/maestro/flows/student",
+    "test:e2e:parent": "maestro test e2e/maestro/flows/parent"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",

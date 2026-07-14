@@ -1,0 +1,25 @@
+appId: com.cakale.edu.app
+---
+# Reusable login subflow. Call via `runFlow` passing EMAIL/PASSWORD env vars.
+- launchApp:
+    clearState: true
+    permissions:
+      location: allow
+      camera: allow
+      microphone: allow
+      notifications: allow
+- assertVisible:
+    id: "email-input"
+    timeout: 15000
+- tapOn:
+    id: "email-input"
+- inputText: "${EMAIL}"
+- tapOn:
+    id: "password-input"
+- inputText: "${PASSWORD}"
+- hideKeyboard
+- tapOn:
+    id: "sign-in-button"
+- assertVisible:
+    text: "Features"
+    timeout: 20000

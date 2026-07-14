@@ -207,3 +207,16 @@ EXPO_PUBLIC_BACKEND_BASE_URL=http://localhost:8000/api/v1/
 ```
 - Physical device: use machine's local IP
 - Android emulator: `http://10.0.2.2:8000/api/v1/`
+
+---
+
+## E2E Testing (Maestro)
+
+- **Location:** `e2e/maestro/` — YAML flows, no native build required (works with Expo).
+- **Install CLI:** `curl -Ls "https://get.maestro.mobile.dev" | bash`
+- **Prerequisite:** run `pnpm seed:demo` in `backend/` (wipes/rebuilds "Cakale Demo Academy") and start the app pointed at that local backend, with a simulator/emulator or device running.
+- **Run:** `pnpm test:e2e` (all flows), or `pnpm test:e2e:admin` / `:staff` / `:student` / `:parent` for a single role's flows.
+- **Structure:** `flows/shared/login.yaml` + `logout.yaml` are reusable subflows (parameterized via `EMAIL`/`PASSWORD` env, called with `runFlow`). Each role folder (`admin/`, `staff/`, `student/`, `parent/`) has one `smoke_<module>.yaml` per feature module (login → navigate → assert screen loaded → logout) plus a few `deep_<action>.yaml` flows for critical multi-step actions (generate/publish results, mark attendance, take an assessment, submit an enquiry, etc.).
+- **Test accounts** (all password `Demo@2026!`, see `.env.example` in the maestro folder): `e2etest@mail.cakale.com` (school admin), `ifeoma.chukwu@mail.cakale.com` (teacher/class teacher JSS1A), `segun.ojo@mail.cakale.com` (finance staff), `chioma.eze@mail.cakale.com` (student, JSS1A), `chinwe.eze.parent@mail.cakale.com` (parent, linked child in JSS1A). No `super_admin` demo account exists yet.
+- **`email-input` / `password-input` / `sign-in-button` testIDs** were added to `SignInForm.tsx` specifically so Maestro can target them reliably — no other screens have `testID`s yet, so other flows target visible text/labels. Add `testID`s to new interactive elements if you want more robust E2E targeting going forward.
+- **Known gap / first-pass caveat:** `deep_*.yaml` flows and the `admin_results`/`subscription`/`notifications` smoke flows (routes not reachable via a Features-grid card tap) were written from static code reading, not a live run — some selectors (button labels, list item positions) may need adjusting the first time they're run against the real app.

@@ -1,0 +1,31 @@
+appId: com.cakale.edu.app
+---
+# Staff: review a pending assessment retake request (seed data includes at least
+# one pending retake request in JSS1A/JSS2A per seed-demo-school.ts).
+# Staff tabs on the assessment detail screen: Info · Questions · Attempts · Scores ·
+# Marking · Retakes (per mobile/CLAUDE.md). First-draft flow — refine after a live run.
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "ifeoma.chukwu@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn: "Features"
+- tapOn: "Assessments"
+- assertVisible:
+    text: "Assessments"
+    timeout: 15000
+- tapOn:
+    index: 0
+    point: "50%,20%"
+- tapOn: "Retakes"
+- scrollUntilVisible:
+    element:
+      text: "Approve"
+    direction: DOWN
+- tapOn:
+    text: "Approve"
+    index: 0
+- assertVisible:
+    text: "Approved"
+    timeout: 15000
+- runFlow: ../shared/logout.yaml

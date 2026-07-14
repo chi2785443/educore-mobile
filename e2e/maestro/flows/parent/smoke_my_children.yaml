@@ -1,0 +1,14 @@
+appId: com.cakale.edu.app
+---
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "chinwe.eze.parent@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn: "Features"
+- tapOn: "My Children"
+- assertVisible:
+    text: "My Children"
+    timeout: 15000
+- back
+- runFlow: ../shared/logout.yaml
