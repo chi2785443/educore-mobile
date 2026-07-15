@@ -1,16 +1,19 @@
 appId: com.cakale.edu.app
 ---
-# Staff (class teacher of JSS1A): clock in for attendance. Location permission is
-# pre-granted by shared/login.yaml's launchApp so no OS dialog interrupts the flow.
+# Staff (class teacher of JSS1A): clock in for attendance (GPS/location method).
+# Location permission is pre-granted by shared/login.yaml's launchApp so no OS
+# dialog interrupts the flow. The Attendance card lives on the Action (FAB)
+# sheet — app/attendance.tsx (Features > Attendance) is history-only and has
+# no Clock In button, so we open the sheet via the FAB instead.
 - runFlow:
     file: ../shared/login.yaml
     env:
       EMAIL: "ifeoma.chukwu@mail.cakale.com"
       PASSWORD: "Demo@2026!"
-- tapOn: "Features"
-- tapOn: "Attendance"
+- tapOn:
+    id: "action-fab-button"
 - extendedWaitUntil:
-    visible: "My Attendance"
+    visible: "Quick Actions"
     timeout: 15000
 - tapOn: "Clock In"
 - extendedWaitUntil:

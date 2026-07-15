@@ -33,6 +33,9 @@ import { ReportType, ReportTerm } from '@/interface/report.interface';
 /* ── Geolocation ─────────────────────────────────────────────────── */
 import * as Location from 'expo-location';
 
+/* ── QR Scanning ─────────────────────────────────────────────────── */
+import { CameraView, useCameraPermissions } from 'expo-camera';
+
 const { height: SCREEN_H } = Dimensions.get('window');
 
 type LocationResult =
@@ -93,6 +96,93 @@ function openAppSettings() {
   }
 }
 
+/* ── QR Scanner — full-screen Modal wrapping CameraView ───────────── */
+function QrScannerModal({
+  visible, onClose, onScanned,
+}: { visible: boolean; onClose: () => void; onScanned: (data: string) => void }) {
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
+
+  useEffect(() => {
+    if (!visible) { setScanned(false); return; }
+    if (!permission || !permission.granted) {
+      requestPermission();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  const handleBarcodeScanned = useCallback(({ data }: { data: string }) => {
+    if (scanned) return;
+    setScanned(true);
+    onScanned(data);
+  }, [scanned, onScanned]);
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} testID="qr-scanner-modal">
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top', 'bottom']}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 }}>
+          <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff' }}>Scan QR Code</Text>
+          <Pressable testID="qr-scanner-close-button" onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+            <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="close" size={18} color="#fff" />
+            </View>
+          </Pressable>
+        </View>
+
+        {!permission ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color="#fff" />
+          </View>
+        ) : !permission.granted ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 }}>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="camera-outline" size={26} color="#fff" />
+            </View>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: '#fff', textAlign: 'center' }}>Camera Access Required</Text>
+            <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 21 }}>
+              {permission.canAskAgain
+                ? 'Camera permission is required to scan the attendance QR code. Please allow it when prompted.'
+                : 'Camera permission was denied. Open Settings to allow it for this app.'}
+            </Text>
+            <View style={{ gap: 10, alignSelf: 'stretch' }}>
+              {permission.canAskAgain ? (
+                <Pressable onPress={requestPermission} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                  <View style={{ backgroundColor: '#4C3FC4', borderRadius: 14, paddingVertical: 13, alignItems: 'center' }}>
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Grant Permission</Text>
+                  </View>
+                </Pressable>
+              ) : (
+                <Pressable onPress={openAppSettings} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                  <View style={{ backgroundColor: '#4C3FC4', borderRadius: 14, paddingVertical: 13, alignItems: 'center' }}>
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>Open Settings</Text>
+                  </View>
+                </Pressable>
+              )}
+              <Pressable onPress={onClose} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+                <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>Cancel</Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <CameraView
+              style={{ flex: 1 }}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+              onBarcodeScanned={handleBarcodeScanned}
+            />
+            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 16, alignItems: 'center' }}>
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Point your camera at the classroom QR code</Text>
+            </View>
+          </View>
+        )}
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 /* ── Inline form wrapper (renders inside the sheet, not a Modal) ── */
 function FormSection({ onBack, title, children }: {
   onBack: () => void; title: string; children: React.ReactNode;
@@ -151,6 +241,9 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
   const [locating, setLocating] = useState(false);
   const [blocker, setBlocker] = useState<{ msg: string; canOpenSettings: boolean } | null>(null);
   const [qrToken, setQrToken] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  const isQrMode = settings?.attendanceMethod === 'qr_code';
 
   const isAdminRole = role === UserRole.SUPER_ADMIN || role === UserRole.SCHOOL_ADMIN;
   const shouldTrack =
@@ -180,10 +273,10 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
     try {
       await clockMutation.mutateAsync({
         type: actionType,
-        method: settings?.useQRCode ? 'qr_code' : 'manual',
+        method: isQrMode ? 'qr_code' : 'manual',
         latitude: locResult.ok ? locResult.latitude : undefined,
         longitude: locResult.ok ? locResult.longitude : undefined,
-        qrToken: settings?.useQRCode ? qrToken.trim() || undefined : undefined,
+        qrToken: isQrMode ? qrToken.trim() || undefined : undefined,
       });
       setQrToken('');
     } catch (err) {
@@ -194,6 +287,12 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
   const handleClock = async () => {
     if (isBusy) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // QR mode: the server geofences via qrToken, not lat/lng — skip acquiring GPS entirely.
+    if (isQrMode) {
+      await doSubmit({ ok: false, reason: 'error' });
+      return;
+    }
 
     setLocating(true);
     const locResult = await getCurrentLocation();
@@ -252,25 +351,31 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
         </View>
       </View>
 
-      {/* QR token input — shown inline when school requires QR */}
-      {!finished && settings?.useQRCode && (
+      {/* QR scan trigger — shown inline when school requires QR */}
+      {!finished && isQrMode && (
         <View style={{ gap: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="qr-code-outline" size={13} color="rgba(255,255,255,0.5)" />
-            <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>QR Token</Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Attendance QR Code</Text>
           </View>
-          <TextInput
-            value={qrToken}
-            onChangeText={setQrToken}
-            placeholder="Paste QR token here…"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            style={{
+          <Pressable testID="scan-qr-button" onPress={() => setScannerOpen(true)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+            <View style={{
               backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
               borderColor: 'rgba(255,255,255,0.15)', borderRadius: 12,
-              paddingHorizontal: 14, paddingVertical: 10,
-              fontSize: 13, color: '#fff',
-            }}
-          />
+              paddingHorizontal: 14, paddingVertical: 12,
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+            }}>
+              <Ionicons name={qrToken ? 'checkmark-circle' : 'camera-outline'} size={18} color={qrToken ? '#4ade80' : '#fff'} />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff', flex: 1 }}>
+                {qrToken ? 'QR code scanned' : 'Scan QR Code'}
+              </Text>
+              {qrToken && (
+                <Pressable onPress={() => setQrToken('')} hitSlop={8}>
+                  <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.5)" />
+                </Pressable>
+              )}
+            </View>
+          </Pressable>
         </View>
       )}
 
@@ -282,11 +387,11 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
       ) : (
         <Pressable
           onPress={handleClock}
-          disabled={isBusy || (!!settings?.useQRCode && !qrToken.trim())}
+          disabled={isBusy || (isQrMode && !qrToken.trim())}
           style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
         >
           <View style={{
-            backgroundColor: (isBusy || (!!settings?.useQRCode && !qrToken.trim())) ? 'rgba(255,255,255,0.2)' : actionColor,
+            backgroundColor: (isBusy || (isQrMode && !qrToken.trim())) ? 'rgba(255,255,255,0.2)' : actionColor,
             borderRadius: 14, paddingVertical: 13,
             flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
             shadowColor: actionColor, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4,
@@ -335,6 +440,17 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
           </View>
         </View>
       </Modal>
+
+      {/* QR scanner — full-screen Modal, camera-based scanning */}
+      <QrScannerModal
+        visible={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScanned={(data) => {
+          setQrToken(data);
+          setScannerOpen(false);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }}
+      />
     </View>
   );
 }

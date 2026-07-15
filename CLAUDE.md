@@ -191,6 +191,16 @@
 - `getCurrentPositionAsync` races against a 10 s timeout. On timeout/failure, falls back to `getLastKnownPositionAsync` (up to 1 h old, then any cached).
 - Attendance card shows a blocking modal on location failure — no two-step confirm dialog.
 
+## Attendance Method (Location vs QR Code)
+
+- `AttendanceSettings.attendanceMethod: 'location' | 'qr_code'` (replaces the old `useQRCode: boolean`) — set per school, drives which clock-in flow the staff/student Attendance card (`app/(tabs)/action.tsx` → `AttendanceCard`, rendered on the Action-tab FAB sheet) shows.
+- `'location'` — existing GPS flow unchanged: `getCurrentLocation()` acquires lat/lng, server geofences against it.
+- `'qr_code'` — no GPS is acquired at all (`getCurrentLocation()` is skipped entirely in `handleClock`). Instead a "Scan QR Code" button opens `QrScannerModal`, a full-screen `Modal` wrapping `expo-camera`'s `CameraView` with `barcodeScannerSettings={{ barcodeTypes: ['qr'] }}` and `onBarcodeScanned`. The scanned string is passed through verbatim as `qrToken` on the clock payload — it's opaque to the client, decoded from a long-lived QR code the school emails to the family (homeschool use case: a visiting teacher scans it at the student's home instead of GPS).
+- Camera permission pattern in `QrScannerModal` mirrors `useCameraPermissions()` from `take.tsx` (exam proctoring) — requests on modal open, shows a denial screen with "Grant Permission" (if `canAskAgain`) or "Open Settings" (mirrors the existing location-denial blocker UX style).
+- Clock-in button is disabled until a token is scanned (`qrToken` non-empty), same pattern as GPS mode requiring acquired coordinates.
+- `testID`s added for Maestro targeting: `action-fab-button` (the FAB in `CustomTabBar.tsx`), `scan-qr-button`, `qr-scanner-modal`, `qr-scanner-close-button`.
+- **E2E note:** Maestro can't feed a real QR image to the device camera, so `staff/deep_qr_attendance_scan.yaml` only verifies the scanner UI opens/closes — not a full scan-to-clock-in. Verify actual scanning manually on-device.
+
 ---
 
 ## Results Service
@@ -218,5 +228,6 @@ EXPO_PUBLIC_BACKEND_BASE_URL=http://localhost:8000/api/v1/
 - **Run:** `pnpm test:e2e` (all flows), or `pnpm test:e2e:admin` / `:staff` / `:student` / `:parent` for a single role's flows.
 - **Structure:** `flows/shared/login.yaml` + `logout.yaml` are reusable subflows (parameterized via `EMAIL`/`PASSWORD` env, called with `runFlow`). Each role folder (`admin/`, `staff/`, `student/`, `parent/`) has one `smoke_<module>.yaml` per feature module (login → navigate → assert screen loaded → logout) plus a few `deep_<action>.yaml` flows for critical multi-step actions (generate/publish results, mark attendance, take an assessment, submit an enquiry, etc.).
 - **Test accounts** (all password `Demo@2026!`, see `.env.example` in the maestro folder): `e2etest@mail.cakale.com` (school admin), `ifeoma.chukwu@mail.cakale.com` (teacher/class teacher JSS1A), `segun.ojo@mail.cakale.com` (finance staff), `chioma.eze@mail.cakale.com` (student, JSS1A), `chinwe.eze.parent@mail.cakale.com` (parent, linked child in JSS1A). No `super_admin` demo account exists yet.
-- **`email-input` / `password-input` / `sign-in-button` testIDs** were added to `SignInForm.tsx` specifically so Maestro can target them reliably — no other screens have `testID`s yet, so other flows target visible text/labels. Add `testID`s to new interactive elements if you want more robust E2E targeting going forward.
+- **`email-input` / `password-input` / `sign-in-button` testIDs** were added to `SignInForm.tsx` specifically so Maestro can target them reliably; `action-fab-button` / `scan-qr-button` / `qr-scanner-modal` / `qr-scanner-close-button` were added for the attendance FAB + QR scanner flow — no other screens have `testID`s yet, so other flows target visible text/labels. Add `testID`s to new interactive elements if you want more robust E2E targeting going forward.
 - **Known gap / first-pass caveat:** `deep_*.yaml` flows and the `admin_results`/`subscription`/`notifications` smoke flows (routes not reachable via a Features-grid card tap) were written from static code reading, not a live run — some selectors (button labels, list item positions) may need adjusting the first time they're run against the real app.
+- **Corrected gap:** `staff/deep_mark_attendance.yaml` originally navigated Features > Attendance > "Clock In", but that screen (`app/attendance.tsx`) is history-only with no Clock In button — the real Attendance card lives on the Action-tab FAB sheet (`app/(tabs)/action.tsx`). Fixed to open via `action-fab-button`.

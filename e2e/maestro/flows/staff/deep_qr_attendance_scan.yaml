@@ -1,0 +1,37 @@
+appId: com.cakale.edu.app
+---
+# Staff clock-in when the school's attendanceMethod is "qr_code": the Attendance
+# card on the Action (FAB) sheet swaps its GPS flow for a "Scan QR Code" button
+# that opens a full-screen camera scanner (expo-camera CameraView).
+#
+# Maestro cannot feed a real QR code image into the device camera in this
+# environment, so this flow only verifies the scanner UI opens/closes correctly —
+# it does not exercise a full scan-to-clock-in. A true end-to-end scan should be
+# verified manually on a device/simulator pointed at a printed/displayed QR code.
+#
+# Prerequisite: the demo school's attendance settings must be set to
+# attendanceMethod: "qr_code" for this staff member's school (otherwise the
+# Attendance card renders the GPS flow instead and "Scan QR Code" will not appear).
+- runFlow:
+    file: ../shared/login.yaml
+    env:
+      EMAIL: "ifeoma.chukwu@mail.cakale.com"
+      PASSWORD: "Demo@2026!"
+- tapOn:
+    id: "action-fab-button"
+- extendedWaitUntil:
+    visible: "Quick Actions"
+    timeout: 15000
+- tapOn:
+    id: "scan-qr-button"
+- extendedWaitUntil:
+    id: "qr-scanner-modal"
+    timeout: 15000
+- assertVisible: "Scan QR Code"
+- tapOn:
+    id: "qr-scanner-close-button"
+- extendedWaitUntil:
+    visible: "Quick Actions"
+    timeout: 10000
+- back
+- runFlow: ../shared/logout.yaml

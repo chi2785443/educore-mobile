@@ -60,7 +60,7 @@ function TabButton({
 
   if (isAction) {
     return (
-      <Pressable onPress={handlePress} onLongPress={onLongPress} style={{ flex: 1, alignItems: 'center' }}>
+      <Pressable testID="action-fab-button" onPress={handlePress} onLongPress={onLongPress} style={{ flex: 1, alignItems: 'center' }}>
         <Animated.View
           style={{
             transform: [{ scale }],

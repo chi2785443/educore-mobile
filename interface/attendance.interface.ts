@@ -37,7 +37,7 @@ export interface AttendanceSettings {
   schoolId: string;
   trackAttendance: boolean;
   locationType: 'school' | 'class';
-  useQRCode: boolean;
+  attendanceMethod: 'location' | 'qr_code';
   qrRefreshSeconds: number;
   allowedRadiusMeters: number;
   trackStaff: boolean;
