@@ -19,6 +19,7 @@
     },
     "android": {
       "package": "com.cakale.edu.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",

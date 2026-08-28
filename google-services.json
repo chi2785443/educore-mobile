@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "6043737148",
+    "project_id": "edu-cakale",
+    "storage_bucket": "edu-cakale.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:6043737148:android:3ab7279485512c02f57739",
+        "android_client_info": {
+          "package_name": "com.cakale.edu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRmnSGN6G8UC46DA8Npd0BJ_z3rTpD0C8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
