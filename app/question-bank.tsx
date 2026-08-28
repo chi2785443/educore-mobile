@@ -268,7 +268,7 @@ function CreateModal({
                 <View style={{ borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb' }}>
                   <Image source={{ uri: imageUri }} style={{ width: '100%', height: 160 }} resizeMode="cover" />
                   {uploadingImage && (
-                    <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
                       <ActivityIndicator color="#fff" />
                       <Text style={{ color: '#fff', fontSize: 12, marginTop: 6 }}>Uploading…</Text>
                     </View>

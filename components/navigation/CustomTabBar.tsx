@@ -5,7 +5,9 @@ import {
   Pressable,
   Animated,
 } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+// SDK 56+ : see app/(tabs)/features/_layout.tsx - the tab types now come
+// from expo-router rather than @react-navigation.
+import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

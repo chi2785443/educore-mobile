@@ -1,6 +1,8 @@
 import { Stack, useNavigation } from 'expo-router';
 import { useEffect } from 'react';
-import { StackActions } from '@react-navigation/native';
+// SDK 56+ : expo-router is no longer compatible with @react-navigation,
+// and re-exports the navigation primitives itself.
+import { StackActions } from 'expo-router/build/react-navigation/routers';
 
 export default function ClassroomStackLayout() {
   const navigation = useNavigation();
