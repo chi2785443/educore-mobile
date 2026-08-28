@@ -26,6 +26,9 @@ export interface StudentAttempt {
   submittedAt?: string;
   timeSpent?: number;
   answerSubmissions?: AnswerSubmission[];
+  /** R2 key of the proctoring recording; null until the upload completes. */
+  recordingUrl?: string | null;
+  recordingPublicId?: string | null;
   student?: { firstName: string; lastName: string; profilePicture?: string };
 }
 

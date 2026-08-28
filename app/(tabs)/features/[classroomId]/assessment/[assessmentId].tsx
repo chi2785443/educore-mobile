@@ -41,7 +41,7 @@ const STATUS_STYLE: Record<AssessmentStatus, { bg: string; text: string; label: 
   completed: { bg: '#F0EEFF', text: '#4C3FC4', label: 'Completed' },
 };
 
-type StaffTab   = 'info' | 'questions' | 'attempts' | 'scores' | 'marking' | 'retakes';
+type StaffTab   = 'info' | 'questions' | 'attempts' | 'review' | 'scores' | 'marking' | 'retakes';
 type StudentTab = 'info' | 'score';
 type AdminTab   = 'info' | 'scores';
 type AnyTab     = StaffTab | StudentTab | AdminTab;
@@ -78,6 +78,11 @@ export default function AssessmentDetailScreen() {
   const isStudent = role === UserRole.STUDENT;
 
   const [activeTab, setActiveTab] = useState<AnyTab>('info');
+  // Review tab: which attempt's recording is open, and its signed URL. Kept
+  // separate from the marking dialog's player state so the two cannot clash.
+  const [reviewOpenAttemptId, setReviewOpenAttemptId] = useState<string | null>(null);
+  const [reviewPlayerUrl, setReviewPlayerUrl] = useState<string | null>(null);
+  const [reviewLoadingId, setReviewLoadingId] = useState<string | null>(null);
   const [retakeReason, setRetakeReason] = useState('');
   const [showRetakeInput, setShowRetakeInput] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -124,7 +129,9 @@ export default function AssessmentDetailScreen() {
   const addMutation = useAddAssessmentQuestions(assessmentId ?? '');
   const removeMutation = useRemoveAssessmentQuestion(assessmentId ?? '');
   const { data: attempts = [], isLoading: loadingAttempts } = useAttemptsForAssessment(
-    (isStaff || isAdmin) && activeTab === 'attempts' ? assessmentId : undefined,
+    (isStaff || isAdmin) && (activeTab === 'attempts' || activeTab === 'review')
+      ? assessmentId
+      : undefined,
   );
   const { data: allScores = [], isLoading: loadingScores } = useScoresForAssessment(
     (isStaff || isAdmin) && activeTab === 'scores' ? assessmentId : undefined,
@@ -235,6 +242,7 @@ export default function AssessmentDetailScreen() {
     { key: 'info',      label: 'Info' },
     { key: 'questions', label: 'Questions' },
     { key: 'attempts',  label: 'Attempts' },
+    { key: 'review',    label: 'Review' },
     { key: 'marking',   label: 'Marking' },
     { key: 'scores',    label: 'Scores' },
     { key: 'retakes',   label: 'Retakes' },
@@ -800,6 +808,116 @@ export default function AssessmentDetailScreen() {
       )}
 
       {/* ATTEMPTS TAB (staff/admin) */}
+      {activeTab === 'review' && (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 36 }}>
+          {loadingAttempts ? (
+            <View style={{ paddingTop: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={typeColor} />
+            </View>
+          ) : attempts.length === 0 ? (
+            <EmptyState icon="videocam-outline" title="No attempts yet" subtitle="Proctoring recordings appear here once students have taken this assessment." />
+          ) : (
+            <>
+              {(() => {
+                const withRec = attempts.filter(a => a.recordingUrl);
+                const withoutRec = attempts.filter(a => !a.recordingUrl);
+                return (
+                  <>
+                    <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
+                      {withRec.length} recording{withRec.length === 1 ? '' : 's'} of {attempts.length} attempt{attempts.length === 1 ? '' : 's'}
+                    </Text>
+
+                    {withRec.map(attempt => {
+                      const studentName = attempt.student
+                        ? `${attempt.student.firstName} ${attempt.student.lastName}`
+                        : 'Unknown Student';
+                      const isOpen = reviewOpenAttemptId === attempt.id && !!reviewPlayerUrl;
+                      return (
+                        <View key={attempt.id} style={{
+                          backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10,
+                          borderWidth: 1, borderColor: '#f1f5f9', gap: 10,
+                        }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 14, fontWeight: '800', color: '#1e293b' }}>{studentName}</Text>
+                              <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                                Attempt #{attempt.attemptNumber}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {isOpen ? (
+                            <InlineRecordingPlayer
+                              url={reviewPlayerUrl!}
+                              onClose={() => {
+                                setReviewOpenAttemptId(null);
+                                setReviewPlayerUrl(null);
+                              }}
+                            />
+                          ) : (
+                            <TouchableOpacity
+                              activeOpacity={0.8}
+                              disabled={reviewLoadingId === attempt.id}
+                              onPress={async () => {
+                                try {
+                                  setReviewLoadingId(attempt.id);
+                                  const url = await studentAttemptService.getSignedViewUrl(attempt.recordingUrl!);
+                                  setReviewPlayerUrl(url);
+                                  setReviewOpenAttemptId(attempt.id);
+                                } catch {
+                                  toast.error('Could not load recording');
+                                } finally {
+                                  setReviewLoadingId(null);
+                                }
+                              }}
+                              style={{
+                                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                backgroundColor: '#EEF2FF', borderRadius: 12, paddingVertical: 11,
+                              }}
+                            >
+                              {reviewLoadingId === attempt.id ? (
+                                <ActivityIndicator size="small" color="#4C3FC4" />
+                              ) : (
+                                <Ionicons name="play-circle-outline" size={18} color="#4C3FC4" />
+                              )}
+                              <Text style={{ fontSize: 13, fontWeight: '800', color: '#4C3FC4' }}>
+                                {reviewLoadingId === attempt.id ? 'Loading…' : 'Play recording'}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+
+                    {withoutRec.length > 0 && (
+                      <View style={{
+                        backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14,
+                        borderWidth: 1, borderColor: '#FDE68A', gap: 6, marginTop: 4,
+                      }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons name="alert-circle-outline" size={15} color="#B45309" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#B45309' }}>
+                            No recording ({withoutRec.length})
+                          </Text>
+                        </View>
+                        <Text style={{ fontSize: 12, color: '#92400E', lineHeight: 18 }}>
+                          These attempts have no proctoring video. Recordings from before the upload fix were never stored, and a student may also decline camera access.
+                        </Text>
+                        {withoutRec.map(a => (
+                          <Text key={a.id} style={{ fontSize: 12, color: '#78350F', marginTop: 2 }}>
+                            {a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown Student'} · Attempt #{a.attemptNumber}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+        </ScrollView>
+      )}
+
       {activeTab === 'attempts' && (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 36 }}>
           {loadingAttempts ? (
