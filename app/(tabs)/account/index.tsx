@@ -642,29 +642,6 @@ export default function AccountTab() {
             <SettingsRow icon="information-circle-outline" iconBg="#f1f5f9" iconColor="#64748b" label="About Cakale EDU" value="v1.0.0" onPress={() => router.push('/account/about' as never)} />
           </SettingsGroup>
 
-          {/* ── Dev: reset onboarding ────────────────────────────── */}
-          <View style={{ marginTop: 8 }}>
-            <View style={{ backgroundColor: '#fff', borderTopWidth: 0.5, borderTopColor: '#e5e7eb', borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb' }}>
-              <Pressable onPress={() => {
-                useAuthStore.setState({ hasOnboarded: false });
-                router.replace('/');
-              }}>
-                {({ pressed }) => (
-                  <View style={{
-                    flexDirection: 'row', alignItems: 'center', gap: 14,
-                    paddingVertical: 14, paddingHorizontal: 20,
-                    backgroundColor: pressed ? '#fffbeb' : '#fff',
-                  }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Ionicons name="refresh-outline" size={17} color="#d97706" />
-                    </View>
-                    <Text style={{ fontSize: 15, fontWeight: '400', color: '#d97706' }}>Reset Onboarding</Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          </View>
-
           {/* ── Sign out ─────────────────────────────────────────── */}
           <View style={{ marginTop: 8, marginBottom: 8 }}>
             <View style={{ backgroundColor: '#fff', borderTopWidth: 0.5, borderTopColor: '#e5e7eb', borderBottomWidth: 0.5, borderBottomColor: '#e5e7eb' }}>
