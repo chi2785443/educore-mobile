@@ -651,6 +651,11 @@ export default function TakeAssessmentScreen() {
                 // Lowest standard quality: proctoring needs a recognisable
                 // face, not detail, and it keeps the upload small on mobile data.
                 videoQuality="480p"
+                // Without this the device's 480p camcorder profile picks its own
+                // bitrate (~2 Mbps on most Android hardware), making a one-hour
+                // attempt roughly 1 GB in R2. 200 kbps matches what the web
+                // recorder uses and brings that to about 90 MB.
+                videoBitrate={200_000}
                 mode="video"
                 onCameraReady={handleCameraReady}
               />
