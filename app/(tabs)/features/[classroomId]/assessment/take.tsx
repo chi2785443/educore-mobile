@@ -121,7 +121,13 @@ export default function TakeAssessmentScreen() {
       try {
         isRecordingRef.current = true;
         setIsRecording(true);
-        recordingPromiseRef.current = cameraRef.current.recordAsync({ maxDuration: 7200 });
+        recordingPromiseRef.current = cameraRef.current.recordAsync({
+          maxDuration: 7200,
+          // Hard ceiling below nginx's 50M client_max_body_size. Recording
+          // stops at this size rather than producing a file the server would
+          // reject outright - a truncated video is far better than none.
+          maxFileSize: 45 * 1024 * 1024,
+        });
         recordingPromiseRef.current.catch(() => {
           isRecordingRef.current = false;
           setIsRecording(false);
@@ -641,6 +647,9 @@ export default function TakeAssessmentScreen() {
                 ref={cameraRef}
                 style={{ flex: 1 }}
                 facing="front"
+                // Lowest standard quality: proctoring needs a recognisable
+                // face, not detail, and it keeps the upload small on mobile data.
+                videoQuality="480p"
                 mode="video"
                 onCameraReady={handleCameraReady}
               />
