@@ -15,6 +15,12 @@ import { studentAttemptService } from '@/services/student-attempt.service';
 import { AnswerSubmission } from '@/interface/attempt.interface';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
+/** Picture-in-picture camera preview size. */
+const PIP_WIDTH = 76;
+const PIP_HEIGHT = 104;
+/** Approximate height of the bottom nav bar, excluding the safe-area inset. */
+const FOOTER_HEIGHT = 56;
+
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -76,6 +82,14 @@ export default function TakeAssessmentScreen() {
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
   const cameraRef = useRef<CameraView>(null);
   const [isRecording, setIsRecording] = useState(false);
+  /**
+   * The PiP camera floats above the question. Docked bottom-right (over the
+   * empty area under the jump-to-question strip) rather than top-right, where
+   * it sat directly on top of the question text and could not be scrolled
+   * clear. Tapping it collapses it to a small pill for the rare layout where
+   * it still gets in the way.
+   */
+  const [pipCollapsed, setPipCollapsed] = useState(false);
   const isRecordingRef = useRef(false);
   const recordingPromiseRef = useRef<Promise<{ uri: string } | undefined> | null>(null);
 
@@ -350,7 +364,7 @@ export default function TakeAssessmentScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16, gap: 18 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: cameraGranted ? PIP_HEIGHT + 32 : 16, gap: 18 }}
           style={{ flex: 1 }}
         >
           {/* Marks + type badge */}
@@ -553,47 +567,70 @@ export default function TakeAssessmentScreen() {
 
       {/* ── PiP camera feed ──────────────────────────────────────── */}
       {cameraGranted && (
-        <View style={{
-          position: 'absolute',
-          top: insets.top + 58,
-          right: 10,
-          width: 76,
-          height: 104,
-          borderRadius: 14,
-          overflow: 'hidden',
-          borderWidth: 2,
-          borderColor: isRecording ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.15)',
-          shadowColor: '#000',
-          shadowOpacity: 0.5,
-          shadowOffset: { width: 0, height: 4 },
-          shadowRadius: 8,
-          elevation: 12,
-          zIndex: 999,
-        }}>
-          <CameraView
-            ref={cameraRef}
-            style={{ flex: 1 }}
-            facing="front"
-            mode="video"
-            onCameraReady={handleCameraReady}
-          />
-          {/* Recording indicator overlay */}
-          <View style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            backgroundColor: 'rgba(0,0,0,0.55)',
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-            gap: 4, paddingVertical: 4,
-          }}>
-            {isRecording ? (
-              <>
-                <RecordingDot />
-                <Text style={{ color: '#ef4444', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>REC</Text>
-              </>
-            ) : (
-              <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '700' }}>CAM</Text>
-            )}
-          </View>
-        </View>
+        <Pressable
+          onPress={() => setPipCollapsed((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={
+            pipCollapsed ? 'Expand camera preview' : 'Collapse camera preview'
+          }
+          style={{
+            position: 'absolute',
+            // Docked above the bottom nav bar, clear of the question text.
+            bottom: FOOTER_HEIGHT + Math.max(insets.bottom + 4, 16) + 12,
+            right: 10,
+            width: pipCollapsed ? 44 : PIP_WIDTH,
+            height: pipCollapsed ? 28 : PIP_HEIGHT,
+            borderRadius: pipCollapsed ? 14 : 14,
+            overflow: 'hidden',
+            borderWidth: 2,
+            borderColor: isRecording ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.15)',
+            shadowColor: '#000',
+            shadowOpacity: 0.5,
+            shadowOffset: { width: 0, height: 4 },
+            shadowRadius: 8,
+            elevation: 12,
+            zIndex: 999,
+          }}
+        >
+          {pipCollapsed ? (
+            <View style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.75)',
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+            }}>
+              {isRecording ? <RecordingDot /> : null}
+              <Text style={{ color: isRecording ? '#ef4444' : 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>
+                {isRecording ? 'REC' : 'CAM'}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <CameraView
+                ref={cameraRef}
+                style={{ flex: 1 }}
+                facing="front"
+                mode="video"
+                onCameraReady={handleCameraReady}
+              />
+              {/* Recording indicator overlay */}
+              <View style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                gap: 4, paddingVertical: 4,
+              }}>
+                {isRecording ? (
+                  <>
+                    <RecordingDot />
+                    <Text style={{ color: '#ef4444', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>REC</Text>
+                  </>
+                ) : (
+                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '700' }}>CAM</Text>
+                )}
+              </View>
+            </>
+          )}
+        </Pressable>
       )}
     </View>
   );
