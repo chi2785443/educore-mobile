@@ -12,6 +12,7 @@ import { ACCESS_TOKEN_KEY } from "@/services/axios.service";
 import { authService } from "@/services/auth.service";
 import { UserType } from "@/interface/user.interface";
 import { ToastProvider } from "@/components/ui/Toast";
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { UpdateWallModal } from "@/components/update/UpdateWallModal";
 import {
   useFonts,
@@ -60,6 +61,16 @@ function AuthInitializer({ onReady }: { onReady: () => void }) {
   return null;
 }
 
+/**
+ * Mounts the push lifecycle. Must sit inside QueryClientProvider (the hook
+ * invalidates the notifications query) and the router context (it deep-links
+ * on tap), so it is a component rather than a call in RootLayout's body.
+ */
+function PushNotificationsGate() {
+  usePushNotifications();
+  return null;
+}
+
 export default function RootLayout() {
   const [ready, setReady] = React.useState(false);
   const [fontsLoaded] = useFonts({
@@ -78,6 +89,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthInitializer onReady={handleReady} />
+        <PushNotificationsGate />
         <UpdateWallModal />
         <StatusBar style="light" />
         {ready && fontsLoaded && (
