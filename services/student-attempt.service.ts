@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import { apiClient } from './axios.service';
 import {
   AnswerSubmission,
@@ -72,6 +73,43 @@ export const studentAttemptService = {
       };
     }
     return d as StudentAttempt;
+  },
+
+  /**
+   * Upload a proctoring recording straight to R2 via a presigned PUT.
+   *
+   * Replaces posting the file through the API, which capped recordings at
+   * nginx's 50M client_max_body_size - about 3 minutes of 480p - so longer
+   * assessments could never upload.
+   */
+  uploadRecordingDirect: async (
+    attemptId: string,
+    videoUri: string,
+  ): Promise<void> => {
+    const ext = videoUri.split('.').pop()?.toLowerCase() ?? 'mp4';
+    const mimeType =
+      ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4';
+
+    const { data } = await apiClient.post<{ uploadUrl: string; key: string }>(
+      `/student-attempts/${attemptId}/recording-url`,
+      { extension: ext },
+    );
+
+    // FileSystem.uploadAsync streams from disk — reading a large video into
+    // memory to build a Blob would risk an OOM on low-end devices.
+    const result = await FileSystem.uploadAsync(data.uploadUrl, videoUri, {
+      httpMethod: 'PUT',
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      headers: { 'Content-Type': mimeType },
+    });
+
+    if (result.status < 200 || result.status >= 300) {
+      throw new Error(`Recording upload failed (HTTP ${result.status})`);
+    }
+
+    await apiClient.post(`/student-attempts/${attemptId}/recording-confirm`, {
+      key: data.key,
+    });
   },
 
   uploadRecording: async (attemptId: string, videoUri: string): Promise<void> => {

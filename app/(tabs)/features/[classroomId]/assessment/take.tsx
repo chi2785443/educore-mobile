@@ -121,12 +121,13 @@ export default function TakeAssessmentScreen() {
       try {
         isRecordingRef.current = true;
         setIsRecording(true);
+        // maxFileSize deliberately NOT set. It previously capped at 45MB to stay
+        // under nginx's body limit, but expo-camera 480p is ~2 Mbps, so that
+        // ceiling stopped recording after roughly 3 minutes - silently
+        // truncating any real assessment. Uploads now go direct to R2, so the
+        // limit no longer exists and the full attempt is captured.
         recordingPromiseRef.current = cameraRef.current.recordAsync({
           maxDuration: 7200,
-          // Hard ceiling below nginx's 50M client_max_body_size. Recording
-          // stops at this size rather than producing a file the server would
-          // reject outright - a truncated video is far better than none.
-          maxFileSize: 45 * 1024 * 1024,
         });
         recordingPromiseRef.current.catch(() => {
           isRecordingRef.current = false;
