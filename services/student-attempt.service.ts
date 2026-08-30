@@ -6,9 +6,20 @@ import {
   StartAttemptPayload,
   SubmitAnswerPayload,
   SubmitAttemptPayload,
+  AttemptReview,
 } from '@/interface/attempt.interface';
 
 export const studentAttemptService = {
+  /**
+   * Post-release answer review: every question with the student's answer, the
+   * correct answer, marks and the teacher's remark. The API returns 403 until
+   * the score is released, so only call this for a released score.
+   */
+  getAttemptReview: async (attemptId: string): Promise<AttemptReview> => {
+    const res = await apiClient.get(`/student-attempts/${attemptId}/review`);
+    return res.data;
+  },
+
   startAttempt: async (payload: StartAttemptPayload): Promise<StudentAttempt> => {
     const res = await apiClient.post('/student-attempts/start', payload);
     return (res.data?.data ?? res.data) as StudentAttempt;

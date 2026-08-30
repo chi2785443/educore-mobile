@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { useMyScores } from '@/hooks/useStudentScore';
 import { StudentScore } from '@/interface/attempt.interface';
+import { AnswerReview } from '@/components/assessment/AnswerReview';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 
 /* ── Constants ───────────────────────────────────────────────────── */
@@ -39,6 +40,7 @@ function pctBg(pct: number): string {
 
 /* ── Score Detail Modal ──────────────────────────────────────────── */
 function ScoreDetailModal({ score, onClose }: { score: StudentScore; onClose: () => void }) {
+  const [tab, setTab] = useState<'summary' | 'review'>('summary');
   const pct = Math.round(Number(score.percentage));
   const typeColor = TYPE_COLOR[score.assessment?.type ?? ''] ?? '#4C3FC4';
   const typeBg = TYPE_BG[score.assessment?.type ?? ''] ?? '#F0EEFF';
@@ -103,6 +105,47 @@ function ScoreDetailModal({ score, onClose }: { score: StudentScore; onClose: ()
             </View>
           </View>
 
+          {/* Tabs */}
+          <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 16 }}>
+            {([
+              { key: 'summary', label: 'Summary', icon: 'stats-chart-outline' },
+              { key: 'review', label: 'Answers', icon: 'list-outline' },
+            ] as const).map((t) => {
+              const active = tab === t.key;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => setTab(t.key)}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    opacity: pressed ? 0.85 : 1,
+                    backgroundColor: active ? typeColor : '#fff',
+                    borderWidth: 1,
+                    borderColor: active ? typeColor : '#e2e8f0',
+                    borderRadius: 12,
+                    paddingVertical: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  })}
+                >
+                  <Ionicons name={t.icon} size={14} color={active ? '#fff' : '#64748b'} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : '#64748b' }}>
+                    {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {tab === 'review' ? (
+            <View style={{ padding: 16 }}>
+              {/* Gated on isReleased: the endpoint 403s until the teacher
+                  releases the score, so the request is never fired early. */}
+              <AnswerReview attemptId={score.attemptId} isReleased={score.isReleased !== false} />
+            </View>
+          ) : (
           <View style={{ padding: 16, gap: 14 }}>
             {/* Assessment info */}
             <View style={{ backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden' }}>
@@ -179,6 +222,7 @@ function ScoreDetailModal({ score, onClose }: { score: StudentScore; onClose: ()
               </Text>
             )}
           </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </Modal>

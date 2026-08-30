@@ -52,6 +52,11 @@ export interface StudentScore {
   id: string;
   assessmentId: string;
   studentId: string;
+  /**
+   * Needed to fetch the post-release answer review. Optional because some
+   * screens build a synthetic "not yet scored" placeholder without one.
+   */
+  attemptId?: string;
   score: number;
   totalMarks: number;
   percentage: number;
@@ -110,4 +115,42 @@ export interface CreateRetakePayload {
 export interface RespondRetakePayload {
   status: 'approved' | 'denied';
   responseNote?: string;
+}
+
+/* ── Post-release answer review ─────────────────────────────────────────────
+ * Mirrors backend AttemptReviewDto (GET /student-attempts/:attemptId/review).
+ * Only served once the teacher has released the score.
+ */
+
+export interface AttemptReviewQuestion {
+  assessmentQuestionId: string;
+  questionOrder: number;
+  questionText: string;
+  questionImage: string | null;
+  questionType: string;
+  options: string[] | null;
+  maxMarks: number;
+  studentAnswer: string | null;
+  correctAnswer: string | null;
+  explanation: string | null;
+  isCorrect: boolean;
+  marksAwarded: number | null;
+  feedback: string | null;
+  markingStatus: string;
+}
+
+export interface AttemptReview {
+  attemptId: string;
+  assessmentId: string;
+  assessmentTitle: string;
+  attemptNumber: number;
+  score: number | null;
+  totalMarks: number | null;
+  percentage: number | null;
+  grade: string | null;
+  isPassed: boolean;
+  remarks: string | null;
+  correctCount: number;
+  questionCount: number;
+  questions: AttemptReviewQuestion[];
 }

@@ -32,6 +32,21 @@ export const useAttemptsForAssessment = (assessmentId: string | undefined) =>
     staleTime: STALE,
   });
 
+/**
+ * Post-release answer review for one attempt.
+ *
+ * `enabled` should carry the score's `isReleased` — the endpoint 403s before
+ * release and retrying that is pointless.
+ */
+export const useAttemptReview = (attemptId: string | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['attempts', 'review', attemptId],
+    queryFn: () => studentAttemptService.getAttemptReview(attemptId!),
+    enabled: !!attemptId && enabled,
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+
 export const useStartAttempt = () => {
   const qc = useQueryClient();
   return useMutation({
