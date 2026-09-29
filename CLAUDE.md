@@ -23,6 +23,7 @@
 - **Global state:** Zustand v5 — persisted via AsyncStorage. Stores `user`, `isAuthenticated`, `selectedSchoolId`, `hasOnboarded`
 - **Tokens:** `expo-secure-store` (keys: `cakale_edu_access_token`, `cakale_edu_refresh_token`)
 - **HTTP:** Axios (`services/axios.service.ts`) — Bearer token, auto-refresh on 401, all errors → `new Error(message)`
+- **Refresh:** `POST /auth/refresh { refresh_token }` returns a **rotated** pair, and both tokens are re-saved to SecureStore. On failure the interceptor wipes SecureStore, calls `useAuthStore.getState().logout()` and `router.replace('/(auth)/sign-in')`. Clearing only the tokens used to strand the user on screens where every request failed.
 - **Forms:** React Hook Form v7 + Zod v4
 
 ---

@@ -1,5 +1,7 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
+import { useAuthStore } from '@/store/authStore';
 
 export const ACCESS_TOKEN_KEY = 'cakale_edu_access_token';
 export const REFRESH_TOKEN_KEY = 'cakale_edu_refresh_token';
@@ -102,15 +104,24 @@ apiClient.interceptors.response.use(
 
         const newToken = data.access_token as string;
         await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, newToken);
+        // Refresh tokens rotate - keep the new one or the next refresh fails
+        if (data.refresh_token) {
+          await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refresh_token as string);
+        }
         processQueue(null, newToken);
 
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
+        const sessionError = new Error('Session expired. Please sign in again.');
+        processQueue(sessionError, null);
         await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
         await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-        return Promise.reject(new Error('Session expired. Please sign in again.'));
+        // Without this the persisted store still says "authenticated" and the
+        // user is stranded on screens where every request fails.
+        useAuthStore.getState().logout();
+        router.replace('/(auth)/sign-in' as never);
+        return Promise.reject(sessionError);
       } finally {
         isRefreshing = false;
       }

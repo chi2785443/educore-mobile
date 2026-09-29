@@ -47,6 +47,7 @@ export interface AuthUserData {
 
 export interface AuthResponse {
   access_token: string;
+  /** Rotates on every POST /auth/refresh - always persist the latest one. */
   refresh_token?: string;
   user: AuthUserData;
   expiresIn?: string;
