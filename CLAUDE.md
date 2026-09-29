@@ -1,6 +1,6 @@
 # Cakale EDU Mobile — React Native (Expo)
 
-- **Framework:** Expo SDK 54 + Expo Router 6 | **Runtime:** React Native 0.81
+- **Framework:** Expo SDK 57 + Expo Router | **Runtime:** React Native 0.86
 - **Dev:** `pnpm start` | **Package manager:** pnpm | **New Architecture:** enabled
 
 ---
@@ -19,12 +19,26 @@
 
 ## State & Data
 
-- **Server state:** TanStack React Query v5
+- **Server state:** TanStack React Query v5. The client lives in `lib/queryClient.ts` (never `new QueryClient` elsewhere).
 - **Global state:** Zustand v5 — persisted via AsyncStorage. Stores `user`, `isAuthenticated`, `selectedSchoolId`, `hasOnboarded`
 - **Tokens:** `expo-secure-store` (keys: `cakale_edu_access_token`, `cakale_edu_refresh_token`)
 - **HTTP:** Axios (`services/axios.service.ts`) — Bearer token, auto-refresh on 401, all errors → `new Error(message)`
 - **Refresh:** `POST /auth/refresh { refresh_token }` returns a **rotated** pair, and both tokens are re-saved to SecureStore. On failure the interceptor wipes SecureStore, calls `useAuthStore.getState().logout()` and `router.replace('/(auth)/sign-in')`. Clearing only the tokens used to strand the user on screens where every request failed.
 - **Forms:** React Hook Form v7 + Zod v4
+- **Errors:** `apiClient` rejects with `ApiError` (server answered; has `.status`) or `NetworkError` (no response: offline/timeout), both in `lib/errors.ts` and both `Error`s, so `err.message` still works. Use `isRetryableError(err)` to decide whether to retry later. A refresh that fails with **no response** does NOT sign out; only a server refusal does.
+
+---
+
+## Offline Support
+
+- **Cached screens:** every query is persisted per-query to AsyncStorage (`experimental_createQueryPersister`, prefix `cakale-q`, 7-day max age, busted by app version). Queries use `networkMode: 'offlineFirst'` so the saved copy is read even offline. Per-query rows, not one blob: Android AsyncStorage rows fail above ~2MB.
+- **Never persisted:** live "right now" keys in `NEVER_PERSIST` (`attendance-today`, `attendance-admin-today`, `app-release`). Add a key there if showing yesterday's copy would mislead.
+- **Sign-out clears it:** `OfflineDataGate` in `app/_layout.tsx` calls `clearQueryCache()` when `isAuthenticated` goes false, so a shared phone never shows the previous user's data.
+- **Startup offline:** `AuthInitializer` keeps the saved user if `getProfile` fails with no response or a 5xx; only an `ApiError` < 500 signs out.
+- **Connectivity:** NetInfo drives `onlineManager`; `useIsOnline()` reads it. `OfflineBanner` shows a pill above the tab bar while offline.
+- **Mutations fail fast offline** (`networkMode: 'always'`) with "You're offline…". Only exam work is queued.
+- **Exam outbox (`lib/examOutbox.ts`):** answers are written to the device first (`queueAnswer`) and delivered in order with retries; `submitAttemptViaOutbox` delivers all answers before submitting and returns `'queued'` when offline; recordings are moved out of the camera cache and uploaded direct-to-R2 with retries (`queueRecording`). Entries carry `userId`; only the signed-in user's are sent. Permanent refusals (deadline passed) are recorded and shown once, not retried. The server allows a 2-minute sync grace past the deadline, nothing more.
+- **Attendance clock-in stays online-only on purpose.** It is proof of presence (GPS/QR at that moment); queueing it would let someone scan once and send it later.
 
 ---
 
@@ -96,7 +110,8 @@
 
 - `take.tsx` auto-requests camera + mic on mount; goes back if denied — assessment requires proctoring
 - Recording starts via `CameraView.recordAsync({ maxDuration: 7200 })` in `onCameraReady` (with 500 ms delay to avoid pipeline race)
-- On submit/auto-submit: `stopRecording()` → fire-and-forget upload to `POST /student-attempts/:id/recording`
+- On submit/auto-submit: `stopRecording()` → `queueRecording()` (exam outbox) → presigned PUT to R2 via `uploadRecordingDirect`, retried until it lands. The legacy multipart `POST /student-attempts/:id/recording` is capped by nginx (~3 min of video); do not use it.
+- The timer counts down to `attempt.startedAt + duration`, never a ticking counter (counters stall in the background and reset on resume).
 - PiP widget: 76×104, top-right corner, `zIndex: 999`, pulsing red dot while active
 - `expo-camera@~17.0.10` installed; plugin declared in `app.json` with camera + mic permissions
 

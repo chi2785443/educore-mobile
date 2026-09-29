@@ -3,7 +3,7 @@ import "../global.css";
 import React, { useEffect } from "react";
 import { LogBox } from "react-native";
 import { Stack } from "expo-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from "expo-splash-screen";
@@ -14,6 +14,15 @@ import { UserType } from "@/interface/user.interface";
 import { ToastProvider } from "@/components/ui/Toast";
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { UpdateWallModal } from "@/components/update/UpdateWallModal";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import {
+  queryClient,
+  clearQueryCache,
+  installQueryListeners,
+  pruneQueryCache,
+} from "@/lib/queryClient";
+import { flushExamOutbox, installExamOutboxSync } from "@/lib/examOutbox";
+import { ApiError } from "@/lib/errors";
 import {
   useFonts,
   Poppins_400Regular,
@@ -28,12 +37,8 @@ SplashScreen.preventAutoHideAsync();
 // (blocking taps on "Account"/"Chat") on emulators/devices with reduced motion enabled.
 LogBox.ignoreLogs(["Reduced motion setting is enabled"]);
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1, staleTime: 60_000, gcTime: 5 * 60 * 1000 },
-    mutations: { retry: 0 },
-  },
-});
+installQueryListeners();
+void pruneQueryCache().catch(() => undefined);
 
 function AuthInitializer({ onReady }: { onReady: () => void }) {
   const { login, logout } = useAuthStore();
@@ -48,8 +53,13 @@ function AuthInitializer({ onReady }: { onReady: () => void }) {
         } else {
           logout();
         }
-      } catch {
-        logout();
+      } catch (err) {
+        // Only a server "no" (401/403 after refresh) ends the session. Offline
+        // or a server outage keeps the saved user so the app opens on cached
+        // data instead of dumping everyone at sign-in.
+        const refused = err instanceof ApiError && err.status < 500;
+        const hasSavedUser = !!useAuthStore.getState().user;
+        if (refused || !hasSavedUser) logout();
       } finally {
         onReady();
       }
@@ -68,6 +78,31 @@ function AuthInitializer({ onReady }: { onReady: () => void }) {
  */
 function PushNotificationsGate() {
   usePushNotifications();
+  return null;
+}
+
+/**
+ * Keeps offline data tied to the signed-in person: clears the cached screens
+ * on sign-out (a shared phone must not show the last user's data) and sends
+ * queued exam work as soon as someone is signed in and online.
+ */
+function OfflineDataGate() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const wasAuthenticated = React.useRef(isAuthenticated);
+
+  useEffect(() => {
+    installExamOutboxSync();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void flushExamOutbox();
+    } else if (wasAuthenticated.current) {
+      void clearQueryCache();
+    }
+    wasAuthenticated.current = isAuthenticated;
+  }, [isAuthenticated]);
+
   return null;
 }
 
@@ -90,6 +125,7 @@ export default function RootLayout() {
       <ToastProvider>
         <AuthInitializer onReady={handleReady} />
         <PushNotificationsGate />
+        <OfflineDataGate />
         <UpdateWallModal />
         <StatusBar style="light" />
         {ready && fontsLoaded && (
@@ -120,6 +156,7 @@ export default function RootLayout() {
             <Stack.Screen name="my-children-documents" options={{ animation: 'slide_from_right' }} />
           </Stack>
         )}
+        {ready && <OfflineBanner />}
       </ToastProvider>
     </QueryClientProvider>
   );

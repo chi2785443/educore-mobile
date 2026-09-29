@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { apiClient } from './axios.service';
+import { NetworkError } from '@/lib/errors';
 import {
   AnswerSubmission,
   StudentAttempt,
@@ -108,14 +109,22 @@ export const studentAttemptService = {
 
     // FileSystem.uploadAsync streams from disk — reading a large video into
     // memory to build a Blob would risk an OOM on low-end devices.
-    const result = await FileSystem.uploadAsync(data.uploadUrl, videoUri, {
-      httpMethod: 'PUT',
-      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-      headers: { 'Content-Type': mimeType },
-    });
+    let status: number;
+    try {
+      const result = await FileSystem.uploadAsync(data.uploadUrl, videoUri, {
+        httpMethod: 'PUT',
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        headers: { 'Content-Type': mimeType },
+      });
+      status = result.status;
+    } catch {
+      throw new NetworkError('Recording upload interrupted');
+    }
 
-    if (result.status < 200 || result.status >= 300) {
-      throw new Error(`Recording upload failed (HTTP ${result.status})`);
+    // Retryable either way: each retry asks for a fresh presigned URL, so an
+    // expired signature (403) or a storage hiccup (5xx) clears on the next go.
+    if (status < 200 || status >= 300) {
+      throw new NetworkError(`Recording upload failed (HTTP ${status})`);
     }
 
     await apiClient.post(`/student-attempts/${attemptId}/recording-confirm`, {

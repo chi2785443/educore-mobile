@@ -1,7 +1,8 @@
-import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, isAxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
+import { ApiError, NetworkError } from '@/lib/errors';
 
 export const ACCESS_TOKEN_KEY = 'cakale_edu_access_token';
 export const REFRESH_TOKEN_KEY = 'cakale_edu_refresh_token';
@@ -94,6 +95,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
+      let newToken: string;
       try {
         const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
         if (!refreshToken) throw new Error('No refresh token');
@@ -102,17 +104,22 @@ apiClient.interceptors.response.use(
           refresh_token: refreshToken,
         });
 
-        const newToken = data.access_token as string;
+        newToken = data.access_token as string;
         await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, newToken);
         // Refresh tokens rotate - keep the new one or the next refresh fails
         if (data.refresh_token) {
           await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refresh_token as string);
         }
         processQueue(null, newToken);
-
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return apiClient(originalRequest);
       } catch (refreshError) {
+        // The refresh never reached the server: the session may be perfectly
+        // valid. Signing out here would strand offline users (and lose any
+        // exam answers still queued on the device).
+        if (isAxiosError(refreshError) && !refreshError.response) {
+          const offline = new NetworkError();
+          processQueue(offline, null);
+          return Promise.reject(offline);
+        }
         const sessionError = new Error('Session expired. Please sign in again.');
         processQueue(sessionError, null);
         await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
@@ -125,9 +132,20 @@ apiClient.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
+
+      // Outside the try: a failure of the retried request itself (403, 500)
+      // is that request's error, not a dead session.
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      return apiClient(originalRequest);
+    }
+
+    // No response means the request never reached the server (offline,
+    // timeout). Typed so callers like the exam outbox know to retry later.
+    if (!error.response) {
+      return Promise.reject(new NetworkError());
     }
 
     // For all other errors (including 401 from auth endpoints), surface the real message.
-    return Promise.reject(new Error(extractErrorMessage(error)));
+    return Promise.reject(new ApiError(extractErrorMessage(error), error.response.status));
   },
 );

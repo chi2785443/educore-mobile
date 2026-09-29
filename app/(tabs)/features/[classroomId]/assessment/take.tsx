@@ -10,8 +10,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAssessment, useAssessmentQuestions } from '@/hooks/useAssessment';
-import { useAttemptById, useSubmitAnswer, useSubmitAttempt } from '@/hooks/useStudentAttempt';
-import { studentAttemptService } from '@/services/student-attempt.service';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAttemptById } from '@/hooks/useStudentAttempt';
+import {
+  getDraftAnswers, queueAnswer, queueRecording, submitAttemptViaOutbox,
+  takeAnswerRejections, usePendingExamCount,
+} from '@/lib/examOutbox';
+import { useIsOnline } from '@/hooks/useIsOnline';
 import { AnswerSubmission } from '@/interface/attempt.interface';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
@@ -67,16 +72,19 @@ export default function TakeAssessmentScreen() {
   const { data: assessment, isLoading: loadingAssessment } = useAssessment(assessmentId);
   const { data: assessmentQs = [], isLoading: loadingQs } = useAssessmentQuestions(assessmentId);
   const { data: attempt, isLoading: loadingAttempt } = useAttemptById(attemptId);
-  const submitAnswerMutation = useSubmitAnswer();
-  const submitAttemptMutation = useSubmitAttempt();
+  const queryClient = useQueryClient();
+  const isOnline = useIsOnline();
+  const pendingSync = usePendingExamCount(attemptId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [timerStarted, setTimerStarted] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const autoSubmittedRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingRecording, setUploadingRecording] = useState(false);
   const theoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Latest typed theory text not yet handed to the outbox. */
+  const pendingTheoryRef = useRef<{ questionId: string; text: string } | null>(null);
 
   /* ── Camera / proctoring ─────────────────────────────────────── */
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -166,7 +174,12 @@ export default function TakeAssessmentScreen() {
       const result = await promise;
       if (!result?.uri) return;
       setUploadingRecording(true);
-      await studentAttemptService.uploadRecording(attemptId, result.uri);
+      // Kept on the device and retried until uploaded, so a weak connection
+      // at the end of the exam no longer loses the video.
+      const uploaded = await queueRecording(attemptId, result.uri);
+      if (!uploaded) {
+        toast.info('Your exam recording is saved on this phone and will upload when you are back online.');
+      }
     } catch (err) {
       // Surfaced rather than swallowed - the teacher has no other signal that
       // the proctoring video is missing.
@@ -202,22 +215,79 @@ export default function TakeAssessmentScreen() {
   const currentQ = questions[currentIndex];
   const totalQ = questions.length;
 
-  /* Pre-populate answers from existing submissions (resume) */
+  /*
+   * Resume: server answers, overlaid with any saved on this phone that have
+   * not reached the server yet (the local copy is always the newer one).
+   */
   useEffect(() => {
-    if (!attempt?.answerSubmissions?.length) return;
-    const existing: Record<string, string> = {};
-    for (const sub of attempt.answerSubmissions) {
-      if (sub.answer) existing[sub.assessmentQuestionId] = sub.answer;
-    }
-    if (Object.keys(existing).length > 0) setAnswers(existing);
-  }, [attempt?.answerSubmissions]);
+    if (!attemptId) return;
+    let cancelled = false;
+    getDraftAnswers(attemptId).then((drafts) => {
+      if (cancelled) return;
+      const merged: Record<string, string> = {};
+      for (const sub of attempt?.answerSubmissions ?? []) {
+        if (sub.answer) merged[sub.assessmentQuestionId] = sub.answer;
+      }
+      Object.assign(merged, drafts);
+      if (Object.keys(merged).length > 0) setAnswers((prev) => ({ ...merged, ...prev }));
+    });
+    return () => { cancelled = true; };
+  }, [attemptId, attempt?.answerSubmissions]);
 
-  /* Initialise timer */
+  /*
+   * Count down to a fixed deadline (server start time + duration) rather than
+   * ticking a counter. A counter restarted from the full duration on resume,
+   * and it stalls while the phone sleeps or the app is backgrounded, so the
+   * student's clock drifted behind the server's and answers were refused
+   * "early". The server remains the authority either way.
+   */
+  const deadlineMs = assessment?.duration && attempt?.startedAt
+    ? new Date(attempt.startedAt).getTime() + assessment.duration * 60_000
+    : null;
+  const timeRemaining = deadlineMs ? Math.max(0, Math.ceil((deadlineMs - now) / 1000)) : 0;
+
   useEffect(() => {
-    if (!assessment?.duration || timerStarted) return;
-    setTimeRemaining(assessment.duration * 60);
-    setTimerStarted(true);
-  }, [assessment?.duration, timerStarted]);
+    if (!deadlineMs) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [deadlineMs]);
+
+  /* Tell the student once if the server refused any saved answer. */
+  useEffect(() => {
+    if (!attemptId || pendingSync > 0) return;
+    takeAnswerRejections(attemptId).then((refused) => {
+      if (refused.length) toast.error(refused[0].message);
+    });
+  }, [attemptId, pendingSync]);
+
+  /*
+   * Saved to the phone immediately and delivered in the background with
+   * retries. Previously this was a fire-and-forget request made only on
+   * "Next": an option tap followed by Prev or the question grid never
+   * reached the server, and any network blip dropped the answer silently.
+   */
+  const saveAnswer = useCallback((questionId: string, answer: string) => {
+    if (!answer.trim() || !attemptId) return;
+    void queueAnswer(attemptId, questionId, answer);
+  }, [attemptId]);
+
+  /** Send a theory answer still waiting on its typing debounce. */
+  function flushTheoryDraft() {
+    if (theoryDebounceRef.current) clearTimeout(theoryDebounceRef.current);
+    theoryDebounceRef.current = null;
+    const pending = pendingTheoryRef.current;
+    pendingTheoryRef.current = null;
+    if (pending) saveAnswer(pending.questionId, pending.text);
+  }
+
+  const finishAndLeave = useCallback(async (outcome: 'submitted' | 'queued') => {
+    queryClient.invalidateQueries({ queryKey: ['attempts', 'mine'] });
+    queryClient.invalidateQueries({ queryKey: ['scores', 'mine'] });
+    if (outcome === 'queued') {
+      toast.info("You're offline. Your answers are saved and will be submitted automatically when you reconnect.");
+    }
+    router.back();
+  }, [queryClient, router]);
 
   /* Countdown + auto-submit */
   const handleAutoSubmit = useCallback(async () => {
@@ -225,24 +295,24 @@ export default function TakeAssessmentScreen() {
     setSubmitting(true);
     // Start finalising + uploading the video now, but do not leave the screen
     // until it has finished - unmounting mid-upload loses the recording.
+    flushTheoryDraft();
     const recordingDone = stopAndUploadRecording();
+    let outcome: 'submitted' | 'queued' = 'submitted';
     try {
-      await submitAttemptMutation.mutateAsync({ attemptId: attemptId ?? '', timeRemaining: 0 });
-    } catch { /* best-effort */ }
+      outcome = await submitAttemptViaOutbox(attemptId ?? '', 0);
+    } catch (err) {
+      // Usually "already auto-submitted" by the server at the deadline.
+      toast.error(err instanceof Error ? err.message : 'Time is up.');
+    }
     await recordingDone;
-    router.back();
-  }, [submitting, attemptId, submitAttemptMutation, router, stopAndUploadRecording]);
+    await finishAndLeave(outcome);
+  }, [submitting, attemptId, finishAndLeave, stopAndUploadRecording]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!timerStarted || timeRemaining <= 0) return;
-    const id = setInterval(() => {
-      setTimeRemaining(t => {
-        if (t <= 1) { clearInterval(id); handleAutoSubmit(); return 0; }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [timerStarted]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!deadlineMs || timeRemaining > 0 || autoSubmittedRef.current) return;
+    autoSubmittedRef.current = true;
+    void handleAutoSubmit();
+  }, [deadlineMs, timeRemaining, handleAutoSubmit]);
 
   /* Stop recording on unmount (safety net) */
   useEffect(() => {
@@ -252,23 +322,32 @@ export default function TakeAssessmentScreen() {
         camera.stopRecording();
         isRecordingRef.current = false;
       }
+      // Leaving mid-sentence: keep what was typed rather than dropping it.
       if (theoryDebounceRef.current) clearTimeout(theoryDebounceRef.current);
+      const pending = pendingTheoryRef.current;
+      if (pending && attemptId && pending.text.trim()) {
+        void queueAnswer(attemptId, pending.questionId, pending.text);
+      }
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Save answer fire-and-forget */
-  const saveAnswer = useCallback((questionId: string, answer: string) => {
-    if (!answer.trim() || !attemptId) return;
-    submitAnswerMutation.mutate({ attemptId, assessmentQuestionId: questionId, answer });
-  }, [attemptId, submitAnswerMutation]);
+  const goTo = (index: number) => {
+    flushTheoryDraft();
+    setCurrentIndex(index);
+  };
 
   const handleNext = () => {
-    if (currentQ) saveAnswer(currentQ.assessmentQuestionId, answers[currentQ.assessmentQuestionId] ?? '');
-    if (currentIndex < totalQ - 1) setCurrentIndex(i => i + 1);
+    if (currentIndex < totalQ - 1) goTo(currentIndex + 1);
   };
 
   const handlePrev = () => {
-    if (currentIndex > 0) setCurrentIndex(i => i - 1);
+    if (currentIndex > 0) goTo(currentIndex - 1);
+  };
+
+  const handleSelectOption = (option: string) => {
+    if (!currentQ) return;
+    setAnswers(prev => ({ ...prev, [currentQ.assessmentQuestionId]: option }));
+    saveAnswer(currentQ.assessmentQuestionId, option);
   };
 
   const handleSubmit = () => {
@@ -281,15 +360,17 @@ export default function TakeAssessmentScreen() {
         {
           text: 'Submit', style: 'destructive',
           onPress: async () => {
-            if (currentQ) saveAnswer(currentQ.assessmentQuestionId, answers[currentQ.assessmentQuestionId] ?? '');
+            flushTheoryDraft();
             setSubmitting(true);
             // Started before the submit so the file finalises in parallel, but
             // awaited before router.back() so the upload cannot be cut short.
             const recordingDone = stopAndUploadRecording();
             try {
-              await submitAttemptMutation.mutateAsync({ attemptId: attemptId ?? '', timeRemaining });
+              // Delivers every queued answer first, then submits; 'queued'
+              // when offline, finished automatically on reconnect.
+              const outcome = await submitAttemptViaOutbox(attemptId ?? '', timeRemaining);
               await recordingDone;
-              router.back();
+              await finishAndLeave(outcome);
             } catch (err) {
               await recordingDone;
               setSubmitting(false);
@@ -315,10 +396,9 @@ export default function TakeAssessmentScreen() {
   const handleTheoryChange = (text: string) => {
     if (!currentQ) return;
     setAnswers(prev => ({ ...prev, [currentQ.assessmentQuestionId]: text }));
+    pendingTheoryRef.current = { questionId: currentQ.assessmentQuestionId, text };
     if (theoryDebounceRef.current) clearTimeout(theoryDebounceRef.current);
-    theoryDebounceRef.current = setTimeout(() => {
-      saveAnswer(currentQ.assessmentQuestionId, text);
-    }, 3000);
+    theoryDebounceRef.current = setTimeout(flushTheoryDraft, 1500);
   };
 
   if (loadingAssessment || loadingAttempt || loadingQs) {
@@ -372,6 +452,18 @@ export default function TakeAssessmentScreen() {
           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, textAlign: 'center', marginTop: 1 }}>
             Question {currentIndex + 1} of {totalQ}
           </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2 }}>
+            <Ionicons
+              name={!isOnline ? 'cloud-offline-outline' : pendingSync > 0 ? 'sync-outline' : 'cloud-done-outline'}
+              size={11}
+              color={!isOnline ? '#fbbf24' : pendingSync > 0 ? '#a5b4fc' : '#34d399'}
+            />
+            <Text style={{ color: !isOnline ? '#fbbf24' : 'rgba(255,255,255,0.45)', fontSize: 10, fontWeight: '600' }}>
+              {!isOnline
+                ? `Offline · ${pendingSync} saved on phone`
+                : pendingSync > 0 ? 'Saving…' : 'All answers saved'}
+            </Text>
+          </View>
         </View>
 
         <View style={{
@@ -451,7 +543,7 @@ export default function TakeAssessmentScreen() {
                 return (
                   <Pressable
                     key={idx}
-                    onPress={() => setAnswers(prev => ({ ...prev, [currentQ.assessmentQuestionId]: opt }))}
+                    onPress={() => handleSelectOption(opt)}
                     style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
                   >
                     <View style={{
@@ -519,7 +611,7 @@ export default function TakeAssessmentScreen() {
                   return (
                     <Pressable
                       key={i}
-                      onPress={() => setCurrentIndex(i)}
+                      onPress={() => goTo(i)}
                       style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
                     >
                       <View style={{
