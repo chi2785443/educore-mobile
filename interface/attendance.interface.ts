@@ -52,6 +52,11 @@ export interface ClockPayload {
   longitude?: number;
   qrToken?: string;
   classroomId?: string;
+  /** Idempotency key for this tap; also sent live so a replay never duplicates. */
+  clientEventId?: string;
+  /** Set when replaying a tap captured without signal (always admin-reviewed). */
+  capturedOffline?: boolean;
+  capturedAt?: string;
 }
 
 // ─── Daily Attendance ─────────────────────────────────────────────────────────

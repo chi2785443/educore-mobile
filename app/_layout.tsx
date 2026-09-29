@@ -22,6 +22,7 @@ import {
   pruneQueryCache,
 } from "@/lib/queryClient";
 import { flushExamOutbox, installExamOutboxSync } from "@/lib/examOutbox";
+import { flushAttendanceOutbox, installAttendanceOutboxSync } from "@/lib/attendanceOutbox";
 import { ApiError } from "@/lib/errors";
 import {
   useFonts,
@@ -92,11 +93,13 @@ function OfflineDataGate() {
 
   useEffect(() => {
     installExamOutboxSync();
+    installAttendanceOutboxSync();
   }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       void flushExamOutbox();
+      void flushAttendanceOutbox();
     } else if (wasAuthenticated.current) {
       void clearQueryCache();
     }

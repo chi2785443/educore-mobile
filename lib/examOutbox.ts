@@ -65,6 +65,7 @@ const EMPTY: OutboxState = { answers: [], submits: [], recordings: [], drafts: {
 let state: OutboxState = EMPTY;
 let loaded: Promise<void> | null = null;
 let flushing: Promise<void> | null = null;
+let rerun = false;
 let versionCounter = Date.now();
 const listeners = new Set<() => void>();
 
@@ -186,7 +187,19 @@ export async function queueRecording(attemptId: string, cameraUri: string): Prom
  * and leaves the rest for the next attempt.
  */
 export function flushExamOutbox(): Promise<void> {
-  flushing ??= runFlush().finally(() => {
+  // A request that arrives mid-pass may be the one that matters (e.g. the
+  // "back online" event while a pass is deciding it is offline), so it
+  // earns one more pass instead of sharing the stale result.
+  if (flushing) {
+    rerun = true;
+    return flushing;
+  }
+  flushing = (async () => {
+    do {
+      rerun = false;
+      await runFlush();
+    } while (rerun);
+  })().finally(() => {
     flushing = null;
   });
   return flushing;

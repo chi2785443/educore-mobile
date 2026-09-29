@@ -38,7 +38,9 @@
 - **Connectivity:** NetInfo drives `onlineManager`; `useIsOnline()` reads it. `OfflineBanner` shows a pill above the tab bar while offline.
 - **Mutations fail fast offline** (`networkMode: 'always'`) with "You're offline…". Only exam work is queued.
 - **Exam outbox (`lib/examOutbox.ts`):** answers are written to the device first (`queueAnswer`) and delivered in order with retries; `submitAttemptViaOutbox` delivers all answers before submitting and returns `'queued'` when offline; recordings are moved out of the camera cache and uploaded direct-to-R2 with retries (`queueRecording`). Entries carry `userId`; only the signed-in user's are sent. Permanent refusals (deadline passed) are recorded and shown once, not retried. The server allows a 2-minute sync grace past the deadline, nothing more.
-- **Attendance clock-in stays online-only on purpose.** It is proof of presence (GPS/QR at that moment); queueing it would let someone scan once and send it later.
+- **Offline clock-in (`lib/attendanceOutbox.ts`):** with no signal the tap (time, GPS/QR, `clientEventId`) is kept on the phone and replayed on reconnect with `capturedOffline: true` + `capturedAt`. The server **always flags these for admin review** and refuses anything older than 24h, so it never skips verification. Every tap sends a `clientEventId`, live too: a live request that timed out after the server saved it cannot be duplicated by the replay. The card counts pending taps (next tap is Clock Out after an offline Clock In) and shows "saved offline" until sent.
+- Both outboxes are single-flight with a re-run flag: a flush requested mid-pass triggers one more pass, so a "back online" event is never swallowed by a pass that already decided it was offline.
+- **Shuffled exams:** the API renumbers `questionOrder` per student; `take.tsx` sorts by it, so never re-sort by anything else.
 
 ---
 

@@ -10,6 +10,12 @@ import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/store/authStore';
+import { onlineManager } from '@tanstack/react-query';
+import { NetworkError } from '@/lib/errors';
+import {
+  newClientEventId, queueClock, takeAttendanceRejections, usePendingClocks,
+} from '@/lib/attendanceOutbox';
+import { ClockPayload } from '@/interface/attendance.interface';
 import { UserRole } from '@/interface/user.interface';
 import {
   useTodayAttendance, useAttendanceSettings, useClockAttendance,
@@ -242,6 +248,15 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
   const [blocker, setBlocker] = useState<{ msg: string; canOpenSettings: boolean } | null>(null);
   const [qrToken, setQrToken] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
+  const pendingClocks = usePendingClocks(schoolId);
+
+  /* Tell the user once if an offline clock-in was refused (e.g. >24h old). */
+  useEffect(() => {
+    if (pendingClocks.length > 0) return;
+    takeAttendanceRejections(schoolId).then((refused) => {
+      if (refused.length) toast.error(refused[0]);
+    });
+  }, [pendingClocks.length, schoolId]);
 
   const isQrMode = settings?.attendanceMethod === 'qr_code';
 
@@ -262,24 +277,57 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
     ((role === UserRole.STAFF && !!settings.trackStaff) ||
       (role === UserRole.STUDENT && !!settings.trackStudents));
 
-  const clockedIn = today?.clockedIn ?? false;
-  const clockedOut = today?.clockedOut ?? false;
+  // Taps saved offline today count locally, so the next tap is correct
+  // (clock out after an offline clock in) before the server has them.
+  const todayKey = new Date().toDateString();
+  const pendingToday = pendingClocks.filter((p) => new Date(p.capturedAt).toDateString() === todayKey);
+  const pendingIn = pendingToday.find((p) => p.payload.type === 'clock_in');
+  const pendingOut = pendingToday.find((p) => p.payload.type === 'clock_out');
+  const clockInTime = today?.clockInTime ?? pendingIn?.capturedAt ?? null;
+  const clockOutTime = today?.clockOutTime ?? pendingOut?.capturedAt ?? null;
+  const clockedIn = (today?.clockedIn ?? false) || !!pendingIn;
+  const clockedOut = (today?.clockedOut ?? false) || !!pendingOut;
   const finished = clockedIn && clockedOut;
   const actionType: 'clock_in' | 'clock_out' = clockedIn && !clockedOut ? 'clock_out' : 'clock_in';
   const actionColor = actionType === 'clock_in' ? '#10b981' : '#e11d48';
   const isBusy = locating || clockMutation.isPending;
 
+  /*
+   * No signal: keep the tap (time, place, QR) on the phone and send it on
+   * reconnect, where it is held for admin review. The same clientEventId
+   * goes on the live request, so a request that timed out after the server
+   * saved it is not recorded twice when the offline copy is replayed.
+   */
+  const saveOffline = async (payload: ClockPayload, clientEventId: string, capturedAt: string) => {
+    await queueClock(schoolId, payload, clientEventId, capturedAt);
+    setQrToken('');
+    toast.info(
+      `No signal. Your ${payload.type === 'clock_in' ? 'clock-in' : 'clock-out'} is saved on this phone and will be sent for admin review when you're back online.`,
+    );
+  };
+
   const doSubmit = async (locResult: LocationResult) => {
+    const clientEventId = newClientEventId();
+    const capturedAt = new Date().toISOString();
+    const payload: ClockPayload = {
+      type: actionType,
+      method: isQrMode ? 'qr_code' : 'manual',
+      latitude: locResult.ok ? locResult.latitude : undefined,
+      longitude: locResult.ok ? locResult.longitude : undefined,
+      qrToken: isQrMode ? qrToken.trim() || undefined : undefined,
+    };
+    if (!onlineManager.isOnline()) {
+      await saveOffline(payload, clientEventId, capturedAt);
+      return;
+    }
     try {
-      await clockMutation.mutateAsync({
-        type: actionType,
-        method: isQrMode ? 'qr_code' : 'manual',
-        latitude: locResult.ok ? locResult.latitude : undefined,
-        longitude: locResult.ok ? locResult.longitude : undefined,
-        qrToken: isQrMode ? qrToken.trim() || undefined : undefined,
-      });
+      await clockMutation.mutateAsync({ ...payload, clientEventId });
       setQrToken('');
     } catch (err) {
+      if (err instanceof NetworkError) {
+        await saveOffline(payload, clientEventId, capturedAt);
+        return;
+      }
       toast.error(err instanceof Error ? err.message : 'Failed to record attendance');
     }
   };
@@ -339,17 +387,26 @@ function AttendanceCard({ schoolId, role }: { schoolId: string; role: string }) 
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: 12 }}>
           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 }}>In</Text>
-          <Text style={{ color: today?.clockInTime ? '#4ade80' : 'rgba(255,255,255,0.2)', fontSize: 18, fontWeight: '900' }}>
-            {today?.clockInTime ? format(new Date(today.clockInTime), 'HH:mm') : '—'}
+          <Text style={{ color: clockInTime ? '#4ade80' : 'rgba(255,255,255,0.2)', fontSize: 18, fontWeight: '900' }}>
+            {clockInTime ? format(new Date(clockInTime), 'HH:mm') : '—'}
           </Text>
         </View>
         <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: 12 }}>
           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 }}>Out</Text>
-          <Text style={{ color: today?.clockOutTime ? '#f87171' : 'rgba(255,255,255,0.2)', fontSize: 18, fontWeight: '900' }}>
-            {today?.clockOutTime ? format(new Date(today.clockOutTime), 'HH:mm') : '—'}
+          <Text style={{ color: clockOutTime ? '#f87171' : 'rgba(255,255,255,0.2)', fontSize: 18, fontWeight: '900' }}>
+            {clockOutTime ? format(new Date(clockOutTime), 'HH:mm') : '—'}
           </Text>
         </View>
       </View>
+
+      {pendingClocks.length > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 10 }}>
+          <Ionicons name="cloud-offline-outline" size={16} color="#fde68a" />
+          <Text style={{ color: '#fef3c7', fontSize: 12, fontWeight: '600', flex: 1, lineHeight: 17 }}>
+            {`${pendingClocks.length === 1 ? '1 entry' : `${pendingClocks.length} entries`} saved offline · will be sent for admin review when you're back online`}
+          </Text>
+        </View>
+      )}
 
       {/* QR scan trigger — shown inline when school requires QR */}
       {!finished && isQrMode && (
