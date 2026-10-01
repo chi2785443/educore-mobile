@@ -13,9 +13,10 @@ import { useAssessment, useAssessmentQuestions } from '@/hooks/useAssessment';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAttemptById } from '@/hooks/useStudentAttempt';
 import {
-  getDraftAnswers, queueAnswer, queueRecording, submitAttemptViaOutbox,
+  getDraftAnswers, queueAnswer, submitAttemptViaOutbox,
   takeAnswerRejections, usePendingExamCount,
 } from '@/lib/examOutbox';
+import { useProctoringCapture } from '@/hooks/useProctoringCapture';
 import { useIsOnline } from '@/hooks/useIsOnline';
 import { AnswerSubmission } from '@/interface/attempt.interface';
 import LoadingScreen from '@/components/ui/LoadingScreen';
@@ -90,7 +91,7 @@ export default function TakeAssessmentScreen() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
   const cameraRef = useRef<CameraView>(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   /**
    * The PiP camera floats above the question. Docked bottom-right (over the
    * empty area under the jump-to-question strip) rather than top-right, where
@@ -99,8 +100,6 @@ export default function TakeAssessmentScreen() {
    * it still gets in the way.
    */
   const [pipCollapsed, setPipCollapsed] = useState(false);
-  const isRecordingRef = useRef(false);
-  const recordingPromiseRef = useRef<Promise<{ uri: string } | undefined> | null>(null);
 
   /* Request camera + mic on mount */
   useEffect(() => {
@@ -119,78 +118,38 @@ export default function TakeAssessmentScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* Start recording once camera is mounted and ready */
+  /*
+   * Proctoring: short clips at random gaps, periodic photos, a longer clip when
+   * the student returns from another app, and a log of every time the app left
+   * the foreground. Queued on the device and uploaded in the background.
+   */
   const handleCameraReady = useCallback(() => {
-    if (isRecordingRef.current) return;
     // Small delay to let the camera's internal video pipeline fully initialise
-    // before calling recordAsync — avoids the "Camera is not ready yet" race.
-    setTimeout(() => {
-      if (!cameraRef.current || isRecordingRef.current) return;
-      try {
-        isRecordingRef.current = true;
-        setIsRecording(true);
-        // maxFileSize deliberately NOT set. It previously capped at 45MB to stay
-        // under nginx's body limit, but expo-camera 480p is ~2 Mbps, so that
-        // ceiling stopped recording after roughly 3 minutes - silently
-        // truncating any real assessment. Uploads now go direct to R2, so the
-        // limit no longer exists and the full attempt is captured.
-        recordingPromiseRef.current = cameraRef.current.recordAsync({
-          maxDuration: 7200,
-        });
-        recordingPromiseRef.current.catch(() => {
-          isRecordingRef.current = false;
-          setIsRecording(false);
-        });
-      } catch {
-        isRecordingRef.current = false;
-        setIsRecording(false);
-      }
-    }, 500);
+    // before the first capture - avoids the "Camera is not ready yet" race.
+    setTimeout(() => setCameraReady(true), 500);
   }, []);
 
+  const proctoring = useProctoringCapture({
+    attemptId,
+    startedAt: attempt?.startedAt,
+    cameraRef,
+    ready: cameraReady,
+  });
+  const isRecording = proctoring.recording;
+
   /**
-   * Stop recording, wait for the camera to finish writing the file, then upload
-   * it. Returns a promise the caller MUST await before navigating away.
-   *
-   * This used to be fire-and-forget: it attached a .then() to the recording
-   * promise and returned immediately, while the caller submitted and then
-   * called router.back(). The camera finishes writing the file well after
-   * stopRecording() returns, so the upload was typically kicked off (or still
-   * in flight) as the screen unmounted, and the video never reached the server.
-   * Both failure paths were also swallowed by empty .catch() blocks, so a lost
-   * proctoring recording was completely invisible to student and teacher.
+   * Finish proctoring before leaving the screen: stop the clip in progress,
+   * queue the events and give uploads a short window. Anything unfinished
+   * keeps uploading from the outbox in the background.
    */
-  const stopAndUploadRecording = useCallback(async (): Promise<void> => {
-    if (!isRecordingRef.current || !cameraRef.current) return;
-    cameraRef.current.stopRecording();
-    isRecordingRef.current = false;
-    setIsRecording(false);
-
-    const promise = recordingPromiseRef.current;
-    recordingPromiseRef.current = null;
-    if (!promise || !attemptId) return;
-
+  const stopProctoring = useCallback(async (): Promise<void> => {
+    setUploadingRecording(true);
     try {
-      const result = await promise;
-      if (!result?.uri) return;
-      setUploadingRecording(true);
-      // Kept on the device and retried until uploaded, so a weak connection
-      // at the end of the exam no longer loses the video.
-      const uploaded = await queueRecording(attemptId, result.uri);
-      if (!uploaded) {
-        toast.info('Your exam recording is saved on this phone and will upload when you are back online.');
-      }
-    } catch (err) {
-      // Surfaced rather than swallowed - the teacher has no other signal that
-      // the proctoring video is missing.
-      console.warn('[proctoring] recording upload failed', err);
-      toast.error(
-        'Your exam recording could not be uploaded. Please let your teacher know.',
-      );
+      await proctoring.flush();
     } finally {
       setUploadingRecording(false);
     }
-  }, [attemptId]);
+  }, [proctoring]);
 
   /* Build questions */
   const questions = useMemo<AnswerSubmission[]>(() =>
@@ -296,7 +255,7 @@ export default function TakeAssessmentScreen() {
     // Start finalising + uploading the video now, but do not leave the screen
     // until it has finished - unmounting mid-upload loses the recording.
     flushTheoryDraft();
-    const recordingDone = stopAndUploadRecording();
+    const recordingDone = stopProctoring();
     let outcome: 'submitted' | 'queued' = 'submitted';
     try {
       outcome = await submitAttemptViaOutbox(attemptId ?? '', 0);
@@ -306,7 +265,7 @@ export default function TakeAssessmentScreen() {
     }
     await recordingDone;
     await finishAndLeave(outcome);
-  }, [submitting, attemptId, finishAndLeave, stopAndUploadRecording]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [submitting, attemptId, finishAndLeave, stopProctoring]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!deadlineMs || timeRemaining > 0 || autoSubmittedRef.current) return;
@@ -314,14 +273,9 @@ export default function TakeAssessmentScreen() {
     void handleAutoSubmit();
   }, [deadlineMs, timeRemaining, handleAutoSubmit]);
 
-  /* Stop recording on unmount (safety net) */
+  /* Unmount safety net (the proctoring hook stops its own camera work). */
   useEffect(() => {
-    const camera = cameraRef.current;
     return () => {
-      if (isRecordingRef.current && camera) {
-        camera.stopRecording();
-        isRecordingRef.current = false;
-      }
       // Leaving mid-sentence: keep what was typed rather than dropping it.
       if (theoryDebounceRef.current) clearTimeout(theoryDebounceRef.current);
       const pending = pendingTheoryRef.current;
@@ -364,7 +318,7 @@ export default function TakeAssessmentScreen() {
             setSubmitting(true);
             // Started before the submit so the file finalises in parallel, but
             // awaited before router.back() so the upload cannot be cut short.
-            const recordingDone = stopAndUploadRecording();
+            const recordingDone = stopProctoring();
             try {
               // Delivers every queued answer first, then submits; 'queued'
               // when offline, finished automatically on reconnect.
@@ -723,18 +677,11 @@ export default function TakeAssessmentScreen() {
             zIndex: 999,
           }}
         >
-          {pipCollapsed ? (
-            <View style={{
-              flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.75)',
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
-            }}>
-              {isRecording ? <RecordingDot /> : null}
-              <Text style={{ color: isRecording ? '#ef4444' : 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>
-                {isRecording ? 'REC' : 'CAM'}
-              </Text>
-            </View>
-          ) : (
+          {/*
+            The camera stays mounted even when the preview is collapsed: it used
+            to be unmounted, which silently stopped proctoring capture.
+          */}
+          {(
             <>
               <CameraView
                 ref={cameraRef}
@@ -751,8 +698,21 @@ export default function TakeAssessmentScreen() {
                 mode="video"
                 onCameraReady={handleCameraReady}
               />
+              {/* Collapsed pill covers the live preview but leaves the camera running */}
+              {pipCollapsed ? (
+                <View style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.9)',
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+                }}>
+                  {isRecording ? <RecordingDot /> : null}
+                  <Text style={{ color: isRecording ? '#ef4444' : 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 }}>
+                    {isRecording ? 'REC' : 'CAM'}
+                  </Text>
+                </View>
+              ) : null}
               {/* Recording indicator overlay */}
-              <View style={{
+              {pipCollapsed ? null : <View style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0,
                 backgroundColor: 'rgba(0,0,0,0.55)',
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -766,7 +726,7 @@ export default function TakeAssessmentScreen() {
                 ) : (
                   <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '700' }}>CAM</Text>
                 )}
-              </View>
+              </View>}
             </>
           )}
         </Pressable>

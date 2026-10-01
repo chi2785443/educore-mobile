@@ -5,6 +5,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { studentAttemptService } from '@/services/student-attempt.service';
 import { useAuthStore } from '@/store/authStore';
 import { isRetryableError } from '@/lib/errors';
+import type { ProctoringEventInput, ProctoringTrigger } from '@/interface/proctoring.interface';
 
 /**
  * Offline-safe delivery for exam work.
@@ -21,6 +22,9 @@ import { isRetryableError } from '@/lib/errors';
 
 const STORAGE_KEY = 'cakale-exam-outbox';
 const RECORDINGS_DIR = `${FileSystem.documentDirectory ?? ''}exam-recordings/`;
+const PROCTORING_DIR = `${FileSystem.documentDirectory ?? ''}exam-proctoring/`;
+/** Keeps a long offline exam from filling the phone with queued captures. */
+const MAX_PROCTORING_PER_ATTEMPT = 300;
 
 interface PendingAnswer {
   userId: string;
@@ -44,6 +48,23 @@ interface PendingRecording {
   uri: string;
 }
 
+interface PendingProctoringMedia {
+  userId: string;
+  attemptId: string;
+  /** Moved out of the camera cache, which the OS may clear at any time. */
+  uri: string;
+  kind: 'clip' | 'photo';
+  trigger: ProctoringTrigger;
+  offsetSeconds: number;
+  durationSeconds?: number;
+}
+
+interface PendingProctoringEvents {
+  userId: string;
+  attemptId: string;
+  events: ProctoringEventInput[];
+}
+
 export interface ExamRejection {
   attemptId: string;
   kind: 'answer' | 'submit';
@@ -54,13 +75,25 @@ interface OutboxState {
   answers: PendingAnswer[];
   submits: PendingSubmit[];
   recordings: PendingRecording[];
+  /** Proctoring clips and photos waiting to upload. */
+  proctoring: PendingProctoringMedia[];
+  /** Integrity events (app left, ...) waiting to send. */
+  proctoringEvents: PendingProctoringEvents[];
   /** Local answer copy per attempt, so a resume offline still shows them. */
   drafts: Record<string, Record<string, string>>;
   /** Server refusals (e.g. deadline passed) the student should hear about. */
   rejected: ExamRejection[];
 }
 
-const EMPTY: OutboxState = { answers: [], submits: [], recordings: [], drafts: {}, rejected: [] };
+const EMPTY: OutboxState = {
+  answers: [],
+  submits: [],
+  recordings: [],
+  proctoring: [],
+  proctoringEvents: [],
+  drafts: {},
+  rejected: [],
+};
 
 let state: OutboxState = EMPTY;
 let loaded: Promise<void> | null = null;
@@ -182,8 +215,44 @@ export async function queueRecording(attemptId: string, cameraUri: string): Prom
 }
 
 /**
+ * Keep a proctoring clip or photo on the device and upload it in the
+ * background, retrying until it lands. Never awaited by the exam screen: a
+ * slow upload must not hold up the student.
+ */
+export async function queueProctoringMedia(
+  attemptId: string,
+  cameraUri: string,
+  meta: { kind: 'clip' | 'photo'; trigger: ProctoringTrigger; offsetSeconds: number; durationSeconds?: number },
+): Promise<void> {
+  const userId = currentUserId();
+  if (!userId) return;
+  await load();
+  if (state.proctoring.filter((p) => p.attemptId === attemptId).length >= MAX_PROCTORING_PER_ATTEMPT) return;
+  await FileSystem.makeDirectoryAsync(PROCTORING_DIR, { intermediates: true }).catch(() => undefined);
+  const ext = cameraUri.split('.').pop() ?? (meta.kind === 'photo' ? 'jpg' : 'mp4');
+  const uri = `${PROCTORING_DIR}${attemptId}-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`;
+  await FileSystem.moveAsync({ from: cameraUri, to: uri });
+  await commit({ ...state, proctoring: [...state.proctoring, { userId, attemptId, uri, ...meta }] });
+  void flushExamOutbox();
+}
+
+export async function queueProctoringEvents(
+  attemptId: string,
+  events: ProctoringEventInput[],
+): Promise<void> {
+  const userId = currentUserId();
+  if (!userId || events.length === 0) return;
+  await load();
+  await commit({
+    ...state,
+    proctoringEvents: [...state.proctoringEvents, { userId, attemptId, events }],
+  });
+  void flushExamOutbox();
+}
+
+/**
  * Send everything queued for the signed-in user, in order: answers, then
- * submits, then recordings. Single-flight; stops at the first network error
+ * submits, then recordings, then proctoring clips, photos and events. Single-flight; stops at the first network error
  * and leaves the rest for the next attempt.
  */
 export function flushExamOutbox(): Promise<void> {
@@ -249,6 +318,30 @@ async function runFlush(): Promise<void> {
       ))) return;
       await FileSystem.deleteAsync(recording.uri, { idempotent: true }).catch(() => undefined);
       await commit({ ...state, recordings: state.recordings.filter((r) => r !== recording) });
+      continue;
+    }
+
+    const media = state.proctoring.find((p) => p.userId === userId);
+    if (media) {
+      if (!(await send(media.attemptId, null, () =>
+        studentAttemptService.uploadProctoringMedia(media.attemptId, media.uri, {
+          kind: media.kind,
+          trigger: media.trigger,
+          offsetSeconds: media.offsetSeconds,
+          durationSeconds: media.durationSeconds,
+        }),
+      ))) return;
+      await FileSystem.deleteAsync(media.uri, { idempotent: true }).catch(() => undefined);
+      await commit({ ...state, proctoring: state.proctoring.filter((p) => p !== media) });
+      continue;
+    }
+
+    const batch = state.proctoringEvents.find((e) => e.userId === userId);
+    if (batch) {
+      if (!(await send(batch.attemptId, null, () =>
+        studentAttemptService.recordProctoringEvents(batch.attemptId, batch.events),
+      ))) return;
+      await commit({ ...state, proctoringEvents: state.proctoringEvents.filter((e) => e !== batch) });
       continue;
     }
 

@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { apiClient } from './axios.service';
 import { NetworkError } from '@/lib/errors';
+import type { ProctoringEventInput, ProctoringTrigger } from '@/interface/proctoring.interface';
 import {
   AnswerSubmission,
   StudentAttempt,
@@ -130,6 +131,64 @@ export const studentAttemptService = {
     await apiClient.post(`/student-attempts/${attemptId}/recording-confirm`, {
       key: data.key,
     });
+  },
+
+  /**
+   * Upload one proctoring clip or photo straight to R2 (presigned PUT), then
+   * confirm it. Per-capture counterpart of uploadRecordingDirect: short clips and
+   * photos replace the single hour-long video.
+   */
+  uploadProctoringMedia: async (
+    attemptId: string,
+    uri: string,
+    meta: {
+      kind: 'clip' | 'photo';
+      trigger: ProctoringTrigger;
+      offsetSeconds: number;
+      durationSeconds?: number;
+    },
+  ): Promise<void> => {
+    const ext = uri.split('.').pop()?.toLowerCase() ?? (meta.kind === 'photo' ? 'jpg' : 'mp4');
+    const extension = meta.kind === 'photo' ? 'jpg' : ext === 'mov' || ext === 'webm' ? ext : 'mp4';
+    const mimeType =
+      meta.kind === 'photo'
+        ? 'image/jpeg'
+        : extension === 'mov'
+          ? 'video/quicktime'
+          : extension === 'webm'
+            ? 'video/webm'
+            : 'video/mp4';
+
+    const { data } = await apiClient.post<{ mediaId: string; uploadUrl: string }>(
+      `/student-attempts/${attemptId}/proctoring/upload-url`,
+      { ...meta, extension },
+    );
+
+    let status: number;
+    try {
+      const result = await FileSystem.uploadAsync(data.uploadUrl, uri, {
+        httpMethod: 'PUT',
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        headers: { 'Content-Type': mimeType },
+      });
+      status = result.status;
+    } catch {
+      throw new NetworkError('Proctoring upload interrupted');
+    }
+    if (status < 200 || status >= 300) {
+      throw new NetworkError(`Proctoring upload failed (HTTP ${status})`);
+    }
+
+    await apiClient.post(`/student-attempts/${attemptId}/proctoring/confirm`, {
+      mediaId: data.mediaId,
+    });
+  },
+
+  recordProctoringEvents: async (
+    attemptId: string,
+    events: ProctoringEventInput[],
+  ): Promise<void> => {
+    await apiClient.post(`/student-attempts/${attemptId}/proctoring/events`, { events });
   },
 
   uploadRecording: async (attemptId: string, videoUri: string): Promise<void> => {
