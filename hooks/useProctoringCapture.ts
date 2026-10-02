@@ -23,9 +23,9 @@ import type { ProctoringEventInput, ProctoringTrigger } from '@/interface/procto
 
 const CLIP_SECONDS = 10;
 const EVENT_CLIP_SECONDS = 15;
-const CLIP_GAP_MIN_S = 90;
-const CLIP_GAP_MAX_S = 180;
-const PHOTO_EVERY_S = 30;
+const CLIP_GAP_MIN_S = 240;
+const CLIP_GAP_MAX_S = 360;
+const PHOTO_EVERY_S = 60;
 const PHOTO_JITTER_S = 6;
 /** Retry a photo this soon when it collided with a clip in progress. */
 const PHOTO_RETRY_MS = 3000;

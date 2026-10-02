@@ -7,7 +7,9 @@ export type ProctoringTrigger =
   | 'interval'
   | 'tab_hidden'
   | 'window_blur'
-  | 'fullscreen_exit';
+  | 'fullscreen_exit'
+  | 'loud_sound'
+  | 'movement';
 
 /**
  * The phone cannot report which app the student switched to, only that, and
