@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, Pressable, TextInput, Alert,
-  ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Easing,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Easing, AppState,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
@@ -22,6 +22,8 @@ import { AnswerSubmission } from '@/interface/attempt.interface';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
 /** Picture-in-picture camera preview size. */
+/** The exam is submitted automatically on this many times leaving the app. */
+const MAX_LEAVES = 3;
 const PIP_WIDTH = 76;
 const PIP_HEIGHT = 104;
 /** Approximate height of the bottom nav bar, excluding the safe-area inset. */
@@ -266,6 +268,36 @@ export default function TakeAssessmentScreen() {
     await recordingDone;
     await finishAndLeave(outcome);
   }, [submitting, attemptId, finishAndLeave, stopProctoring]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Leaving the exam: warn each time, end it on the third. */
+  const leavesRef = useRef(0);
+  useEffect(() => {
+    let backgroundedAt = 0;
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'background') {
+        backgroundedAt = Date.now();
+        return;
+      }
+      // 'inactive' alone is a notification shade or system dialog, not leaving.
+      if (next !== 'active' || backgroundedAt === 0) return;
+      const awayMs = Date.now() - backgroundedAt;
+      backgroundedAt = 0;
+      if (awayMs < 2000 || autoSubmittedRef.current) return;
+      leavesRef.current += 1;
+      if (leavesRef.current >= MAX_LEAVES) {
+        autoSubmittedRef.current = true;
+        toast.error(`You left the exam ${MAX_LEAVES} times. It has ended and your answers are being submitted.`);
+        void handleAutoSubmit();
+      } else {
+        const left = MAX_LEAVES - leavesRef.current;
+        Alert.alert(
+          `Warning ${leavesRef.current} of ${MAX_LEAVES}`,
+          `You left the exam screen. Leaving ${left === 1 ? 'one more time' : `${left} more times`} will end the exam and submit your answers automatically.`,
+        );
+      }
+    });
+    return () => sub.remove();
+  }, [handleAutoSubmit]);
 
   useEffect(() => {
     if (!deadlineMs || timeRemaining > 0 || autoSubmittedRef.current) return;
