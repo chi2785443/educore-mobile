@@ -1,5 +1,5 @@
 import { apiClient } from './axios.service';
-import { TermResult, ReportCard } from '@/interface/result.interface';
+import { TermResult, ReportCard, UpdateRemarksPayload } from '@/interface/result.interface';
 
 const exList = <T>(d: unknown): T[] => {
   if (d && typeof d === 'object' && 'data' in d) {
@@ -100,6 +100,10 @@ export const resultsService = {
   }): Promise<TermResult[]> => {
     const res = await apiClient.post('/results/generate', dto);
     return exList<TermResult>(res.data);
+  },
+
+  updateRemarks: async (termResultId: string, payload: UpdateRemarksPayload): Promise<void> => {
+    await apiClient.patch(`/results/${termResultId}/remarks`, payload);
   },
 
   submitForApproval: async (classroomId: string, term: string, academicYear: string): Promise<void> => {

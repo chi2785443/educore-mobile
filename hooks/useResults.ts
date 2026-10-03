@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resultsService } from '@/services/results.service';
-import { ReportCard } from '@/interface/result.interface';
+import { ReportCard, UpdateRemarksPayload } from '@/interface/result.interface';
 
 export const useMyResults = (enabled = true) =>
   useQuery({
@@ -73,6 +73,17 @@ export const useSubmitResultsForApproval = () => {
       resultsService.submitForApproval(classroomId, term, academicYear),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['classroom-results', vars.classroomId] });
+    },
+  });
+};
+
+export const useUpdateRemarks = (termResultId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UpdateRemarksPayload) => resultsService.updateRemarks(termResultId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student-report-card'] });
+      qc.invalidateQueries({ queryKey: ['classroom-results'] });
     },
   });
 };

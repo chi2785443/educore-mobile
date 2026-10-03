@@ -78,3 +78,10 @@ export interface ReportCard {
     subjectsFailed: number;
   };
 }
+
+/** Every field is optional: remarks are never required. '' clears a remark. */
+export interface UpdateRemarksPayload {
+  teacherRemarks?: string;
+  principalRemarks?: string;
+  subjectRemarks?: { subjectId: string; remarks: string }[];
+}

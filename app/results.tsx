@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import SubjectRemarksCard from '@/components/results/SubjectRemarksCard';
 import {
   View, Text, ScrollView, FlatList, Pressable, ActivityIndicator,
   RefreshControl, Modal, Alert,
@@ -490,6 +491,8 @@ function ReportCardModal({ result, onClose }: { result: TermResult; onClose: () 
                     )}
                   </View>
                 )}
+
+                <SubjectRemarksCard subjects={rc?.subjectResults ?? result.subjectResults ?? []} />
 
                 {/* Footer */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>

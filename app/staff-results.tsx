@@ -12,6 +12,9 @@ import { useResultsFilters, useClassroomResults, useStudentReportCard } from '@/
 import { TermResult, SubjectResult, ReportCard } from '@/interface/result.interface';
 import ClassroomDetailTabs from '@/components/classroom/ClassroomDetailTabs';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import RemarksEditor from '@/components/results/RemarksEditor';
+import SubjectRemarksCard from '@/components/results/SubjectRemarksCard';
+import { UserRole } from '@/interface/user.interface';
 
 /* ── Helpers ───────────────────────────────────────────────────── */
 const TERM_LABELS: Record<string, string> = {
@@ -168,9 +171,9 @@ function SubjectTableRow({ sub, index }: { sub: SubjectResult; index: number }) 
 
 /* ── Report Card Modal ─────────────────────────────────────────── */
 function ReportCardModal({
-  studentId, studentName, term, academicYear, onClose,
+  studentId, studentName, term, academicYear, isAdminLevel, onClose,
 }: {
-  studentId: string; studentName: string; term: string; academicYear: string; onClose: () => void;
+  studentId: string; studentName: string; term: string; academicYear: string; isAdminLevel: boolean; onClose: () => void;
 }) {
   const { data: rc, isLoading } = useStudentReportCard(studentId, term, academicYear);
   const [printing, setPrinting] = useState(false);
@@ -208,7 +211,7 @@ function ReportCardModal({
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#f3f4f6' }} edges={['top', 'bottom']}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingBottom: 40 }}>
 
           {/* School header */}
           <View style={{ backgroundColor: '#4f46e5', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}>
@@ -405,6 +408,10 @@ function ReportCardModal({
                     )}
                   </View>
                 )}
+
+                {/* Subject remarks + editor (staff) */}
+                <SubjectRemarksCard subjects={rc.subjectResults} />
+                <RemarksEditor key={rc.termResult.id} rc={rc} isAdminLevel={isAdminLevel} />
 
                 {/* Footer */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9' }}>
@@ -667,6 +674,7 @@ export default function StaffResultsScreen() {
           studentName={selectedStudent.name}
           term={activeTerm}
           academicYear={activeYear}
+          isAdminLevel={primary?.role === UserRole.SUPER_ADMIN || primary?.role === UserRole.SCHOOL_ADMIN || !!user?.isAdmin}
           onClose={() => setSelectedStudent(null)}
         />
       )}

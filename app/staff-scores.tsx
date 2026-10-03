@@ -75,11 +75,11 @@ function ScoreDetailModal({
                 </View>
               ) : (
                 <Pressable onPress={handleRelease} disabled={releasing} style={({ pressed }) => ({ opacity: pressed || releasing ? 0.7 : 1 })}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
                     {releasing
-                      ? <ActivityIndicator size="small" color="#fff" />
-                      : <Ionicons name="send" size={13} color="#fff" />}
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Release</Text>
+                      ? <ActivityIndicator size="small" color={typeColor} />
+                      : <Ionicons name="send" size={13} color={typeColor} />}
+                    <Text style={{ color: typeColor, fontSize: 13, fontWeight: '800' }}>Release</Text>
                   </View>
                 </Pressable>
               )
