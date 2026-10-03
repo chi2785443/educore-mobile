@@ -374,10 +374,6 @@ function LearnersIllustration() {
 
       {/* Cap badge top */}
       <Animated.View style={[i1St, { position: 'absolute', top: H * 0.02, left: W * 0.22 }]}>
-        <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#E0EEFF',
-          alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="school-outline" size={18} color="#0284c7" />
-        </View>
       </Animated.View>
     </View>
   );

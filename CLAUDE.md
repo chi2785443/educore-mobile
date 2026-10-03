@@ -255,3 +255,4 @@ EXPO_PUBLIC_BACKEND_BASE_URL=http://localhost:8000/api/v1/
 - `components/results/SubjectRemarksCard.tsx` shows subject remarks (staff modal and the student's `app/results.tsx`); renders nothing when none are set. Students only see remarks once results are published.
 - The Release button in `app/staff-scores.tsx` is solid white with text in the assessment colour so it reads on any header colour.
 - Proctoring retention (clips/photos deleted N days after release) has no mobile UI: the school setting and the review panel are web-only.
+- **No decorative icon tiles:** screen headers, cards and sheets carry text only (no tinted icon square beside a title). Keep icons for back/close buttons, chevrons, status, tabs, empty states and avatars.

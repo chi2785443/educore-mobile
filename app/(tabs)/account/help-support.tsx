@@ -141,13 +141,6 @@ export default function HelpSupportScreen() {
               FAQs and contact options
             </Text>
           </View>
-          <View style={{
-            width: 36, height: 36, borderRadius: 12,
-            backgroundColor: 'rgba(255,255,255,0.12)',
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Ionicons name="help-circle-outline" size={20} color="rgba(255,255,255,0.8)" />
-          </View>
         </View>
       </View>
 

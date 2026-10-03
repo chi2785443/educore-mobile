@@ -88,12 +88,6 @@ function ClassroomPickerModal({
                 borderBottomWidth: 1, borderBottomColor: '#f8fafc',
                 backgroundColor: selectedId === 'all' ? '#F0EEFF' : '#fff',
               }}>
-                <View style={{
-                  width: 40, height: 40, borderRadius: 13,
-                  backgroundColor: '#F0EEFF', alignItems: 'center', justifyContent: 'center', marginRight: 12,
-                }}>
-                  <Ionicons name="grid-outline" size={19} color="#4C3FC4" />
-                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 14, fontWeight: '700', color: '#0f172a' }}>All Classrooms</Text>
                   <Text style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Generate for every classroom at once</Text>
@@ -255,13 +249,6 @@ export default function GenerateResultsScreen() {
               Compile scores into term results
             </Text>
           </View>
-          <View style={{
-            width: 36, height: 36, borderRadius: 12,
-            backgroundColor: 'rgba(255,255,255,0.1)',
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Ionicons name="bar-chart-outline" size={18} color="rgba(255,255,255,0.7)" />
-          </View>
         </View>
       </View>
 
@@ -357,12 +344,6 @@ export default function GenerateResultsScreen() {
                 borderBottomWidth: 1, borderBottomColor: '#f8fafc',
                 flexDirection: 'row', alignItems: 'center', gap: 10,
               }}>
-                <View style={{
-                  width: 30, height: 30, borderRadius: 10,
-                  backgroundColor: '#F0EEFF', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Ionicons name="options-outline" size={15} color="#4C3FC4" />
-                </View>
                 <Text style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }}>Result Parameters</Text>
               </View>
 

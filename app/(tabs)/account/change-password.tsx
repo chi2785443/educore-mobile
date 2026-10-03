@@ -273,14 +273,6 @@ export default function ChangePasswordScreen() {
                 { icon: 'checkmark-circle-outline' as const, tip: 'Add a special character (!@#$%)' },
               ].map(({ icon, tip }) => (
                 <View key={tip} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{
-                    width: 28, height: 28, borderRadius: 9,
-                    backgroundColor: '#f5f3ff',
-                    alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <Ionicons name={icon} size={14} color="#7c3aed" />
-                  </View>
                   <Text style={{ fontSize: 13, color: '#475569', flex: 1 }}>{tip}</Text>
                 </View>
               ))}

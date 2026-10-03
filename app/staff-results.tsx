@@ -504,9 +504,6 @@ export default function StaffResultsScreen() {
               {classrooms.length} classroom{classrooms.length !== 1 ? 's' : ''}
             </Text>
           </View>
-          <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="trophy-outline" size={18} color="rgba(255,255,255,0.7)" />
-          </View>
         </View>
       </View>
 

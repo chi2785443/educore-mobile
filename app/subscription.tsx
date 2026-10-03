@@ -181,9 +181,6 @@ export default function SubscriptionScreen() {
               </View>
               {summary.tools.map((t, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: i < summary.tools.length - 1 ? 1 : 0, borderBottomColor: '#f9fafb' }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: '#f5f3ff', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="cube-outline" size={18} color="#7c3aed" />
-                  </View>
                   <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: '#374151' }}>{t.tool.name}</Text>
                   <View style={{ backgroundColor: t.status === 'active' ? '#dcfce7' : '#fee2e2', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 11, fontWeight: '700', color: t.status === 'active' ? '#16a34a' : '#dc2626', textTransform: 'capitalize' }}>

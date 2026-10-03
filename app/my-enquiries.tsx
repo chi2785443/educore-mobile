@@ -280,9 +280,6 @@ function DetailView({ enquiry, onBack }: { enquiry: Enquiry; onBack: () => void 
 function DetailRow({ icon, label, value }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-      <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-        <Ionicons name={icon} size={15} color="#d97706" />
-      </View>
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 11, color: '#9ca3af', fontWeight: '700', marginBottom: 2 }}>{label}</Text>
         <Text style={{ fontSize: 14, color: '#111827', fontWeight: '600' }}>{value}</Text>
@@ -337,9 +334,6 @@ function SchoolPickerView({
       {/* Skip option */}
       <Pressable onPress={onSkip} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
         <View style={{ margin: 16, marginBottom: 0, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#e5e7eb', borderStyle: 'dashed' }}>
-          <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="chatbubble-ellipses-outline" size={18} color="#d97706" />
-          </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, fontWeight: '800', color: '#374151' }}>Send without a school</Text>
             <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>Type the school name in your message</Text>
@@ -613,9 +607,6 @@ function NewEnquiryFormView({
         {/* Child info toggle */}
         <Pressable onPress={() => setShowChildSection(p => !p)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#e5e7eb' }}>
-            <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="happy-outline" size={18} color="#d97706" />
-            </View>
             <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: '#374151' }}>
               {showChildSection ? 'Hide child information' : 'Add child information (optional)'}
             </Text>

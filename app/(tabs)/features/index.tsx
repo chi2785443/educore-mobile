@@ -223,13 +223,6 @@ export default function FeaturesTab() {
               All your tools in one place
             </Text>
           </View>
-          <View style={{
-            width: 36, height: 36, borderRadius: 12,
-            backgroundColor: 'rgba(255,255,255,0.08)',
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Ionicons name="apps-outline" size={18} color="rgba(255,255,255,0.6)" />
-          </View>
         </View>
       </View>
 

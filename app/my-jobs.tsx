@@ -464,9 +464,6 @@ function AdminApplicationDetailView({ application, schoolId, onBack, onRefresh, 
         {application.resume?.url && (
           <Pressable onPress={() => Linking.openURL(application.resume!.url)} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
             <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Ionicons name="document-text-outline" size={20} color="#6366f1" />
-              </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#0f172a' }}>{application.resume.name ?? 'Resume'}</Text>
                 <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Tap to open</Text>

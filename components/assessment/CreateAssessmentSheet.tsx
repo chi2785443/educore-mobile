@@ -105,9 +105,6 @@ function ClassroomPickerModal({ visible, classrooms, onSelect, onClose }: {
           {/* "All students" option */}
           <Pressable onPress={() => { onSelect(null); onClose(); }} style={({ pressed }) => ({ backgroundColor: pressed ? '#f8fafc' : '#fff' })}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#E8F5EE', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="people-outline" size={20} color="#059669" />
-              </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#059669' }}>All students (no class filter)</Text>
                 <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>Assessment visible to all</Text>

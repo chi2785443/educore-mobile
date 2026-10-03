@@ -265,9 +265,6 @@ function AdminDetailView({
         {/* Previous school */}
         {enrollment.previousSchool && (
           <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Ionicons name="business-outline" size={17} color="#6366f1" />
-            </View>
             <View>
               <Text style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8', marginBottom: 2 }}>Previous School</Text>
               <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a' }}>{enrollment.previousSchool}</Text>
@@ -289,9 +286,6 @@ function AdminDetailView({
             <View style={{ gap: 10 }}>
               {docs.map((doc, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#f8fafc', borderRadius: 14, padding: 12 }}>
-                  <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: '#eef2ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Ionicons name="document-text-outline" size={19} color="#6366f1" />
-                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>{doc!.name}</Text>
                     {doc!.fileSize && <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{fmtSize(doc!.fileSize)}</Text>}
@@ -459,9 +453,6 @@ function AdminEnrollmentsScreen({ schoolId, schoolName }: { schoolId: string; sc
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900' }}>Enrollments</Text>
             <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 1 }} numberOfLines={1}>{schoolName}</Text>
-          </View>
-          <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: 'rgba(99,102,241,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="document-text-outline" size={19} color="#a5b4fc" />
           </View>
         </View>
 
@@ -667,9 +658,6 @@ function UserDetailView({ enrollment, onBack }: { enrollment: Enrollment; onBack
             <View style={{ gap: 10 }}>
               {docs.map((doc, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#f8fafc', borderRadius: 12, padding: 12 }}>
-                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#e0e7ff', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Ionicons name="document-text-outline" size={18} color="#6366f1" />
-                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }} numberOfLines={1}>{doc!.name}</Text>
                     {doc!.fileSize && <Text style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{fmtSize(doc!.fileSize)}</Text>}

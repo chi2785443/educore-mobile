@@ -334,13 +334,6 @@ export default function EditProfileScreen() {
               flexDirection: 'row', alignItems: 'center', gap: 12,
               paddingHorizontal: 16, paddingVertical: 14,
             }}>
-              <View style={{
-                width: 36, height: 36, borderRadius: 10,
-                backgroundColor: '#F0EEFF',
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Ionicons name="mail-outline" size={16} color="#4C3FC4" />
-              </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '700', marginBottom: 1 }}>Email</Text>
                 <Text style={{ fontSize: 14, color: '#374151', fontWeight: '600' }}>{user?.email ?? '—'}</Text>
